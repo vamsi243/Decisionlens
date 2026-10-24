@@ -28,7 +28,7 @@ import numpy as np
 from contracts import Archetype, Event, EventType, Outcome, Period, Point
 from engine import probability as P
 from engine.fatigue import FatigueModel
-from engine.physics import LOFT_DISTANCE, Kinematics, flight_params
+from engine.physics import LOFT_DISTANCE, Kinematics, arrival_time, flight_params
 from engine.profiles import effective_reach_cm
 from generator.roster import AWAY, HOME, WORK_RATE, Roster
 
@@ -50,6 +50,7 @@ RUN_RATE = {  # forward runs per second while in possession
     Archetype.BOX_TO_BOX: 0.014,
     Archetype.DEEP_PLAYMAKER: 0.005,
 }
+OPEN_BALL_S = 0.6  # after this a claimed loose ball is anyone's
 DUEL_HAZARD = 0.25  # challenges per second while a defender is within 1.5 m
 DRIBBLERS = {Archetype.WINGER, Archetype.PRESSING_FORWARD, Archetype.OVERLAPPING_FB}
 
@@ -478,7 +479,12 @@ class MatchSim:
                 urgent[i] = True
         elif self.mode == LOOSE:
             aim = self.ball[:2] + self.ball_v * 0.5
-            teams = (HOME, AWAY) if self.loose_claim is None else (self.loose_claim,)
+            claim = self.loose_claim
+            teams = (
+                (HOME, AWAY)
+                if claim is None or self.t - self.loose_since > OPEN_BALL_S
+                else (claim,)
+            )
             for team in teams:
                 i, _ = self.nearest(self.on_team(team, outfield=True), self.ball[:2])
                 targets[i] = aim
@@ -574,7 +580,7 @@ class MatchSim:
                 self.loose_since = self.t
                 self.loose_claim = None
                 self.loose_intercept = False
-                self.ball_v *= 0.25
+                self.ball_v *= 0.25 if fl.peak > 1.0 else 0.55
                 fl.on_arrive()
         elif self.mode == LOOSE:
             self.ball[:2] += self.ball_v * DT
@@ -602,7 +608,8 @@ class MatchSim:
         if not (0.0 <= x <= L and 0.0 <= y <= W):
             self._out_of_play()
             return
-        mask = self.on if self.loose_claim is None else self.on & (self.team == self.loose_claim)
+        open_ball = self.loose_claim is None or self.t - self.loose_since > OPEN_BALL_S
+        mask = self.on if open_ball else self.on & (self.team == self.loose_claim)
         idx = np.flatnonzero(mask)
         d = np.linalg.norm(self.pos[idx] - self.ball[:2], axis=1)
         k = int(np.argmin(d))
@@ -610,7 +617,7 @@ class MatchSim:
             self._collect(int(idx[k]))
 
     def _collect(self, i: int) -> None:
-        if self.loose_intercept:
+        if self.loose_intercept and self.team[i] == self.loose_claim:
             self.emit(
                 EventType.INTERCEPTION,
                 team_id=int(self.team[i]),
@@ -772,7 +779,7 @@ class MatchSim:
             if intercept_frac is None:
                 _, fj = _seg_dist(self.pos[j : j + 1], start, recv_pt)
                 intercept_frac = float(fj[0])
-            ip = start + (recv_pt - start) * float(np.clip(intercept_frac, 0.35, 0.95))
+            ip = self._reachable_cut(j, start, recv_pt, intercept_frac, speed_avg)
             fl = self.kick(
                 "pass",
                 o,
@@ -797,6 +804,28 @@ class MatchSim:
             pressure=pressure,
             tags=list(tags) + (["lofted"] if lofted else []),
         )
+
+    def _reachable_cut(
+        self, j: int, start: np.ndarray, end: np.ndarray, frac: float, speed_avg: float
+    ) -> np.ndarray:
+        """Where a failed pass is cut out: the first point on the lane interceptor `j` can reach
+        before the ball, else straight at `j` (a misplaced pass). Never a spot nobody can reach,
+        which would leave the ball dead on the grass."""
+        d = float(np.linalg.norm(end - start))
+        f0 = float(np.clip(frac, 0.35, 0.95))
+        fracs = np.unique(np.r_[f0, np.linspace(0.35, 1.0, 14)])
+        pts = start + (end - start) * fracs[:, None]
+        t_ball = fracs * d / speed_avg  # the ball stops at the cut point, so it arrives at T
+        t_player = arrival_time(self.kin([j]), pts)[0]  # acceleration, momentum, reaction
+        ok = t_player <= t_ball + 0.1
+        cut: np.ndarray
+        if ok[fracs == f0].any():
+            cut = start + (end - start) * f0
+        elif ok.any():
+            cut = pts[int(np.argmax(ok))]
+        else:
+            cut = np.clip(self.pos[j] + self.vel[j] * 0.4, [1, 1], [L - 1, W - 1])
+        return cut
 
     def _arrive(self, i: int, intercept: bool = False) -> None:
         self.loose_claim = int(self.team[i])
@@ -953,6 +982,12 @@ class MatchSim:
         u = self.rng.random(2)
         end = rel(team, np.array([48.0 + 20.0 * u[0], 8.0 + 52.0 * u[1]]))
         self.ball[2] = max(self.ball[2], BALL_R)
+        # The nearest player from each side goes for the dropping ball, so it isn't left alone.
+        mates = self.on_team(team, outfield=True)
+        chasers = [
+            self.nearest(self.on_team(1 - team, outfield=True), end)[0],
+            self.nearest(mates[mates != o], end)[0],
+        ]
         fl = self.kick(
             "clearance",
             o,
@@ -961,7 +996,7 @@ class MatchSim:
             peak=6.0 if header else 12.0,
             z_end=BALL_R,
             on_arrive=lambda: None,
-            roles=[],
+            roles=[(i, end) for i in chasers],
         )
         self.emit(
             EventType.CLEARANCE,
