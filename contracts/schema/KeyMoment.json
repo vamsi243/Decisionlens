@@ -1,0 +1,109 @@
+{
+  "$defs": {
+    "FrameRange": {
+      "additionalProperties": false,
+      "properties": {
+        "end": {
+          "minimum": 0,
+          "title": "End",
+          "type": "integer"
+        },
+        "start": {
+          "minimum": 0,
+          "title": "Start",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "start",
+        "end"
+      ],
+      "title": "FrameRange",
+      "type": "object"
+    },
+    "MomentType": {
+      "enum": [
+        "aerial_duel",
+        "recovery_run",
+        "big_chance",
+        "line_breaking_pass",
+        "press_turnover",
+        "goal",
+        "fatigue_alert"
+      ],
+      "title": "MomentType",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "event_id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Event Id"
+    },
+    "frame_range": {
+      "$ref": "#/$defs/FrameRange"
+    },
+    "importance": {
+      "default": 0.5,
+      "maximum": 1.0,
+      "minimum": 0.0,
+      "title": "Importance",
+      "type": "number"
+    },
+    "moment_id": {
+      "title": "Moment Id",
+      "type": "string"
+    },
+    "players": {
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1,
+      "title": "Players",
+      "type": "array"
+    },
+    "t_ms": {
+      "minimum": 0,
+      "title": "T Ms",
+      "type": "integer"
+    },
+    "team_id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Team Id"
+    },
+    "title": {
+      "default": "",
+      "title": "Title",
+      "type": "string"
+    },
+    "type": {
+      "$ref": "#/$defs/MomentType"
+    }
+  },
+  "required": [
+    "moment_id",
+    "t_ms",
+    "type",
+    "players",
+    "frame_range"
+  ],
+  "title": "KeyMoment",
+  "type": "object"
+}

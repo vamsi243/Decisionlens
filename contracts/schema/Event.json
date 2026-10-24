@@ -1,0 +1,216 @@
+{
+  "$defs": {
+    "EventType": {
+      "enum": [
+        "pass",
+        "cross",
+        "shot",
+        "dribble",
+        "tackle",
+        "interception",
+        "aerial_duel",
+        "clearance",
+        "foul",
+        "possession_change",
+        "pressure",
+        "substitution",
+        "goal",
+        "knock",
+        "period_start",
+        "period_end"
+      ],
+      "title": "EventType",
+      "type": "string"
+    },
+    "Outcome": {
+      "enum": [
+        "success",
+        "fail"
+      ],
+      "title": "Outcome",
+      "type": "string"
+    },
+    "Period": {
+      "enum": [
+        "1H",
+        "2H"
+      ],
+      "title": "Period",
+      "type": "string"
+    },
+    "Point": {
+      "additionalProperties": false,
+      "properties": {
+        "x": {
+          "maximum": 110.0,
+          "minimum": -5.0,
+          "title": "X",
+          "type": "number"
+        },
+        "y": {
+          "maximum": 73.0,
+          "minimum": -5.0,
+          "title": "Y",
+          "type": "number"
+        }
+      },
+      "required": [
+        "x",
+        "y"
+      ],
+      "title": "Point",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "ball_height_m": {
+      "anyOf": [
+        {
+          "maximum": 40,
+          "minimum": 0,
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Ball Height M"
+    },
+    "ball_speed_ms": {
+      "anyOf": [
+        {
+          "maximum": 50,
+          "minimum": 0,
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Ball Speed Ms"
+    },
+    "end": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Point"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "event_id": {
+      "title": "Event Id",
+      "type": "string"
+    },
+    "frame_ref": {
+      "minimum": 0,
+      "title": "Frame Ref",
+      "type": "integer"
+    },
+    "outcome": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Outcome"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "period": {
+      "$ref": "#/$defs/Period"
+    },
+    "player_id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Player Id"
+    },
+    "pressure": {
+      "anyOf": [
+        {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Pressure"
+    },
+    "start": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Point"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "t_ms": {
+      "minimum": 0,
+      "title": "T Ms",
+      "type": "integer"
+    },
+    "tags": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Tags",
+      "type": "array"
+    },
+    "target_id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Target Id"
+    },
+    "team_id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Team Id"
+    },
+    "type": {
+      "$ref": "#/$defs/EventType"
+    }
+  },
+  "required": [
+    "event_id",
+    "t_ms",
+    "period",
+    "type",
+    "frame_ref"
+  ],
+  "title": "Event",
+  "type": "object"
+}

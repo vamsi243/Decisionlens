@@ -1,0 +1,139 @@
+{
+  "$defs": {
+    "PitchSize": {
+      "additionalProperties": false,
+      "properties": {
+        "length": {
+          "default": 105.0,
+          "title": "Length",
+          "type": "number"
+        },
+        "width": {
+          "default": 68.0,
+          "title": "Width",
+          "type": "number"
+        }
+      },
+      "title": "PitchSize",
+      "type": "object"
+    },
+    "TeamColours": {
+      "additionalProperties": false,
+      "properties": {
+        "primary": {
+          "pattern": "^#[0-9a-fA-F]{6}$",
+          "title": "Primary",
+          "type": "string"
+        },
+        "secondary": {
+          "pattern": "^#[0-9a-fA-F]{6}$",
+          "title": "Secondary",
+          "type": "string"
+        }
+      },
+      "required": [
+        "primary",
+        "secondary"
+      ],
+      "title": "TeamColours",
+      "type": "object"
+    },
+    "TeamMeta": {
+      "additionalProperties": false,
+      "properties": {
+        "colours": {
+          "$ref": "#/$defs/TeamColours"
+        },
+        "formation": {
+          "pattern": "^\\d(-\\d){2,4}$",
+          "title": "Formation",
+          "type": "string"
+        },
+        "is_home": {
+          "title": "Is Home",
+          "type": "boolean"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "short_name": {
+          "maxLength": 4,
+          "title": "Short Name",
+          "type": "string"
+        },
+        "team_id": {
+          "title": "Team Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "team_id",
+        "name",
+        "short_name",
+        "formation",
+        "colours",
+        "is_home"
+      ],
+      "title": "TeamMeta",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "match_id": {
+      "title": "Match Id",
+      "type": "string"
+    },
+    "period_length_ms": {
+      "default": 2700000,
+      "exclusiveMinimum": 0,
+      "title": "Period Length Ms",
+      "type": "integer"
+    },
+    "pitch": {
+      "$ref": "#/$defs/PitchSize",
+      "default": {
+        "length": 105.0,
+        "width": 68.0
+      }
+    },
+    "seed": {
+      "title": "Seed",
+      "type": "integer"
+    },
+    "synthetic": {
+      "default": true,
+      "title": "Synthetic",
+      "type": "boolean"
+    },
+    "teams": {
+      "items": {
+        "$ref": "#/$defs/TeamMeta"
+      },
+      "maxItems": 2,
+      "minItems": 2,
+      "title": "Teams",
+      "type": "array"
+    },
+    "tracking_hz": {
+      "default": 10,
+      "maximum": 50,
+      "minimum": 1,
+      "title": "Tracking Hz",
+      "type": "integer"
+    },
+    "venue": {
+      "default": "Synthetic Stadium",
+      "title": "Venue",
+      "type": "string"
+    }
+  },
+  "required": [
+    "match_id",
+    "seed",
+    "teams"
+  ],
+  "title": "MatchMeta",
+  "type": "object"
+}

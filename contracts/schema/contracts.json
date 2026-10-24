@@ -1,0 +1,1277 @@
+{
+  "$defs": {
+    "ActionKind": {
+      "enum": [
+        "pass",
+        "cross",
+        "shot",
+        "dribble",
+        "carry",
+        "clear",
+        "header",
+        "recovery_run"
+      ],
+      "title": "ActionKind",
+      "type": "string"
+    },
+    "Archetype": {
+      "enum": [
+        "goalkeeper",
+        "aerial_cb",
+        "ball_playing_cb",
+        "overlapping_fb",
+        "deep_playmaker",
+        "box_to_box",
+        "pressing_forward",
+        "target_man",
+        "winger"
+      ],
+      "title": "Archetype",
+      "type": "string"
+    },
+    "BallState": {
+      "additionalProperties": false,
+      "properties": {
+        "owner_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Owner Id"
+        },
+        "x": {
+          "maximum": 110.0,
+          "minimum": -5.0,
+          "title": "X",
+          "type": "number"
+        },
+        "y": {
+          "maximum": 73.0,
+          "minimum": -5.0,
+          "title": "Y",
+          "type": "number"
+        },
+        "z": {
+          "maximum": 40,
+          "minimum": 0,
+          "title": "Z",
+          "type": "number"
+        }
+      },
+      "required": [
+        "x",
+        "y",
+        "z"
+      ],
+      "title": "BallState",
+      "type": "object"
+    },
+    "Driver": {
+      "additionalProperties": false,
+      "description": "One reason the counterfactual differs, e.g. factor=jump_reach, delta=+12, unit=cm.",
+      "properties": {
+        "delta": {
+          "title": "Delta",
+          "type": "number"
+        },
+        "factor": {
+          "title": "Factor",
+          "type": "string"
+        },
+        "text": {
+          "title": "Text",
+          "type": "string"
+        },
+        "unit": {
+          "title": "Unit",
+          "type": "string"
+        }
+      },
+      "required": [
+        "factor",
+        "delta",
+        "unit",
+        "text"
+      ],
+      "title": "Driver",
+      "type": "object"
+    },
+    "Event": {
+      "additionalProperties": false,
+      "properties": {
+        "ball_height_m": {
+          "anyOf": [
+            {
+              "maximum": 40,
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Ball Height M"
+        },
+        "ball_speed_ms": {
+          "anyOf": [
+            {
+              "maximum": 50,
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Ball Speed Ms"
+        },
+        "end": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Point"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "event_id": {
+          "title": "Event Id",
+          "type": "string"
+        },
+        "frame_ref": {
+          "minimum": 0,
+          "title": "Frame Ref",
+          "type": "integer"
+        },
+        "outcome": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Outcome"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "period": {
+          "$ref": "#/$defs/Period"
+        },
+        "player_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Player Id"
+        },
+        "pressure": {
+          "anyOf": [
+            {
+              "maximum": 1.0,
+              "minimum": 0.0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Pressure"
+        },
+        "start": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Point"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "t_ms": {
+          "minimum": 0,
+          "title": "T Ms",
+          "type": "integer"
+        },
+        "tags": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Tags",
+          "type": "array"
+        },
+        "target_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Target Id"
+        },
+        "team_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Team Id"
+        },
+        "type": {
+          "$ref": "#/$defs/EventType"
+        }
+      },
+      "required": [
+        "event_id",
+        "t_ms",
+        "period",
+        "type",
+        "frame_ref"
+      ],
+      "title": "Event",
+      "type": "object"
+    },
+    "EventType": {
+      "enum": [
+        "pass",
+        "cross",
+        "shot",
+        "dribble",
+        "tackle",
+        "interception",
+        "aerial_duel",
+        "clearance",
+        "foul",
+        "possession_change",
+        "pressure",
+        "substitution",
+        "goal",
+        "knock",
+        "period_start",
+        "period_end"
+      ],
+      "title": "EventType",
+      "type": "string"
+    },
+    "FrameRange": {
+      "additionalProperties": false,
+      "properties": {
+        "end": {
+          "minimum": 0,
+          "title": "End",
+          "type": "integer"
+        },
+        "start": {
+          "minimum": 0,
+          "title": "Start",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "start",
+        "end"
+      ],
+      "title": "FrameRange",
+      "type": "object"
+    },
+    "KeyMoment": {
+      "additionalProperties": false,
+      "properties": {
+        "event_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Event Id"
+        },
+        "frame_range": {
+          "$ref": "#/$defs/FrameRange"
+        },
+        "importance": {
+          "default": 0.5,
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Importance",
+          "type": "number"
+        },
+        "moment_id": {
+          "title": "Moment Id",
+          "type": "string"
+        },
+        "players": {
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Players",
+          "type": "array"
+        },
+        "t_ms": {
+          "minimum": 0,
+          "title": "T Ms",
+          "type": "integer"
+        },
+        "team_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Team Id"
+        },
+        "title": {
+          "default": "",
+          "title": "Title",
+          "type": "string"
+        },
+        "type": {
+          "$ref": "#/$defs/MomentType"
+        }
+      },
+      "required": [
+        "moment_id",
+        "t_ms",
+        "type",
+        "players",
+        "frame_range"
+      ],
+      "title": "KeyMoment",
+      "type": "object"
+    },
+    "MatchMeta": {
+      "additionalProperties": false,
+      "properties": {
+        "match_id": {
+          "title": "Match Id",
+          "type": "string"
+        },
+        "period_length_ms": {
+          "default": 2700000,
+          "exclusiveMinimum": 0,
+          "title": "Period Length Ms",
+          "type": "integer"
+        },
+        "pitch": {
+          "$ref": "#/$defs/PitchSize",
+          "default": {
+            "length": 105.0,
+            "width": 68.0
+          }
+        },
+        "seed": {
+          "title": "Seed",
+          "type": "integer"
+        },
+        "synthetic": {
+          "default": true,
+          "title": "Synthetic",
+          "type": "boolean"
+        },
+        "teams": {
+          "items": {
+            "$ref": "#/$defs/TeamMeta"
+          },
+          "maxItems": 2,
+          "minItems": 2,
+          "title": "Teams",
+          "type": "array"
+        },
+        "tracking_hz": {
+          "default": 10,
+          "maximum": 50,
+          "minimum": 1,
+          "title": "Tracking Hz",
+          "type": "integer"
+        },
+        "venue": {
+          "default": "Synthetic Stadium",
+          "title": "Venue",
+          "type": "string"
+        }
+      },
+      "required": [
+        "match_id",
+        "seed",
+        "teams"
+      ],
+      "title": "MatchMeta",
+      "type": "object"
+    },
+    "Modifiers": {
+      "additionalProperties": false,
+      "description": "Multipliers applied to a player's physical profile (1.0 = fresh).",
+      "properties": {
+        "accel": {
+          "default": 1.0,
+          "maximum": 1.0,
+          "minimum": 0.5,
+          "title": "Accel",
+          "type": "number"
+        },
+        "reaction": {
+          "default": 1.0,
+          "maximum": 1.6,
+          "minimum": 1.0,
+          "title": "Reaction",
+          "type": "number"
+        },
+        "speed": {
+          "default": 1.0,
+          "maximum": 1.0,
+          "minimum": 0.5,
+          "title": "Speed",
+          "type": "number"
+        }
+      },
+      "title": "Modifiers",
+      "type": "object"
+    },
+    "MomentType": {
+      "enum": [
+        "aerial_duel",
+        "recovery_run",
+        "big_chance",
+        "line_breaking_pass",
+        "press_turnover",
+        "goal",
+        "fatigue_alert"
+      ],
+      "title": "MomentType",
+      "type": "string"
+    },
+    "Option": {
+      "additionalProperties": false,
+      "properties": {
+        "action": {
+          "$ref": "#/$defs/ActionKind"
+        },
+        "chosen": {
+          "default": false,
+          "title": "Chosen",
+          "type": "boolean"
+        },
+        "option_id": {
+          "title": "Option Id",
+          "type": "string"
+        },
+        "p_success": {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "P Success",
+          "type": "number"
+        },
+        "path": {
+          "items": {
+            "$ref": "#/$defs/Point"
+          },
+          "minItems": 2,
+          "title": "Path",
+          "type": "array"
+        },
+        "range": {
+          "$ref": "#/$defs/ProbRange"
+        },
+        "target": {
+          "$ref": "#/$defs/Point"
+        },
+        "target_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Target Id"
+        },
+        "xt_gain": {
+          "maximum": 1,
+          "minimum": -1,
+          "title": "Xt Gain",
+          "type": "number"
+        }
+      },
+      "required": [
+        "option_id",
+        "action",
+        "target",
+        "p_success",
+        "range",
+        "xt_gain",
+        "path"
+      ],
+      "title": "Option",
+      "type": "object"
+    },
+    "OptionSet": {
+      "additionalProperties": false,
+      "properties": {
+        "actor_id": {
+          "title": "Actor Id",
+          "type": "string"
+        },
+        "best_option_id": {
+          "title": "Best Option Id",
+          "type": "string"
+        },
+        "moment_id": {
+          "title": "Moment Id",
+          "type": "string"
+        },
+        "options": {
+          "items": {
+            "$ref": "#/$defs/Option"
+          },
+          "maxItems": 4,
+          "minItems": 1,
+          "title": "Options",
+          "type": "array"
+        },
+        "t_ms": {
+          "minimum": 0,
+          "title": "T Ms",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "moment_id",
+        "t_ms",
+        "actor_id",
+        "options",
+        "best_option_id"
+      ],
+      "title": "OptionSet",
+      "type": "object"
+    },
+    "Outcome": {
+      "enum": [
+        "success",
+        "fail"
+      ],
+      "title": "Outcome",
+      "type": "string"
+    },
+    "Overlay": {
+      "additionalProperties": false,
+      "properties": {
+        "grounded": {
+          "default": false,
+          "title": "Grounded",
+          "type": "boolean"
+        },
+        "kind": {
+          "$ref": "#/$defs/OverlayKind"
+        },
+        "moment_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Moment Id"
+        },
+        "overlay_id": {
+          "title": "Overlay Id",
+          "type": "string"
+        },
+        "payload": {
+          "additionalProperties": true,
+          "default": {},
+          "title": "Payload",
+          "type": "object"
+        },
+        "show_for_ms": {
+          "default": 8000,
+          "exclusiveMinimum": 0,
+          "title": "Show For Ms",
+          "type": "integer"
+        },
+        "source": {
+          "default": "engine",
+          "title": "Source",
+          "type": "string"
+        },
+        "t_ms": {
+          "minimum": 0,
+          "title": "T Ms",
+          "type": "integer"
+        },
+        "text": {
+          "additionalProperties": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object"
+          },
+          "default": {},
+          "propertyNames": {
+            "$ref": "#/$defs/Persona"
+          },
+          "title": "Text",
+          "type": "object"
+        }
+      },
+      "required": [
+        "overlay_id",
+        "t_ms",
+        "kind"
+      ],
+      "title": "Overlay",
+      "type": "object"
+    },
+    "OverlayKind": {
+      "enum": [
+        "moment",
+        "options",
+        "what_if",
+        "stat",
+        "fatigue",
+        "recap"
+      ],
+      "title": "OverlayKind",
+      "type": "string"
+    },
+    "Period": {
+      "enum": [
+        "1H",
+        "2H"
+      ],
+      "title": "Period",
+      "type": "string"
+    },
+    "Persona": {
+      "enum": [
+        "analyst",
+        "fan"
+      ],
+      "title": "Persona",
+      "type": "string"
+    },
+    "Physical": {
+      "additionalProperties": false,
+      "properties": {
+        "accel_ms2": {
+          "maximum": 8,
+          "minimum": 1,
+          "title": "Accel Ms2",
+          "type": "number"
+        },
+        "height_cm": {
+          "maximum": 210,
+          "minimum": 150,
+          "title": "Height Cm",
+          "type": "number"
+        },
+        "jump_reach_cm": {
+          "maximum": 320,
+          "minimum": 180,
+          "title": "Jump Reach Cm",
+          "type": "number"
+        },
+        "max_speed_ms": {
+          "maximum": 11,
+          "minimum": 5,
+          "title": "Max Speed Ms",
+          "type": "number"
+        },
+        "reaction_s": {
+          "maximum": 0.6,
+          "minimum": 0.1,
+          "title": "Reaction S",
+          "type": "number"
+        }
+      },
+      "required": [
+        "height_cm",
+        "max_speed_ms",
+        "accel_ms2",
+        "reaction_s",
+        "jump_reach_cm"
+      ],
+      "title": "Physical",
+      "type": "object"
+    },
+    "PhysicalStatus": {
+      "enum": [
+        "fit",
+        "tiring",
+        "fatigued",
+        "knock"
+      ],
+      "title": "PhysicalStatus",
+      "type": "string"
+    },
+    "PitchSize": {
+      "additionalProperties": false,
+      "properties": {
+        "length": {
+          "default": 105.0,
+          "title": "Length",
+          "type": "number"
+        },
+        "width": {
+          "default": 68.0,
+          "title": "Width",
+          "type": "number"
+        }
+      },
+      "title": "PitchSize",
+      "type": "object"
+    },
+    "PlayerProfile": {
+      "additionalProperties": false,
+      "properties": {
+        "archetype": {
+          "$ref": "#/$defs/Archetype"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "physical": {
+          "$ref": "#/$defs/Physical"
+        },
+        "player_id": {
+          "title": "Player Id",
+          "type": "string"
+        },
+        "position": {
+          "$ref": "#/$defs/Position"
+        },
+        "shirt_number": {
+          "maximum": 99,
+          "minimum": 1,
+          "title": "Shirt Number",
+          "type": "integer"
+        },
+        "skill": {
+          "$ref": "#/$defs/Skill"
+        },
+        "starter": {
+          "title": "Starter",
+          "type": "boolean"
+        },
+        "team_id": {
+          "title": "Team Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "player_id",
+        "team_id",
+        "name",
+        "shirt_number",
+        "position",
+        "archetype",
+        "starter",
+        "physical",
+        "skill"
+      ],
+      "title": "PlayerProfile",
+      "type": "object"
+    },
+    "PlayerTrack": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "vx": {
+          "title": "Vx",
+          "type": "number"
+        },
+        "vy": {
+          "title": "Vy",
+          "type": "number"
+        },
+        "x": {
+          "maximum": 110.0,
+          "minimum": -5.0,
+          "title": "X",
+          "type": "number"
+        },
+        "y": {
+          "maximum": 73.0,
+          "minimum": -5.0,
+          "title": "Y",
+          "type": "number"
+        }
+      },
+      "required": [
+        "id",
+        "x",
+        "y",
+        "vx",
+        "vy"
+      ],
+      "title": "PlayerTrack",
+      "type": "object"
+    },
+    "Point": {
+      "additionalProperties": false,
+      "properties": {
+        "x": {
+          "maximum": 110.0,
+          "minimum": -5.0,
+          "title": "X",
+          "type": "number"
+        },
+        "y": {
+          "maximum": 73.0,
+          "minimum": -5.0,
+          "title": "Y",
+          "type": "number"
+        }
+      },
+      "required": [
+        "x",
+        "y"
+      ],
+      "title": "Point",
+      "type": "object"
+    },
+    "Position": {
+      "enum": [
+        "GK",
+        "CB",
+        "FB",
+        "DM",
+        "CM",
+        "AM",
+        "W",
+        "ST"
+      ],
+      "title": "Position",
+      "type": "string"
+    },
+    "ProbRange": {
+      "additionalProperties": false,
+      "description": "Monte Carlo spread: median with 10th-90th percentile.",
+      "properties": {
+        "high": {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "High",
+          "type": "number"
+        },
+        "low": {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Low",
+          "type": "number"
+        },
+        "median": {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Median",
+          "type": "number"
+        }
+      },
+      "required": [
+        "median",
+        "low",
+        "high"
+      ],
+      "title": "ProbRange",
+      "type": "object"
+    },
+    "ProfileKind": {
+      "enum": [
+        "actual",
+        "archetype",
+        "custom",
+        "substitute"
+      ],
+      "title": "ProfileKind",
+      "type": "string"
+    },
+    "ProfileRef": {
+      "additionalProperties": false,
+      "properties": {
+        "archetype": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Archetype"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "kind": {
+          "$ref": "#/$defs/ProfileKind"
+        },
+        "label": {
+          "title": "Label",
+          "type": "string"
+        },
+        "player_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Player Id"
+        }
+      },
+      "required": [
+        "kind",
+        "label"
+      ],
+      "title": "ProfileRef",
+      "type": "object"
+    },
+    "Scenario": {
+      "additionalProperties": false,
+      "properties": {
+        "p_success": {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "P Success",
+          "type": "number"
+        },
+        "profile": {
+          "$ref": "#/$defs/ProfileRef"
+        },
+        "range": {
+          "$ref": "#/$defs/ProbRange"
+        }
+      },
+      "required": [
+        "profile",
+        "p_success",
+        "range"
+      ],
+      "title": "Scenario",
+      "type": "object"
+    },
+    "Skill": {
+      "additionalProperties": false,
+      "properties": {
+        "aerial": {
+          "maximum": 100.0,
+          "minimum": 0.0,
+          "title": "Aerial",
+          "type": "number"
+        },
+        "finishing": {
+          "maximum": 100.0,
+          "minimum": 0.0,
+          "title": "Finishing",
+          "type": "number"
+        },
+        "passing": {
+          "maximum": 100.0,
+          "minimum": 0.0,
+          "title": "Passing",
+          "type": "number"
+        },
+        "tackle": {
+          "maximum": 100.0,
+          "minimum": 0.0,
+          "title": "Tackle",
+          "type": "number"
+        }
+      },
+      "required": [
+        "passing",
+        "aerial",
+        "tackle",
+        "finishing"
+      ],
+      "title": "Skill",
+      "type": "object"
+    },
+    "TeamColours": {
+      "additionalProperties": false,
+      "properties": {
+        "primary": {
+          "pattern": "^#[0-9a-fA-F]{6}$",
+          "title": "Primary",
+          "type": "string"
+        },
+        "secondary": {
+          "pattern": "^#[0-9a-fA-F]{6}$",
+          "title": "Secondary",
+          "type": "string"
+        }
+      },
+      "required": [
+        "primary",
+        "secondary"
+      ],
+      "title": "TeamColours",
+      "type": "object"
+    },
+    "TeamMeta": {
+      "additionalProperties": false,
+      "properties": {
+        "colours": {
+          "$ref": "#/$defs/TeamColours"
+        },
+        "formation": {
+          "pattern": "^\\d(-\\d){2,4}$",
+          "title": "Formation",
+          "type": "string"
+        },
+        "is_home": {
+          "title": "Is Home",
+          "type": "boolean"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "short_name": {
+          "maxLength": 4,
+          "title": "Short Name",
+          "type": "string"
+        },
+        "team_id": {
+          "title": "Team Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "team_id",
+        "name",
+        "short_name",
+        "formation",
+        "colours",
+        "is_home"
+      ],
+      "title": "TeamMeta",
+      "type": "object"
+    },
+    "TrackingFrame": {
+      "additionalProperties": false,
+      "properties": {
+        "ball": {
+          "$ref": "#/$defs/BallState"
+        },
+        "frame": {
+          "minimum": 0,
+          "title": "Frame",
+          "type": "integer"
+        },
+        "period": {
+          "$ref": "#/$defs/Period"
+        },
+        "players": {
+          "items": {
+            "$ref": "#/$defs/PlayerTrack"
+          },
+          "title": "Players",
+          "type": "array"
+        },
+        "t_ms": {
+          "minimum": 0,
+          "title": "T Ms",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "frame",
+        "t_ms",
+        "period",
+        "ball",
+        "players"
+      ],
+      "title": "TrackingFrame",
+      "type": "object"
+    },
+    "WhatIf": {
+      "additionalProperties": false,
+      "properties": {
+        "actor_id": {
+          "title": "Actor Id",
+          "type": "string"
+        },
+        "actual": {
+          "$ref": "#/$defs/Scenario"
+        },
+        "counterfactual": {
+          "$ref": "#/$defs/Scenario"
+        },
+        "drivers": {
+          "items": {
+            "$ref": "#/$defs/Driver"
+          },
+          "title": "Drivers",
+          "type": "array"
+        },
+        "ghost_path": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/Point"
+          },
+          "title": "Ghost Path",
+          "type": "array"
+        },
+        "moment_id": {
+          "title": "Moment Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "moment_id",
+        "actor_id",
+        "actual",
+        "counterfactual",
+        "drivers"
+      ],
+      "title": "WhatIf",
+      "type": "object"
+    },
+    "WorkloadState": {
+      "additionalProperties": false,
+      "properties": {
+        "distance_m": {
+          "minimum": 0,
+          "title": "Distance M",
+          "type": "number"
+        },
+        "fatigue": {
+          "maximum": 100.0,
+          "minimum": 0.0,
+          "title": "Fatigue",
+          "type": "number"
+        },
+        "hsr_m": {
+          "minimum": 0,
+          "title": "Hsr M",
+          "type": "number"
+        },
+        "modifiers": {
+          "$ref": "#/$defs/Modifiers",
+          "default": {
+            "accel": 1.0,
+            "reaction": 1.0,
+            "speed": 1.0
+          }
+        },
+        "player_id": {
+          "title": "Player Id",
+          "type": "string"
+        },
+        "recent_load": {
+          "minimum": 0,
+          "title": "Recent Load",
+          "type": "number"
+        },
+        "sprints": {
+          "minimum": 0,
+          "title": "Sprints",
+          "type": "integer"
+        },
+        "status": {
+          "$ref": "#/$defs/PhysicalStatus"
+        },
+        "t_ms": {
+          "minimum": 0,
+          "title": "T Ms",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "t_ms",
+        "player_id",
+        "distance_m",
+        "hsr_m",
+        "sprints",
+        "recent_load",
+        "fatigue",
+        "status"
+      ],
+      "title": "WorkloadState",
+      "type": "object"
+    }
+  },
+  "description": "Bundle model so one schema carries every record as a shared $def.",
+  "properties": {
+    "event": {
+      "$ref": "#/$defs/Event"
+    },
+    "key_moment": {
+      "$ref": "#/$defs/KeyMoment"
+    },
+    "match_meta": {
+      "$ref": "#/$defs/MatchMeta"
+    },
+    "option_set": {
+      "$ref": "#/$defs/OptionSet"
+    },
+    "overlay": {
+      "$ref": "#/$defs/Overlay"
+    },
+    "player_profile": {
+      "$ref": "#/$defs/PlayerProfile"
+    },
+    "tracking_frame": {
+      "$ref": "#/$defs/TrackingFrame"
+    },
+    "what_if": {
+      "$ref": "#/$defs/WhatIf"
+    },
+    "workload_state": {
+      "$ref": "#/$defs/WorkloadState"
+    }
+  },
+  "required": [
+    "match_meta",
+    "player_profile",
+    "tracking_frame",
+    "event",
+    "workload_state",
+    "key_moment",
+    "option_set",
+    "what_if",
+    "overlay"
+  ],
+  "title": "Contracts",
+  "type": "object"
+}

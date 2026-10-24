@@ -1,0 +1,219 @@
+{
+  "$defs": {
+    "Archetype": {
+      "enum": [
+        "goalkeeper",
+        "aerial_cb",
+        "ball_playing_cb",
+        "overlapping_fb",
+        "deep_playmaker",
+        "box_to_box",
+        "pressing_forward",
+        "target_man",
+        "winger"
+      ],
+      "title": "Archetype",
+      "type": "string"
+    },
+    "Driver": {
+      "additionalProperties": false,
+      "description": "One reason the counterfactual differs, e.g. factor=jump_reach, delta=+12, unit=cm.",
+      "properties": {
+        "delta": {
+          "title": "Delta",
+          "type": "number"
+        },
+        "factor": {
+          "title": "Factor",
+          "type": "string"
+        },
+        "text": {
+          "title": "Text",
+          "type": "string"
+        },
+        "unit": {
+          "title": "Unit",
+          "type": "string"
+        }
+      },
+      "required": [
+        "factor",
+        "delta",
+        "unit",
+        "text"
+      ],
+      "title": "Driver",
+      "type": "object"
+    },
+    "Point": {
+      "additionalProperties": false,
+      "properties": {
+        "x": {
+          "maximum": 110.0,
+          "minimum": -5.0,
+          "title": "X",
+          "type": "number"
+        },
+        "y": {
+          "maximum": 73.0,
+          "minimum": -5.0,
+          "title": "Y",
+          "type": "number"
+        }
+      },
+      "required": [
+        "x",
+        "y"
+      ],
+      "title": "Point",
+      "type": "object"
+    },
+    "ProbRange": {
+      "additionalProperties": false,
+      "description": "Monte Carlo spread: median with 10th-90th percentile.",
+      "properties": {
+        "high": {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "High",
+          "type": "number"
+        },
+        "low": {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Low",
+          "type": "number"
+        },
+        "median": {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Median",
+          "type": "number"
+        }
+      },
+      "required": [
+        "median",
+        "low",
+        "high"
+      ],
+      "title": "ProbRange",
+      "type": "object"
+    },
+    "ProfileKind": {
+      "enum": [
+        "actual",
+        "archetype",
+        "custom",
+        "substitute"
+      ],
+      "title": "ProfileKind",
+      "type": "string"
+    },
+    "ProfileRef": {
+      "additionalProperties": false,
+      "properties": {
+        "archetype": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Archetype"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "kind": {
+          "$ref": "#/$defs/ProfileKind"
+        },
+        "label": {
+          "title": "Label",
+          "type": "string"
+        },
+        "player_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Player Id"
+        }
+      },
+      "required": [
+        "kind",
+        "label"
+      ],
+      "title": "ProfileRef",
+      "type": "object"
+    },
+    "Scenario": {
+      "additionalProperties": false,
+      "properties": {
+        "p_success": {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "P Success",
+          "type": "number"
+        },
+        "profile": {
+          "$ref": "#/$defs/ProfileRef"
+        },
+        "range": {
+          "$ref": "#/$defs/ProbRange"
+        }
+      },
+      "required": [
+        "profile",
+        "p_success",
+        "range"
+      ],
+      "title": "Scenario",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "actor_id": {
+      "title": "Actor Id",
+      "type": "string"
+    },
+    "actual": {
+      "$ref": "#/$defs/Scenario"
+    },
+    "counterfactual": {
+      "$ref": "#/$defs/Scenario"
+    },
+    "drivers": {
+      "items": {
+        "$ref": "#/$defs/Driver"
+      },
+      "title": "Drivers",
+      "type": "array"
+    },
+    "ghost_path": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/Point"
+      },
+      "title": "Ghost Path",
+      "type": "array"
+    },
+    "moment_id": {
+      "title": "Moment Id",
+      "type": "string"
+    }
+  },
+  "required": [
+    "moment_id",
+    "actor_id",
+    "actual",
+    "counterfactual",
+    "drivers"
+  ],
+  "title": "WhatIf",
+  "type": "object"
+}

@@ -1,0 +1,164 @@
+{
+  "$defs": {
+    "Archetype": {
+      "enum": [
+        "goalkeeper",
+        "aerial_cb",
+        "ball_playing_cb",
+        "overlapping_fb",
+        "deep_playmaker",
+        "box_to_box",
+        "pressing_forward",
+        "target_man",
+        "winger"
+      ],
+      "title": "Archetype",
+      "type": "string"
+    },
+    "Physical": {
+      "additionalProperties": false,
+      "properties": {
+        "accel_ms2": {
+          "maximum": 8,
+          "minimum": 1,
+          "title": "Accel Ms2",
+          "type": "number"
+        },
+        "height_cm": {
+          "maximum": 210,
+          "minimum": 150,
+          "title": "Height Cm",
+          "type": "number"
+        },
+        "jump_reach_cm": {
+          "maximum": 320,
+          "minimum": 180,
+          "title": "Jump Reach Cm",
+          "type": "number"
+        },
+        "max_speed_ms": {
+          "maximum": 11,
+          "minimum": 5,
+          "title": "Max Speed Ms",
+          "type": "number"
+        },
+        "reaction_s": {
+          "maximum": 0.6,
+          "minimum": 0.1,
+          "title": "Reaction S",
+          "type": "number"
+        }
+      },
+      "required": [
+        "height_cm",
+        "max_speed_ms",
+        "accel_ms2",
+        "reaction_s",
+        "jump_reach_cm"
+      ],
+      "title": "Physical",
+      "type": "object"
+    },
+    "Position": {
+      "enum": [
+        "GK",
+        "CB",
+        "FB",
+        "DM",
+        "CM",
+        "AM",
+        "W",
+        "ST"
+      ],
+      "title": "Position",
+      "type": "string"
+    },
+    "Skill": {
+      "additionalProperties": false,
+      "properties": {
+        "aerial": {
+          "maximum": 100.0,
+          "minimum": 0.0,
+          "title": "Aerial",
+          "type": "number"
+        },
+        "finishing": {
+          "maximum": 100.0,
+          "minimum": 0.0,
+          "title": "Finishing",
+          "type": "number"
+        },
+        "passing": {
+          "maximum": 100.0,
+          "minimum": 0.0,
+          "title": "Passing",
+          "type": "number"
+        },
+        "tackle": {
+          "maximum": 100.0,
+          "minimum": 0.0,
+          "title": "Tackle",
+          "type": "number"
+        }
+      },
+      "required": [
+        "passing",
+        "aerial",
+        "tackle",
+        "finishing"
+      ],
+      "title": "Skill",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "archetype": {
+      "$ref": "#/$defs/Archetype"
+    },
+    "name": {
+      "title": "Name",
+      "type": "string"
+    },
+    "physical": {
+      "$ref": "#/$defs/Physical"
+    },
+    "player_id": {
+      "title": "Player Id",
+      "type": "string"
+    },
+    "position": {
+      "$ref": "#/$defs/Position"
+    },
+    "shirt_number": {
+      "maximum": 99,
+      "minimum": 1,
+      "title": "Shirt Number",
+      "type": "integer"
+    },
+    "skill": {
+      "$ref": "#/$defs/Skill"
+    },
+    "starter": {
+      "title": "Starter",
+      "type": "boolean"
+    },
+    "team_id": {
+      "title": "Team Id",
+      "type": "string"
+    }
+  },
+  "required": [
+    "player_id",
+    "team_id",
+    "name",
+    "shirt_number",
+    "position",
+    "archetype",
+    "starter",
+    "physical",
+    "skill"
+  ],
+  "title": "PlayerProfile",
+  "type": "object"
+}

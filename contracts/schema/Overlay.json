@@ -1,0 +1,94 @@
+{
+  "$defs": {
+    "OverlayKind": {
+      "enum": [
+        "moment",
+        "options",
+        "what_if",
+        "stat",
+        "fatigue",
+        "recap"
+      ],
+      "title": "OverlayKind",
+      "type": "string"
+    },
+    "Persona": {
+      "enum": [
+        "analyst",
+        "fan"
+      ],
+      "title": "Persona",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "grounded": {
+      "default": false,
+      "title": "Grounded",
+      "type": "boolean"
+    },
+    "kind": {
+      "$ref": "#/$defs/OverlayKind"
+    },
+    "moment_id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Moment Id"
+    },
+    "overlay_id": {
+      "title": "Overlay Id",
+      "type": "string"
+    },
+    "payload": {
+      "additionalProperties": true,
+      "default": {},
+      "title": "Payload",
+      "type": "object"
+    },
+    "show_for_ms": {
+      "default": 8000,
+      "exclusiveMinimum": 0,
+      "title": "Show For Ms",
+      "type": "integer"
+    },
+    "source": {
+      "default": "engine",
+      "title": "Source",
+      "type": "string"
+    },
+    "t_ms": {
+      "minimum": 0,
+      "title": "T Ms",
+      "type": "integer"
+    },
+    "text": {
+      "additionalProperties": {
+        "additionalProperties": {
+          "type": "string"
+        },
+        "type": "object"
+      },
+      "default": {},
+      "propertyNames": {
+        "$ref": "#/$defs/Persona"
+      },
+      "title": "Text",
+      "type": "object"
+    }
+  },
+  "required": [
+    "overlay_id",
+    "t_ms",
+    "kind"
+  ],
+  "title": "Overlay",
+  "type": "object"
+}

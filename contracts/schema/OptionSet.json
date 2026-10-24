@@ -1,0 +1,176 @@
+{
+  "$defs": {
+    "ActionKind": {
+      "enum": [
+        "pass",
+        "cross",
+        "shot",
+        "dribble",
+        "carry",
+        "clear",
+        "header",
+        "recovery_run"
+      ],
+      "title": "ActionKind",
+      "type": "string"
+    },
+    "Option": {
+      "additionalProperties": false,
+      "properties": {
+        "action": {
+          "$ref": "#/$defs/ActionKind"
+        },
+        "chosen": {
+          "default": false,
+          "title": "Chosen",
+          "type": "boolean"
+        },
+        "option_id": {
+          "title": "Option Id",
+          "type": "string"
+        },
+        "p_success": {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "P Success",
+          "type": "number"
+        },
+        "path": {
+          "items": {
+            "$ref": "#/$defs/Point"
+          },
+          "minItems": 2,
+          "title": "Path",
+          "type": "array"
+        },
+        "range": {
+          "$ref": "#/$defs/ProbRange"
+        },
+        "target": {
+          "$ref": "#/$defs/Point"
+        },
+        "target_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Target Id"
+        },
+        "xt_gain": {
+          "maximum": 1,
+          "minimum": -1,
+          "title": "Xt Gain",
+          "type": "number"
+        }
+      },
+      "required": [
+        "option_id",
+        "action",
+        "target",
+        "p_success",
+        "range",
+        "xt_gain",
+        "path"
+      ],
+      "title": "Option",
+      "type": "object"
+    },
+    "Point": {
+      "additionalProperties": false,
+      "properties": {
+        "x": {
+          "maximum": 110.0,
+          "minimum": -5.0,
+          "title": "X",
+          "type": "number"
+        },
+        "y": {
+          "maximum": 73.0,
+          "minimum": -5.0,
+          "title": "Y",
+          "type": "number"
+        }
+      },
+      "required": [
+        "x",
+        "y"
+      ],
+      "title": "Point",
+      "type": "object"
+    },
+    "ProbRange": {
+      "additionalProperties": false,
+      "description": "Monte Carlo spread: median with 10th-90th percentile.",
+      "properties": {
+        "high": {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "High",
+          "type": "number"
+        },
+        "low": {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Low",
+          "type": "number"
+        },
+        "median": {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Median",
+          "type": "number"
+        }
+      },
+      "required": [
+        "median",
+        "low",
+        "high"
+      ],
+      "title": "ProbRange",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "actor_id": {
+      "title": "Actor Id",
+      "type": "string"
+    },
+    "best_option_id": {
+      "title": "Best Option Id",
+      "type": "string"
+    },
+    "moment_id": {
+      "title": "Moment Id",
+      "type": "string"
+    },
+    "options": {
+      "items": {
+        "$ref": "#/$defs/Option"
+      },
+      "maxItems": 4,
+      "minItems": 1,
+      "title": "Options",
+      "type": "array"
+    },
+    "t_ms": {
+      "minimum": 0,
+      "title": "T Ms",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "moment_id",
+    "t_ms",
+    "actor_id",
+    "options",
+    "best_option_id"
+  ],
+  "title": "OptionSet",
+  "type": "object"
+}

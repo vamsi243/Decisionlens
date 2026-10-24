@@ -1,0 +1,104 @@
+{
+  "$defs": {
+    "Modifiers": {
+      "additionalProperties": false,
+      "description": "Multipliers applied to a player's physical profile (1.0 = fresh).",
+      "properties": {
+        "accel": {
+          "default": 1.0,
+          "maximum": 1.0,
+          "minimum": 0.5,
+          "title": "Accel",
+          "type": "number"
+        },
+        "reaction": {
+          "default": 1.0,
+          "maximum": 1.6,
+          "minimum": 1.0,
+          "title": "Reaction",
+          "type": "number"
+        },
+        "speed": {
+          "default": 1.0,
+          "maximum": 1.0,
+          "minimum": 0.5,
+          "title": "Speed",
+          "type": "number"
+        }
+      },
+      "title": "Modifiers",
+      "type": "object"
+    },
+    "PhysicalStatus": {
+      "enum": [
+        "fit",
+        "tiring",
+        "fatigued",
+        "knock"
+      ],
+      "title": "PhysicalStatus",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "distance_m": {
+      "minimum": 0,
+      "title": "Distance M",
+      "type": "number"
+    },
+    "fatigue": {
+      "maximum": 100.0,
+      "minimum": 0.0,
+      "title": "Fatigue",
+      "type": "number"
+    },
+    "hsr_m": {
+      "minimum": 0,
+      "title": "Hsr M",
+      "type": "number"
+    },
+    "modifiers": {
+      "$ref": "#/$defs/Modifiers",
+      "default": {
+        "accel": 1.0,
+        "reaction": 1.0,
+        "speed": 1.0
+      }
+    },
+    "player_id": {
+      "title": "Player Id",
+      "type": "string"
+    },
+    "recent_load": {
+      "minimum": 0,
+      "title": "Recent Load",
+      "type": "number"
+    },
+    "sprints": {
+      "minimum": 0,
+      "title": "Sprints",
+      "type": "integer"
+    },
+    "status": {
+      "$ref": "#/$defs/PhysicalStatus"
+    },
+    "t_ms": {
+      "minimum": 0,
+      "title": "T Ms",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "t_ms",
+    "player_id",
+    "distance_m",
+    "hsr_m",
+    "sprints",
+    "recent_load",
+    "fatigue",
+    "status"
+  ],
+  "title": "WorkloadState",
+  "type": "object"
+}
