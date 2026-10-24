@@ -4,7 +4,7 @@ Status: **done** / **partial** / **todo** / **cut**. Priority: M must, S should,
 
 | # | Feature | Pri | Status | How to see it | Stage |
 | --- | --- | --- | --- | --- | --- |
-| F1 | Synthetic match generator | M | todo | | Ingest |
+| F1 | Synthetic match generator | M | partial — seeded, deterministic, all 5 scripted moments; outcomes use stub rules until the Phase 3 engine replaces them | `make generate SEED=42`, then `uv run python scripts/dot_viewer.py data/samples/match_42 --start 85:58 --end 86:18` | Ingest |
 | F2 | Live stream of events + 10 Hz tracking | M | todo | | Ingest |
 | F3 | Tactics board | M | todo | | Render |
 | F4 | Name tags + speed/distance badges | M | todo | | Render |

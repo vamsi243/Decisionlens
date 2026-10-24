@@ -54,7 +54,7 @@ def lint() -> int:
 
 
 def generate(seed: int) -> int:
-    return run([sys.executable, "-m", "generator", "--seed", str(seed)])
+    return run([sys.executable, "-m", "generator", "--seed", str(seed), "--gzip"])
 
 
 def replay() -> int:

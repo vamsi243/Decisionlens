@@ -58,6 +58,23 @@ class Outcome(StrEnum):
 
 
 class Event(Contract):
+    """One on-ball or match action. `outcome` is always from `player_id`'s point of view.
+
+    pass / cross: player = passer, target = intended receiver; `end` is the intended point even
+        when the pass fails (the interception event says where it was won).
+    shot: outcome success = goal; first tag is goal | saved | wide.
+    interception: player = the one who won the ball.
+    tackle: player = tackler, target = ball carrier.
+    dribble: player = carrier, target = defender being beaten (or not).
+    aerial_duel: player = the defending-side player (the team that did not deliver the ball),
+        target = the attacker; success = the defender won it.
+    pressure: player = presser, target = carrier, `pressure` 0-1 from their distance.
+    foul: player = offender, target = fouled player.
+    substitution: player = player coming on, target = player going off.
+    possession_change: team/player = who now has the ball.
+    Scripted ground truth carries the tags `scripted` and `scripted:<moment type>`.
+    """
+
     event_id: str
     t_ms: TimeMs
     period: Period

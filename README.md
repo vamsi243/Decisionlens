@@ -10,6 +10,17 @@ _TODO (Phase 9)_
 ## What it does
 _TODO — see [FEATURES.md](FEATURES.md)._
 
+## The sample match
+`data/samples/match_42/` holds one generated match for judges: `meta.jsonl`, `players.jsonl`, `events.jsonl` and `tracking.jsonl.gz` (10 Hz, 54,000 frames). Regenerate it in about 25 s with `make generate SEED=42`; the same seed always produces byte-identical files.
+
+| Minute | Scripted key moment |
+| --- | --- |
+| 23' | Line-breaking pass — Quill (RIV_06) splits Hillton's midfield to Reyes-Ward |
+| 38' | Turnover under a high press — Hillton's press forces Varga (RIV_05) into a loose pass |
+| 57' | Big chance missed — Reyes-Ward drags a shot wide from 11 m |
+| 71' | Tired full-back beaten on a recovery run — Kollmann (HIL_07) outruns Holt (RIV_03) |
+| 86' | Late aerial duel at the back post — Morrow (HIL_09) out-jumps Pell (RIV_02) and scores |
+
 ## Microsoft and Azure tech
 _TODO (Phase 8)_
 
