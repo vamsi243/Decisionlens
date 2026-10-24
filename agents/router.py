@@ -37,6 +37,7 @@ class Step(StrEnum):
     TRANSLATOR = "translator"
     INTERPRETER = "interpreter"
     RECAP = "recap"
+    DECISIONS = "decisions"
 
 
 ROUTES: dict[Trigger, tuple[Step, ...]] = {
@@ -45,11 +46,18 @@ ROUTES: dict[Trigger, tuple[Step, ...]] = {
     Trigger.KEY_MOMENT: (Step.MOMENT, Step.WHAT_IF, Step.NARRATOR),
     Trigger.FATIGUE: (Step.WHAT_IF, Step.NARRATOR),
     Trigger.LANGUAGE_CHANGE: (Step.TRANSLATOR,),
-    Trigger.HALF_TIME: (Step.INTERPRETER, Step.RECAP),
-    Trigger.FULL_TIME: (Step.INTERPRETER, Step.RECAP),
+    Trigger.HALF_TIME: (Step.INTERPRETER, Step.RECAP, Step.DECISIONS),
+    Trigger.FULL_TIME: (Step.INTERPRETER, Step.RECAP, Step.DECISIONS),
 }
 
-MODEL_STEPS = {Step.MOMENT, Step.WHAT_IF, Step.NARRATOR, Step.INTERPRETER, Step.RECAP}
+MODEL_STEPS = {
+    Step.MOMENT,
+    Step.WHAT_IF,
+    Step.NARRATOR,
+    Step.INTERPRETER,
+    Step.RECAP,
+    Step.DECISIONS,
+}
 
 
 def route(trigger: Trigger) -> tuple[Step, ...]:

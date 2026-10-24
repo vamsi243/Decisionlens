@@ -40,11 +40,14 @@ def moment_facts(ctx: EngineContext, a: MomentAnalysis) -> dict[str, Any]:
         "headline": m.title,
         "team": ctx.teams.get(m.team_id or "", ""),
         "players": [ctx.name(p) for p in m.players],
+        # each player's own club, so a card never puts someone in the wrong team
+        "player_teams": {ctx.name(p): ctx.teams.get(ctx.players[p].team_id, "") for p in m.players},
     }
     w = a.what_if
     if w is not None:
         facts["what_if"] = {
             "player": ctx.name(w.actor_id),
+            "player_team": ctx.teams.get(ctx.players[w.actor_id].team_id, ""),
             "actual_pct": pct(w.actual.p_success),
             "actual_range_pct": [pct(w.actual.range.low), pct(w.actual.range.high)],
             "swap": w.counterfactual.profile.label,

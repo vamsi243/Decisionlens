@@ -23,7 +23,7 @@ from agents import prompts, templates
 from agents.backend import ChatBackend
 from agents.cache import ResponseCache
 from agents.facts import moment_facts
-from agents.grounding import check
+from agents.grounding import check, numbers_in
 from agents.router import Step, Trigger, route, trigger_for
 from contracts import Event, Overlay, OverlayKind, Persona
 from contracts.stream import MomentAnalysis, StreamMessageType
@@ -77,6 +77,8 @@ class Orchestrator:
         self.traces: list[Trace] = []
         self._queued: set[str] = set()
         self.swap_args: dict[str, dict[str, Any]] = {}
+        # Player panel: agent lines per decision id, written at half-time and full-time.
+        self.decision_lines: dict[str, dict[Persona, dict[str, str]]] = {}
 
     # ------------------------------------------------------------------ queueing
     def submit_moment(self, a: MomentAnalysis) -> None:
@@ -93,6 +95,7 @@ class Orchestrator:
             return
         self._queued.add(oid)
         self.queue.put_nowait(lambda: self._publish(self.recap(trig, e.t_ms)))
+        self.queue.put_nowait(lambda: self.decision_notes(trig, e.t_ms))
 
     async def _publish(self, coro: Awaitable[Overlay]) -> None:
         ov = await coro
@@ -121,6 +124,9 @@ class Orchestrator:
         model: str,
         cache_id: str,
         use_tools: bool = False,
+        max_words: int | None = None,
+        numbers: bool = True,
+        whole: bool = True,
     ) -> str | None:
         """One agent step, traced: a child span of the trigger's span in App Insights."""
         with tracer.start_as_current_span(f"agent.{agent}") as span:
@@ -135,6 +141,9 @@ class Orchestrator:
                 model=model,
                 cache_id=cache_id,
                 use_tools=use_tools,
+                max_words=max_words,
+                numbers=numbers,
+                whole=whole,
             )
             last = trace_.steps[-1] if trace_.steps else None
             if last is not None:
@@ -153,11 +162,21 @@ class Orchestrator:
         model: str,
         cache_id: str,
         use_tools: bool = False,
+        max_words: int | None = None,
+        numbers: bool = True,
+        whole: bool = True,
     ) -> str | None:
         t0 = time.perf_counter()
+
+        def usable(text: str) -> bool:
+            # grounded, short enough for a card, and number-free where the reader wants words
+            short = max_words is None or len(text.split()) <= max_words
+            grounded = not whole or check(text, facts).ok  # else the caller checks each part
+            return grounded and short and (numbers or not numbers_in(text))
+
         key = ResponseCache.key(self.match_id, cache_id, agent, model, prompts.PROMPT_VERSION)
         hit = self.cache.get(key)
-        if hit is not None and (use_tools or check(hit, facts).ok):
+        if hit is not None and (use_tools or usable(hit)):
             trace.steps.append(StepRecord(step, agent, "cache", self._ms(t0)))
             return hit
         if self.backend is None:
@@ -180,11 +199,11 @@ class Orchestrator:
                 continue
             text = (text or "").strip()
             g = check(text, facts)
-            if text and g.ok:
+            if text and usable(text):
                 self.cache.put(key, text)
                 trace.steps.append(StepRecord(step, agent, "agent", self._ms(t0), attempt))
                 return text
-            log.info("%s ungrounded numbers %s", agent, g.offending)
+            log.info("%s unusable: numbers %s, %d words", agent, g.offending, len(text.split()))
             failed = False
             prompt += (
                 "\n\nYour previous answer used numbers that are not in the FACTS: "
@@ -237,6 +256,10 @@ class Orchestrator:
             trace.steps.append(StepRecord(Step.WHAT_IF, "engine", "engine", 0))
 
         narr = {**facts, **{k: v for k, v in extras.items() if k != "route"}}
+        wf = facts.get("what_if")
+        if wf and trig != Trigger.FATIGUE:  # the engine's words for the swing, used verbatim
+            verb = templates.VERB.get(facts["type"], "to come out on top")
+            narr["swing_words"] = f"{templates.swing(wf['actual_pct'], wf['swap_pct'])} {verb}"
         if trig == Trigger.FATIGUE:
             t_analyst, t_fan = templates.fatigue_analyst(facts), templates.fatigue_fan(facts)
         else:
@@ -249,15 +272,23 @@ class Orchestrator:
             narr,
             model=mini,
             cache_id=mid,
+            max_words=32,
         )
-        fan = await self._ask(
-            trace,
-            Step.NARRATOR,
-            "narrator_fan",
-            prompts.NARRATOR_FAN,
-            narr,
-            model=nano,
-            cache_id=mid,
+        # A fatigue alert's fan line is fixed engine wording; a model adds nothing but risk.
+        fan = (
+            None
+            if trig == Trigger.FATIGUE
+            else await self._ask(
+                trace,
+                Step.NARRATOR,
+                "narrator_fan",
+                prompts.NARRATOR_FAN,
+                narr,
+                model=nano,
+                cache_id=mid,
+                max_words=20,
+                numbers=False,
+            )
         )
         self.traces.append(trace)
         kind = (
@@ -348,9 +379,17 @@ class Orchestrator:
             rf,
             model=mini,
             cache_id=cid,
+            max_words=48,
         )
         fan = await self._ask(
-            trace, Step.RECAP, "recap_fan", prompts.RECAP_FAN, rf, model=nano, cache_id=cid
+            trace,
+            Step.RECAP,
+            "recap_fan",
+            prompts.RECAP_FAN,
+            rf,
+            model=nano,
+            cache_id=cid,
+            max_words=36,
         )
         self.traces.append(trace)
         return self._overlay(
@@ -367,6 +406,34 @@ class Orchestrator:
             fan or templates.recap_fan(facts),
             trace,
         )
+
+    # ------------------------------------------------------------------ player decisions
+    async def decision_notes(self, trig: Trigger, t_ms: int) -> None:
+        """One call per team: a short line for every player's engine-ranked decisions so far.
+        Lines that are ungrounded, too long, or (for fans) contain numbers are dropped, and the
+        panel keeps the template for those."""
+        pipe = self.ctx.pipeline
+        for team in pipe.meta.teams:
+            ids = [p.player_id for p in pipe.players if p.team_id == team.team_id]
+            facts: list[dict[str, Any]] = []
+            for pid in ids:
+                for d in await asyncio.to_thread(pipe.player_decisions, pid, t_ms):
+                    facts.append(self.ctx.decision_facts(d))
+            if not facts:
+                continue
+            trace = Trace(trig.value, f"decisions_{trig.value}_{team.team_id}")
+            raw = await self._ask(
+                trace,
+                Step.DECISIONS,
+                "decisions",
+                prompts.DECISIONS,
+                {"team": team.name, "decisions": facts},
+                model=self.settings.azure_openai_deployment_mini,
+                cache_id=f"decisions_{trig.value}_{team.team_id}",
+                whole=False,  # one bad line shouldn't sink the rest: each is checked on its own
+            )
+            self.traces.append(trace)
+            self.decision_lines.update(_decision_lines(raw, facts))
 
     # ------------------------------------------------------------------ overlay
     def _overlay(
@@ -400,3 +467,35 @@ class Orchestrator:
             grounded=True,  # agent text passed the check; templates are built from the facts
             source=source,
         )
+
+
+def _decision_lines(
+    raw: str | None, facts: list[dict[str, Any]]
+) -> dict[str, dict[Persona, dict[str, str]]]:
+    """Parse the Decisions agent's JSON and keep only lines that pass the card checks."""
+    if not raw:
+        return {}
+    body = raw.strip().removeprefix("```json").removeprefix("```").removesuffix("```").strip()
+    try:
+        parsed = json.loads(body)
+    except ValueError:
+        log.info("decisions: reply was not JSON")
+        return {}
+    by_id = {f["id"]: f for f in facts}
+    out: dict[str, dict[Persona, dict[str, str]]] = {}
+    for did, lines in parsed.items() if isinstance(parsed, dict) else []:
+        f = by_id.get(did)
+        if f is None or not isinstance(lines, dict):
+            continue
+        analyst, fan = str(lines.get("analyst", "")).strip(), str(lines.get("fan", "")).strip()
+        ok = (
+            analyst
+            and fan
+            and check(analyst, f).ok
+            and len(analyst.split()) <= 30
+            and len(fan.split()) <= 20
+            and not numbers_in(fan)
+        )
+        if ok:
+            out[did] = {Persona.ANALYST: {"en": analyst}, Persona.FAN: {"en": fan}}
+    return out

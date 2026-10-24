@@ -128,3 +128,62 @@ def recap_fan(r: dict[str, Any]) -> str:
     lead = "level" if hg == ag else (h if hg > ag else a) + " ahead"
     tp = r["turning_points"][0]["title"] if r["turning_points"] else "a tight contest"
     return f"{h} {hg}-{ag} {a}, {lead}. The moment everyone will talk about: {tp}."
+
+
+# ------------------------------------------------------------------ player decisions
+FOLLOW = {
+    "goal_for": "{team} scored",
+    "shot_for": "{team} had a shot",
+    "goal_against": "{opponents} scored",
+    "shot_against": "{opponents} had a shot",
+    "lost_ball": "the ball was lost",
+}
+
+
+def _act(o: dict[str, Any]) -> str:
+    return f"{o['action']} to {o['to']}" if o.get("to") else o["action"]
+
+
+def _cap(s: str) -> str:
+    return s[:1].upper() + s[1:]
+
+
+def decision_analyst(f: dict[str, Any]) -> str:
+    m = f["minute"]
+    if f["kind"] == "defending":
+        lost = f.get("lost") or {"what": "a duel", "to": "an opponent"}
+        s = f"{m}' Lost {lost['what']} to {lost['to']}"
+    elif f["positive"]:
+        c = f["chosen"]
+        s = f"{m}' {_cap(_act(c))} was the best option: {c['goal_odds_pct']}% goal odds"
+    else:
+        c, b = f["chosen"], f["better"]
+        s = (
+            f"{m}' {_cap(_act(c))} gave {c['goal_odds_pct']}% goal odds;"
+            f" a {_act(b)} would have raised them to {b['goal_odds_pct']}%"
+        )
+    follow = FOLLOW.get(f["followed"])
+    if follow and not (f["kind"] == "on_ball" and f.get("chosen", {}).get("action") == "shot"):
+        s += f"; {follow.format(**f)} within {f['window_s']} s"
+        if f.get("shot_xg_pct") is not None and f["followed"].startswith("shot"):
+            s += f" ({f['shot_xg_pct']}% xG)"
+    elif f["followed"] == "goal_for":
+        s += ", and it went in"
+    return s + "."
+
+
+def decision_fan(f: dict[str, Any]) -> str:
+    if f["kind"] == "defending":
+        lost = f.get("lost") or {"what": "a duel", "to": "an opponent"}
+        end = "scored" if f["followed"] == "goal_against" else "had a shot"
+        return f"Lost {lost['what']} to {lost['to']}, and {f['opponents']} {end}."
+    if f["positive"]:
+        return (
+            "Picked the best option, and it ended in a goal!"
+            if f["followed"] == "goal_for"
+            else "Picked the best option."
+        )
+    s = f"A {_act(f['better'])} would have given a better chance of a goal."
+    if f["followed"] in ("goal_against", "shot_against"):
+        s += f" {FOLLOW[f['followed']].format(**f)} soon after."
+    return s
