@@ -53,7 +53,8 @@ class Contracts(BaseModel):
 
 
 def _dump(path: Path, schema: dict[str, object]) -> None:
-    path.write_text(json.dumps(schema, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    text = json.dumps(schema, indent=2, sort_keys=True) + "\n"
+    path.write_text(text, encoding="utf-8", newline="\n")  # LF on every OS
 
 
 def export(out_dir: Path = SCHEMA_DIR) -> list[Path]:
