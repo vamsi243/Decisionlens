@@ -34,6 +34,9 @@ param openAiDeploymentFallback string = 'gpt-4.1-mini'
 param translatorKey string = ''
 param translatorRegion string = ''
 
+@description('Cosmos DB region (separate because Cosmos DB capacity is often short in busy regions such as eastus)')
+param cosmosLocation string = 'eastus2'
+
 @description('Cosmos DB free tier (one per subscription: set false if it is already used)')
 param cosmosFreeTier string = 'true' // "true" / "false" (azd passes strings)
 
@@ -62,6 +65,7 @@ module resources 'resources.bicep' = {
     openAiDeploymentFallback: openAiDeploymentFallback
     translatorKey: translatorKey
     translatorRegion: translatorRegion
+    cosmosLocation: cosmosLocation
     cosmosFreeTier: toLower(cosmosFreeTier) == 'true'
   }
 }

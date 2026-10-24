@@ -23,7 +23,8 @@ services:
     host: containerapp
     docker:
       path: ./Dockerfile
-      remoteBuild: true
+      # Built locally with Docker: ACR Tasks (remote build) are blocked on free-credit subscriptions.
+      remoteBuild: false
   web:
     project: ./web
     language: js

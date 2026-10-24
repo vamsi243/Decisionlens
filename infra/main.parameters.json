@@ -13,6 +13,7 @@
     "openAiDeploymentFallback": { "value": "${AZURE_OPENAI_DEPLOYMENT_FALLBACK=gpt-4.1-mini}" },
     "translatorKey": { "value": "${AZURE_TRANSLATOR_KEY}" },
     "translatorRegion": { "value": "${AZURE_TRANSLATOR_REGION}" },
+    "cosmosLocation": { "value": "${AZURE_COSMOS_LOCATION=eastus2}" },
     "cosmosFreeTier": { "value": "${COSMOS_FREE_TIER=true}" }
   }
 }

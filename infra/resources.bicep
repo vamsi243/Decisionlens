@@ -15,6 +15,7 @@ param openAiDeploymentFallback string
 @secure()
 param translatorKey string
 param translatorRegion string
+param cosmosLocation string
 param cosmosFreeTier bool
 
 // Built-in role definition ids
@@ -144,8 +145,9 @@ resource eventHubsAccess 'Microsoft.Authorization/roleAssignments@2022-04-01' = 
 
 // --- cosmos db (free tier): moments, analyses, cards, agent cache ------------------------------------
 resource cosmos 'Microsoft.DocumentDB/databaseAccounts@2024-05-15' = {
-  name: 'cosmos-${token}'
-  location: location
+  // region in the name, so moving regions never collides with an account stuck in a failed create
+  name: 'cosmos-${token}-${cosmosLocation}'
+  location: cosmosLocation
   tags: tags
   kind: 'GlobalDocumentDB'
   properties: {
@@ -153,7 +155,7 @@ resource cosmos 'Microsoft.DocumentDB/databaseAccounts@2024-05-15' = {
     enableFreeTier: cosmosFreeTier
     disableLocalAuth: true
     consistencyPolicy: { defaultConsistencyLevel: 'Session' }
-    locations: [ { locationName: location, failoverPriority: 0, isZoneRedundant: false } ]
+    locations: [ { locationName: cosmosLocation, failoverPriority: 0, isZoneRedundant: false } ]
   }
 }
 
