@@ -27,6 +27,7 @@ from contracts.analysis import KeyMoment, OptionSet, WhatIf
 from contracts.base import Contract, Period, TimeMs
 from contracts.match import MatchMeta, PlayerProfile
 from contracts.stats import MatchStats
+from contracts.tracking import TrackingFrame
 
 Speed = Literal[1, 2, 4, 8]
 
@@ -66,3 +67,4 @@ class Hello(Contract):
     status: ReplayStatus
     moments: list[KeyMoment]
     stats: MatchStats | None = None
+    frame: TrackingFrame | None = None  # where the replay is, so a paused board isn't empty

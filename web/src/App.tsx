@@ -1,48 +1,90 @@
-import { useEffect, useState } from "react";
-import { Activity } from "lucide-react";
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
+import { Board } from "@/components/board/Board";
+import { MomentFeed } from "@/components/MomentFeed";
+import { Scrubber } from "@/components/Scrubber";
+import { SettingsSheet } from "@/components/SettingsSheet";
+import { TopBar } from "@/components/TopBar";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { api } from "@/lib/api";
+import { connectStream } from "@/lib/stream";
+import { useMatch } from "@/state/match";
+import { usePrefs } from "@/state/prefs";
 
-const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:8000";
-
-export function App() {
-  const [status, setStatus] = useState<string>("connecting…");
-
-  useEffect(() => {
-    fetch(`${API_URL}/health`)
-      .then((r) => r.json())
-      .then((d: { status: string; run_mode: string }) => setStatus(`${d.status} · ${d.run_mode}`))
-      .catch(() => setStatus("api offline"));
-  }, []);
-
-  return (
-    <main className="min-h-screen bg-bg px-4 py-10 sm:px-10">
-      <div className="mx-auto max-w-5xl">
-        <header className="flex items-center justify-between">
-          <h1 className="font-display text-2xl font-semibold tracking-tight">Decision Lens</h1>
-          <span className="num flex items-center gap-2 rounded-md border border-line bg-surface px-3 py-1.5 text-sm text-muted shadow-sm">
-            <Activity className="size-4 text-green" aria-hidden />
-            {status}
-          </span>
-        </header>
-
-        <section className="mt-8 rounded-xl border border-line bg-surface p-6 shadow-lg">
-          <p className="text-muted">Every moment, every option, every fan.</p>
-          <div className="mt-6 aspect-[105/68] w-full rounded-xl border border-line bg-panel-2" />
-          <div className="mt-6 flex flex-wrap gap-3">
-            <Chip label="Riverside FC" value="0" />
-            <Chip label="Hillton United" value="0" />
-            <Chip label="Clock" value="00:00" accent />
-          </div>
-        </section>
-      </div>
-    </main>
+/** When the replay crosses a key moment with an analysis, pause so the option map can be read. */
+function usePauseAtMoments() {
+  const pause = usePrefs((s) => s.pauseAtMoments);
+  const done = useRef(new Set<string>());
+  useEffect(
+    () =>
+      useMatch.subscribe((s, prev) => {
+        if (!pause || !s.status?.playing || s.clockMs < prev.clockMs) return;
+        for (const m of Object.values(s.seen)) {
+          if (m.type === "fatigue_alert" || done.current.has(m.moment_id) || !s.analyses[m.moment_id]) continue;
+          if (prev.clockMs < m.t_ms + 600 && s.clockMs >= m.t_ms + 600) {
+            done.current.add(m.moment_id);
+            useMatch.getState().pin(m.moment_id);
+            void api.pause();
+          }
+        }
+      }),
+    [pause],
   );
 }
 
-function Chip({ label, value, accent }: { label: string; value: string; accent?: boolean }) {
+// Charts are heavy (recharts): load the drawer only when it is first opened.
+const StatsDrawer = lazy(() =>
+  import("@/components/StatsDrawer").then((m) => ({ default: m.StatsDrawer })),
+);
+
+function Legend() {
   return (
-    <div className="flex items-center gap-2 rounded-md border border-line bg-surface px-3 py-2 shadow-sm">
-      <span className="text-sm text-muted">{label}</span>
-      <span className={`num text-sm font-medium ${accent ? "text-amber" : "text-ink"}`}>{value}</span>
+    <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted">
+      <span className="inline-flex items-center gap-1.5">
+        <span className="size-2.5 rounded-full bg-ink" /> Riverside FC
+      </span>
+      <span className="inline-flex items-center gap-1.5">
+        <span className="size-2.5 rounded-full border-2 border-ink bg-surface" /> Hillton United
+      </span>
+      <span className="inline-flex items-center gap-1.5">
+        <span className="h-0.5 w-4 rounded bg-green" /> best option
+      </span>
+      <span className="inline-flex items-center gap-1.5">
+        <span className="size-2.5 rounded-full border border-dashed border-green" /> what-if
+      </span>
+      <span className="inline-flex items-center gap-1.5">
+        <span className="size-2 rounded-full bg-amber" /> ball · sprint badge
+      </span>
     </div>
+  );
+}
+
+export function App() {
+  const [stats, setStats] = useState(false);
+  const [settings, setSettings] = useState(false);
+  useEffect(() => connectStream(), []);
+  usePauseAtMoments();
+
+  return (
+    <TooltipProvider>
+      <div className="flex min-h-dvh flex-col bg-bg">
+        <TopBar onStats={() => setStats(true)} onSettings={() => setSettings(true)} />
+        <main className="mx-auto grid w-full max-w-[1500px] flex-1 gap-5 px-4 py-5 lg:grid-cols-[minmax(0,1fr)_380px] lg:px-6">
+          <section className="self-start lg:sticky lg:top-[84px]">
+            <Board />
+            <Legend />
+          </section>
+          <aside className="flex min-h-[320px] flex-col lg:h-[calc(100dvh-170px)] lg:sticky lg:top-[84px]">
+            <MomentFeed />
+          </aside>
+        </main>
+        <Scrubber />
+      </div>
+      {stats ? (
+        <Suspense fallback={null}>
+          <StatsDrawer open={stats} onOpenChange={setStats} />
+        </Suspense>
+      ) : null}
+      <SettingsSheet open={settings} onOpenChange={setSettings} />
+    </TooltipProvider>
   );
 }

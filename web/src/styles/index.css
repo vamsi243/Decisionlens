@@ -47,3 +47,23 @@ body {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* Sheets: fade the scrim, slide the panel in on the brand ease. */
+.sheet-overlay[data-state="open"] {
+  animation: dl-fade-in 200ms var(--ease);
+}
+.sheet-content[data-state="open"][data-side="right"] {
+  animation: dl-slide-in-right 320ms var(--ease);
+}
+.sheet-content[data-state="open"][data-side="bottom"] {
+  animation: dl-slide-in-up 320ms var(--ease);
+}
+@keyframes dl-fade-in {
+  from { opacity: 0; }
+}
+@keyframes dl-slide-in-right {
+  from { opacity: 0; transform: translateX(24px); }
+}
+@keyframes dl-slide-in-up {
+  from { opacity: 0; transform: translateY(24px); }
+}

@@ -109,12 +109,18 @@ def drivers(
 # --- building swaps ---------------------------------------------------------------------------
 
 
+def _article(noun: str) -> str:
+    return "An" if noun[:1].lower() in "aeiou" else "A"
+
+
 def swap_archetype(
     snap: Snapshot, actor_id: str, archetype: Archetype
 ) -> tuple[ProfileRef, PlayerProfile, Modifiers]:
     prof = archetype_profile(archetype, actor_id, snap.team_of(actor_id))
     ref = ProfileRef(
-        kind=ProfileKind.ARCHETYPE, archetype=archetype, label=f"A {ARCHETYPE_LABEL[archetype]}"
+        kind=ProfileKind.ARCHETYPE,
+        archetype=archetype,
+        label=f"{_article(ARCHETYPE_LABEL[archetype])} {ARCHETYPE_LABEL[archetype]}",
     )
     return ref, prof, snap.modifiers[actor_id]
 

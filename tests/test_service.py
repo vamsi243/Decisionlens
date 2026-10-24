@@ -178,3 +178,15 @@ def test_websocket_streams_hello_then_frames(client: TestClient) -> None:
         assert frames == sorted(frames)
         assert kinds["status"] >= 1
         client.post("/replay/pause")
+
+
+def test_seek_republishes_the_full_picture(short_match: Path) -> None:
+    src, cap = FileReplay(short_match), Capture()
+    pipe = Pipeline(src, MemoryStore(), cap)
+    pipe.warm_up()
+    pkt = src.packet(733)  # not on any publishing cadence
+    pkt.after_seek = True
+    asyncio.run(pipe.handle(pkt))
+    kinds = {k for k, _ in cap.sent}
+    expected = {StreamMessageType.STATS, StreamMessageType.WORKLOAD, StreamMessageType.INTENSITY}
+    assert expected <= kinds

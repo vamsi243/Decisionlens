@@ -53,6 +53,18 @@ export type EventType =
   | "knock"
   | "period_start"
   | "period_end";
+export type OwnerId = string | null;
+export type X1 = number;
+export type Y1 = number;
+export type Z = number;
+export type Frame = number;
+export type Id = string;
+export type Vx = number;
+export type Vy = number;
+export type X2 = number;
+export type Y2 = number;
+export type Players = PlayerTrack[];
+export type TMs1 = number;
 export type MatchId = string;
 export type PeriodLengthMs = number;
 export type Length = number;
@@ -81,8 +93,8 @@ export type MomentId = string;
 /**
  * @minItems 1
  */
-export type Players = [string, ...string[]];
-export type TMs1 = number;
+export type Players1 = [string, ...string[]];
+export type TMs2 = number;
 export type TeamId2 = string | null;
 export type Title = string;
 /**
@@ -125,8 +137,8 @@ export type Passing = number;
 export type Tackle = number;
 export type Starter = boolean;
 export type TeamId3 = string;
-export type Players1 = PlayerProfile[];
-export type TMs2 = number;
+export type Players2 = PlayerProfile[];
+export type TMs3 = number;
 /**
  * @minItems 2
  * @maxItems 2
@@ -148,11 +160,11 @@ export type TacklesWon = number;
 export type TeamId4 = string;
 export type Xg = number;
 export type DurationMs = number;
-export type Frame = number;
+export type Frame1 = number;
 export type Live = boolean;
 export type Playing = boolean;
 export type Speed = 1 | 2 | 4 | 8;
-export type TMs3 = number;
+export type TMs4 = number;
 export type DangerousTurnovers = number;
 export type Duels = number;
 export type Goals1 = number;
@@ -188,7 +200,7 @@ export type Low = number;
 export type Median = number;
 export type TargetId1 = string | null;
 export type XtGain = number;
-export type TMs4 = number;
+export type TMs5 = number;
 export type ActorId1 = string;
 export type PSuccess1 = number;
 /**
@@ -215,18 +227,6 @@ export type MomentId3 = string | null;
 export type OverlayId = string;
 export type ShowForMs = number;
 export type Source = string;
-export type TMs5 = number;
-export type OwnerId = string | null;
-export type X1 = number;
-export type Y1 = number;
-export type Z = number;
-export type Frame1 = number;
-export type Id = string;
-export type Vx = number;
-export type Vy = number;
-export type X2 = number;
-export type Y2 = number;
-export type Players2 = PlayerTrack[];
 export type TMs6 = number;
 export type DistanceM = number;
 export type Fatigue = number;
@@ -341,11 +341,44 @@ export interface Point {
  * via the `definition` "Hello".
  */
 export interface Hello {
+  frame?: TrackingFrame | null;
   meta: MatchMeta;
   moments: Moments;
-  players: Players1;
+  players: Players2;
   stats?: MatchStats | null;
   status: ReplayStatus;
+}
+/**
+ * This interface was referenced by `Contracts`'s JSON-Schema
+ * via the `definition` "TrackingFrame".
+ */
+export interface TrackingFrame {
+  ball: BallState;
+  frame: Frame;
+  period: Period;
+  players: Players;
+  t_ms: TMs1;
+}
+/**
+ * This interface was referenced by `Contracts`'s JSON-Schema
+ * via the `definition` "BallState".
+ */
+export interface BallState {
+  owner_id?: OwnerId;
+  x: X1;
+  y: Y1;
+  z: Z;
+}
+/**
+ * This interface was referenced by `Contracts`'s JSON-Schema
+ * via the `definition` "PlayerTrack".
+ */
+export interface PlayerTrack {
+  id: Id;
+  vx: Vx;
+  vy: Vy;
+  x: X2;
+  y: Y2;
 }
 /**
  * This interface was referenced by `Contracts`'s JSON-Schema
@@ -394,8 +427,8 @@ export interface KeyMoment {
   frame_range: FrameRange;
   importance?: Importance;
   moment_id: MomentId;
-  players: Players;
-  t_ms: TMs1;
+  players: Players1;
+  t_ms: TMs2;
   team_id?: TeamId2;
   title?: Title;
   type: MomentType;
@@ -449,7 +482,7 @@ export interface Skill {
  * via the `definition` "MatchStats".
  */
 export interface MatchStats {
-  t_ms: TMs2;
+  t_ms: TMs3;
   teams: Teams1;
 }
 /**
@@ -479,12 +512,12 @@ export interface TeamStats {
  */
 export interface ReplayStatus {
   duration_ms: DurationMs;
-  frame: Frame;
+  frame: Frame1;
   live?: Live;
   period: Period;
   playing: Playing;
   speed: Speed;
-  t_ms: TMs3;
+  t_ms: TMs4;
 }
 /**
  * Match intensity for one 5-minute window (0-100, computable live; see engine.metrics).
@@ -522,7 +555,7 @@ export interface OptionSet {
   best_option_id: BestOptionId;
   moment_id: MomentId1;
   options: Options;
-  t_ms: TMs4;
+  t_ms: TMs5;
 }
 /**
  * This interface was referenced by `Contracts`'s JSON-Schema
@@ -605,7 +638,7 @@ export interface Overlay {
   payload?: Payload;
   show_for_ms?: ShowForMs;
   source?: Source;
-  t_ms: TMs5;
+  t_ms: TMs6;
   text?: Text1;
 }
 export interface Payload {
@@ -615,38 +648,6 @@ export interface Text1 {
   [k: string]: {
     [k: string]: string;
   };
-}
-/**
- * This interface was referenced by `Contracts`'s JSON-Schema
- * via the `definition` "TrackingFrame".
- */
-export interface TrackingFrame {
-  ball: BallState;
-  frame: Frame1;
-  period: Period;
-  players: Players2;
-  t_ms: TMs6;
-}
-/**
- * This interface was referenced by `Contracts`'s JSON-Schema
- * via the `definition` "BallState".
- */
-export interface BallState {
-  owner_id?: OwnerId;
-  x: X1;
-  y: Y1;
-  z: Z;
-}
-/**
- * This interface was referenced by `Contracts`'s JSON-Schema
- * via the `definition` "PlayerTrack".
- */
-export interface PlayerTrack {
-  id: Id;
-  vx: Vx;
-  vy: Vy;
-  x: X2;
-  y: Y2;
 }
 /**
  * This interface was referenced by `Contracts`'s JSON-Schema

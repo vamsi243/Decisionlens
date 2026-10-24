@@ -15,6 +15,48 @@
       "title": "Archetype",
       "type": "string"
     },
+    "BallState": {
+      "additionalProperties": false,
+      "properties": {
+        "owner_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Owner Id"
+        },
+        "x": {
+          "maximum": 110.0,
+          "minimum": -5.0,
+          "title": "X",
+          "type": "number"
+        },
+        "y": {
+          "maximum": 73.0,
+          "minimum": -5.0,
+          "title": "Y",
+          "type": "number"
+        },
+        "z": {
+          "maximum": 40,
+          "minimum": 0,
+          "title": "Z",
+          "type": "number"
+        }
+      },
+      "required": [
+        "x",
+        "y",
+        "z"
+      ],
+      "title": "BallState",
+      "type": "object"
+    },
     "FrameRange": {
       "additionalProperties": false,
       "properties": {
@@ -327,6 +369,44 @@
       "title": "PlayerProfile",
       "type": "object"
     },
+    "PlayerTrack": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "vx": {
+          "title": "Vx",
+          "type": "number"
+        },
+        "vy": {
+          "title": "Vy",
+          "type": "number"
+        },
+        "x": {
+          "maximum": 110.0,
+          "minimum": -5.0,
+          "title": "X",
+          "type": "number"
+        },
+        "y": {
+          "maximum": 73.0,
+          "minimum": -5.0,
+          "title": "Y",
+          "type": "number"
+        }
+      },
+      "required": [
+        "id",
+        "x",
+        "y",
+        "vx",
+        "vy"
+      ],
+      "title": "PlayerTrack",
+      "type": "object"
+    },
     "Position": {
       "enum": [
         "GK",
@@ -590,10 +670,58 @@
       ],
       "title": "TeamStats",
       "type": "object"
+    },
+    "TrackingFrame": {
+      "additionalProperties": false,
+      "properties": {
+        "ball": {
+          "$ref": "#/$defs/BallState"
+        },
+        "frame": {
+          "minimum": 0,
+          "title": "Frame",
+          "type": "integer"
+        },
+        "period": {
+          "$ref": "#/$defs/Period"
+        },
+        "players": {
+          "items": {
+            "$ref": "#/$defs/PlayerTrack"
+          },
+          "title": "Players",
+          "type": "array"
+        },
+        "t_ms": {
+          "minimum": 0,
+          "title": "T Ms",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "frame",
+        "t_ms",
+        "period",
+        "ball",
+        "players"
+      ],
+      "title": "TrackingFrame",
+      "type": "object"
     }
   },
   "additionalProperties": false,
   "properties": {
+    "frame": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/TrackingFrame"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
     "meta": {
       "$ref": "#/$defs/MatchMeta"
     },

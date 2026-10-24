@@ -44,6 +44,22 @@ flowchart LR
 7. **Explain** (Phase 6). The agents turn the analysis into grounded cards.
 8. **Render** (Phase 5). The board draws frames, cards, arrows and ghosts.
 
+## The board (web/)
+```mermaid
+flowchart LR
+  WS[/ws/] --> ST[stream.ts dispatch]
+  ST -->|frame| FB[frames.ts<br/>mutable buffer]
+  ST -->|everything else| Z[(Zustand match store)]
+  FB --> RAF[rAF loop<br/>writes SVG attributes]
+  Z --> R[React: top bar, feed, scrubber, drawer]
+  P[(prefs store<br/>localStorage)] --> R
+  R -->|REST| API[/replay/*, /moments/]
+```
+- **Frames bypass React.** At 8× there are 80 frames a second. They go into a two-frame buffer. A `requestAnimationFrame` loop interpolates between the last two and writes `transform` attributes directly, so React re-renders at most 10 times a second (the clock). A seek or a gap snaps instead of gliding. With `prefers-reduced-motion` it shows frames as they arrive.
+- **Cost at 8×:** about 16 µs to handle a message and 8 µs per interpolated sample, which is under 2 ms of main-thread time per second.
+- **Moments in a replay.** `/moments?all=true` gives the scrubber every marker up front. Missing analyses are fetched on demand, so seeking forward still fills the feed. After a seek the server republishes stats, workload and intensity immediately.
+- **Lazy charts.** The stats drawer (recharts) is a separate chunk loaded on first open: 457 KB initial JS (153 KB gzipped).
+
 ## Agents and router
 _TODO (Phase 6)_
 

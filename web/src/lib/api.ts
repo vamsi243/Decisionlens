@@ -1,0 +1,40 @@
+import type {
+  IntensityPoint,
+  KeyMoment,
+  MatchMeta,
+  MatchStats,
+  MomentAnalysis,
+  PlayerProfile,
+  ReplayStatus,
+  Speed,
+  WorkloadState,
+} from "@/types/contracts";
+
+export const API_URL = (import.meta.env.VITE_API_URL ?? "http://localhost:8000").replace(/\/$/, "");
+export const WS_URL = `${API_URL.replace(/^http/, "ws")}/ws`;
+
+async function req<T>(path: string, init?: RequestInit): Promise<T> {
+  const res = await fetch(`${API_URL}${path}`, {
+    ...init,
+    headers: { "Content-Type": "application/json", ...(init?.headers ?? {}) },
+  });
+  if (!res.ok) throw new Error(`${init?.method ?? "GET"} ${path}: ${res.status}`);
+  return (await res.json()) as T;
+}
+
+const post = <T>(path: string, body?: unknown) =>
+  req<T>(path, { method: "POST", body: body === undefined ? undefined : JSON.stringify(body) });
+
+export const api = {
+  match: () => req<{ meta: MatchMeta; status: ReplayStatus }>("/match"),
+  players: () => req<PlayerProfile[]>("/players"),
+  moments: (all = false) => req<KeyMoment[]>(`/moments${all ? "?all=true" : ""}`),
+  analysis: (id: string) => req<MomentAnalysis>(`/moments/${encodeURIComponent(id)}/analysis`),
+  stats: () => req<MatchStats>("/stats"),
+  workload: () => req<WorkloadState[]>("/workload"),
+  intensity: () => req<IntensityPoint[]>("/intensity"),
+  play: () => post<ReplayStatus>("/replay/play"),
+  pause: () => post<ReplayStatus>("/replay/pause"),
+  seek: (t_ms: number) => post<ReplayStatus>("/replay/seek", { t_ms: Math.max(0, Math.round(t_ms)) }),
+  speed: (speed: Speed) => post<ReplayStatus>("/replay/speed", { speed }),
+};

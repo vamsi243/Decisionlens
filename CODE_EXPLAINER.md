@@ -13,6 +13,8 @@
 | `tasks.py` | Cross-platform task runner used by the Makefile |
 | `service/` | `ports.py` (interfaces), `adapters/` (file replay, memory store, WebSocket, Azure stubs), `pipeline.py`, `main.py` (REST + WS) |
 | `infra/` | Bicep for the Phase 4 hello deploy (registry, Container Apps, managed identity) |
+| `web/src/state/` | `frames.ts` (frame buffer + interpolation), `match.ts` (Zustand store fed by the socket), `prefs.ts` (persona, favourites, language; saved locally) |
+| `web/src/components/` | `board/` (pitch, players, ball, option arrows, what-if ghost), `TopBar`, `Scrubber`, `MomentFeed`/`MomentCard`, `StatsDrawer`, `SettingsSheet`, `ui/` (shadcn-style Radix primitives) |
 
 ## Contracts in practice
 - `contracts/base.py` — `Point`, `Probability`, `ProbRange` (median + 10th-90th percentile, must be ordered), pitch constants.
@@ -25,7 +27,6 @@
 | --- | --- |
 | `roster.py` | Two invented 16-player squads, formations as team-relative slots, archetype base profiles with seeded jitter |
 | `sim.py` | `MatchSim`: one `step()` per 0.1 s — director → carrier decision → targets → movement → ball → duels → pressure → fatigue → substitutions |
-| `rules.py` | Stub probabilities (pass success, xG, aerial win, tackle/dribble). Phase 3 swaps in the engine |
 | `script.py` | The five scripted key moments, substitutions and the knock |
 | `writer.py` | Streams tracking lines while simulating, then writes meta, players and events |
 
@@ -41,6 +42,9 @@
 **Adding an archetype:** add it to `contracts.Archetype`, give it a row in `ARCHETYPE_BASE` (and optionally `RUN_RATE` / `DRIBBLERS` in `sim.py`), then regenerate the schema with `make schema`.
 
 ## How one frame travels
+_On the board:_ `stream.ts` hands each frame to `frames.push()`. The `Board` component's `requestAnimationFrame` loop calls `frames.sample(now)`, which interpolates between the last two frames over 100 ms ÷ speed, and moves each player's `<g>` by setting its `transform`.
+
+_In the service:_
 1. `FileReplay.next_packet()` waits until the frame is due: `clock start + n × 0.1 s / speed`. If it falls more than 1 s behind, it drops the backlog.
 2. `Pipeline.handle()` passes the packet to `_process()`. That updates `WorkloadTracker` (distance, high-speed running, sprints, heat, fatigue), `StatsTracker`, `IntensityTracker` and `MomentDetector`, all held in `LiveState`.
 3. The raw frame bytes are wrapped as `{"type":"frame","data":…}` and fanned out to every WebSocket client's queue.
@@ -53,8 +57,6 @@
 4. `analysis_worker` runs `engine.whatif.what_if` (fresh aerial centre-back from the bench) and, for on-ball moments, `engine.options.option_set` in a thread. The result is stored and published as `analysis`.
 5. Phase 6 adds the agents that turn this analysis into analyst and fan cards.
 
-## How one key moment becomes a card
-_TODO_
 
 ## The probability maths (`engine/`)
 

@@ -384,6 +384,17 @@
     "Hello": {
       "additionalProperties": false,
       "properties": {
+        "frame": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/TrackingFrame"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
         "meta": {
           "$ref": "#/$defs/MatchMeta"
         },

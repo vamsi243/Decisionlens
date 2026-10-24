@@ -110,7 +110,10 @@ def _carry_eval(
     return fn
 
 
-def candidates(snap: Snapshot, actor: str) -> list[_Cand]:
+def candidates(
+    snap: Snapshot, actor: str, pass_ends: dict[str, np.ndarray] | None = None
+) -> list[_Cand]:
+    """`pass_ends` pins a receiver's target point (the pass actually played goes where it went)."""
     team = snap.team_of(actor)
     start = snap.pos[snap.idx(actor)]
     fx, fy = (float(v) for v in snap.rel(team, start))
@@ -125,7 +128,9 @@ def candidates(snap: Snapshot, actor: str) -> list[_Cand]:
         mid = snap.ids[m]
         if mid == actor:
             continue
-        end = np.clip(snap.pos[m] + snap.vel[m] * 0.6, [1.0, 1.0], [104.0, 67.0])
+        end = (pass_ends or {}).get(mid)
+        if end is None:
+            end = np.clip(snap.pos[m] + snap.vel[m] * 0.6, [1.0, 1.0], [104.0, 67.0])
         ex, ey = snap.rel(team, end)
         fn = _pass_eval(start, end, snap.kin([m]), defs, prof.skill.passing, pressure)
         out.append(_Cand(ActionKind.PASS, mid, end, xt(ex, ey) - here, fn))
@@ -174,7 +179,10 @@ def option_set(
     chosen: Event | None = None,
     runs: int = RUNS,
 ) -> OptionSet:
-    cands = sorted(candidates(snap, actor), key=lambda c: -c.value)
+    pinned = {}
+    if chosen is not None and chosen.type == EventType.PASS and chosen.target_id and chosen.end:
+        pinned[chosen.target_id] = np.array([chosen.end.x, chosen.end.y])
+    cands = sorted(candidates(snap, actor, pinned), key=lambda c: -c.value)
     picked = cands[:MAX_OPTIONS]
     if chosen is not None:
         match = next((c for c in cands if _matches(c, chosen)), None)

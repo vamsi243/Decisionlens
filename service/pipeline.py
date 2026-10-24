@@ -176,20 +176,21 @@ class Pipeline:
         return [self.state.workload.state(pid, t) for pid in self.state.on_ids]
 
     async def handle(self, pkt: FramePacket) -> None:
-        if pkt.after_seek:
+        fresh = pkt.after_seek  # boards need the whole picture again after a jump
+        if fresh:
             self.restore(pkt.frame)
         found = self._process(self.state, pkt)
         pub = self.publisher
         await pub.publish_raw(StreamMessageType.FRAME, pkt.raw)
         for e in pkt.events:
             await pub.publish(StreamMessageType.EVENT, e)
-        if pkt.frame % STATS_EVERY == 0:
+        if fresh or pkt.frame % STATS_EVERY == 0:
             s = self.stats()
             self.store.put_stats(s)
             await pub.publish(StreamMessageType.STATS, s)
-        if pkt.frame % WORKLOAD_EVERY == 0:
+        if fresh or pkt.frame % WORKLOAD_EVERY == 0:
             await pub.publish(StreamMessageType.WORKLOAD, self.workload())
-        if pkt.frame % INTENSITY_EVERY == 0:
+        if fresh or pkt.frame % INTENSITY_EVERY == 0:
             await pub.publish(StreamMessageType.INTENSITY, self.state.intensity.series())
         for d in found:
             await self._moment(d)

@@ -211,7 +211,8 @@ async def ws(websocket: WebSocket) -> None:
         players=src.players,
         status=status,
         moments=store.moments(until_ms=status.t_ms),
-        stats=store.stats(),
+        stats=store.stats() or rt.pipeline.stats(),
+        frame=src.packet(status.frame).data,
     )
     assert rt.adapters.ws is not None
     await rt.adapters.ws.serve(websocket, encode(StreamMessageType.HELLO, hello_msg))

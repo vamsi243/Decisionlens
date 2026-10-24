@@ -59,6 +59,15 @@ API on http://localhost:8000, web on http://localhost:5173.
 | Generate a match | `uv run python tasks.py generate --seed 42` (`make generate SEED=42`) |
 | Azure smoke test | `uv run python scripts/smoke_azure.py` |
 
+## The tactics board
+`uv run python tasks.py dev` opens the board on http://localhost:5173. Press play and pick 1×, 2×, 4× or 8×.
+
+- **Pitch:** Riverside's players are filled ink discs and Hillton's are white rings. The ball leaves a short amber trail. A badge appears when a player sprints (over 25 km/h) or passes another kilometre.
+- **Key moments:** they collect in the right rail. Each amber diamond on the scrubber replays one.
+- **Option map:** with *pause at key moments* on (the default), the replay stops on each moment. Green arrows show the best option, grey ones the alternatives, and the dashed green ghost the what-if.
+- **Stats drawer** (chart icon): team stats, workload and fatigue, and the intensity chart.
+- **Settings** (sliders icon): persona, favourite club and player, language, what-if profile.
+
 ## The stream service
 `uv run python tasks.py dev` (or `make replay` for the API alone) serves the sample match on http://localhost:8000:
 
