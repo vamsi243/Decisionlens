@@ -68,6 +68,15 @@ API on http://localhost:8000, web on http://localhost:5173.
 - **Stats drawer** (chart icon): team stats, workload and fatigue, and the intensity chart.
 - **Settings** (sliders icon): persona, favourite club and player, language, what-if profile.
 
+## Three pages
+| Page | What you get |
+| --- | --- |
+| **Live** (`#/`) | The tactics board, key-moment cards, scrubber, stats drawer. Click a player to follow them (halo, name tag, their moments first in the feed, heat map in analyst mode). |
+| **Recap** (`#/recap`) | The full-time story, scroll by scroll. The pitch stays pinned and scrolling through each turning point replays it, ending on the option map and the what-if ghost. |
+| **How it works** (`#/how`) | The five stages and the agent architecture, with live numbers from the running match. |
+
+**Analyst vs fan.** The analyst card shows the option map, ranges, drivers, workload, intensity and a heat map, and every card exports as time-coded overlay JSON. The fan view is one plain-words line in larger type; on the board, fans see only the best and chosen options and a what-if ghost labelled in words.
+
 ## The agents
 Five agents built with **Microsoft Agent Framework** on **Azure OpenAI in Foundry** (`gpt-5.4-mini` for analyst text and recaps, `gpt-5.4-nano` for fan lines, lowest reasoning effort, `gpt-4.1-mini` as the fallback):
 
@@ -102,6 +111,9 @@ uv run python -m mcp_server --match data/samples/match_42
 | `GET /overlays` (`?all=true`) | Agent cards so far: analyst + fan text, engine payload, source |
 | `GET /overlays/{id}?lang=es` | A card translated by Azure AI Translator (no model call, cached) |
 | `GET /agents/traces` | Which router steps ran per trigger and where each text came from |
+| `GET /moments/{id}/frames` | Tracking frames around a moment (for replays) |
+| `GET /players/{id}/heatmap` (`?full=true`) | Share of time in each 5 m cell |
+| `GET /recap` | The full-time recap, whatever the live replay is doing |
 | `POST /mcp/` | The MCP server (streamable HTTP) |
 | `WS /ws` | `hello`, then frames, events, stats, workload, intensity, moments, analyses and status |
 

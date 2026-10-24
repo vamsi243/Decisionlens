@@ -1,5 +1,8 @@
 import { useReducedMotion } from "framer-motion";
+import { Flame } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { api } from "@/lib/api";
+import { cn } from "@/lib/utils";
 import { frames } from "@/state/frames";
 import { useMatch } from "@/state/match";
 import { usePrefs } from "@/state/prefs";
@@ -50,6 +53,52 @@ function useDistanceBadges() {
   return badges;
 }
 
+const HEAT_REFRESH_MS = 10_000;
+
+/** Where the followed player has spent the match so far (analyst view). */
+function HeatLayer({ playerId }: { playerId: string }) {
+  const [cells, setCells] = useState<number[][] | null>(null);
+  useEffect(() => {
+    let alive = true;
+    const load = () =>
+      api
+        .heatmap(playerId)
+        .then((h) => alive && setCells(h.cells))
+        .catch(() => undefined);
+    void load();
+    const t = setInterval(load, HEAT_REFRESH_MS);
+    return () => {
+      alive = false;
+      clearInterval(t);
+    };
+  }, [playerId]);
+  if (!cells) return null;
+  const nx = cells.length;
+  const ny = cells[0]?.length ?? 1;
+  const max = Math.max(1e-6, ...cells.flat());
+  const w = PITCH.length / nx;
+  const h = PITCH.width / ny;
+  return (
+    <g aria-hidden>
+      {cells.flatMap((col, i) =>
+        col.map((v, j) =>
+          v > 0 ? (
+            <rect
+              key={`${i}-${j}`}
+              x={i * w}
+              y={PITCH.width - (j + 1) * h}
+              width={w}
+              height={h}
+              fill="var(--amber)"
+              opacity={0.08 + 0.55 * (v / max)}
+            />
+          ) : null,
+        ),
+      )}
+    </g>
+  );
+}
+
 export function Board() {
   const onPitch = useMatch((s) => s.onPitch);
   const players = useMatch((s) => s.players);
@@ -59,6 +108,9 @@ export function Board() {
   const clockMs = useMatch((s) => s.clockMs);
   const pinned = useMatch((s) => s.pinned);
   const focus = usePrefs((s) => s.player);
+  const persona = usePrefs((s) => s.persona);
+  const setPrefs = usePrefs((s) => s.set);
+  const [heat, setHeat] = useState(false);
   const reduce = useReducedMotion();
   const distanceBadges = useDistanceBadges();
 
@@ -123,8 +175,9 @@ export function Board() {
         aria-label="Live tactics board"
       >
         <ArrowMarkers />
+        {heat && focus && persona === "analyst" ? <HeatLayer playerId={focus} /> : null}
         <PitchMarkings />
-        <MomentLayer analysis={active} />
+        <MomentLayer analysis={active} fan={persona === "fan"} />
         {Array.from({ length: TRAIL }, (_, i) => (
           <circle key={i} ref={(el) => (trail.current[i] = el)} r={0.35} fill="var(--amber)" opacity={0} />
         ))}
@@ -137,6 +190,14 @@ export function Board() {
           return (
             <g
               key={id}
+              role="button"
+              tabIndex={0}
+              aria-label={`${p.name}${focused ? " (followed)" : ""}`}
+              className="cursor-pointer outline-none"
+              onClick={() => setPrefs({ player: focused ? null : id })}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") setPrefs({ player: focused ? null : id });
+              }}
               ref={(el) => {
                 const r = refs.current.get(id) ?? { group: null, badge: null, badgeText: null };
                 r.group = el;
@@ -201,6 +262,19 @@ export function Board() {
         <ellipse ref={shadow} rx={0.6} ry={0.25} fill="var(--ink)" opacity={0.2} />
         <circle ref={ball} r={0.55} fill="var(--amber)" stroke="var(--surface)" strokeWidth={0.12} />
       </svg>
+      {focus && persona === "analyst" ? (
+        <button
+          type="button"
+          onClick={() => setHeat((v) => !v)}
+          aria-pressed={heat}
+          className={cn(
+            "absolute left-4 top-4 inline-flex items-center gap-1.5 rounded-md border border-line bg-surface/90 px-2.5 py-1 text-xs shadow-sm backdrop-blur",
+            heat ? "text-amber" : "text-muted hover:text-ink",
+          )}
+        >
+          <Flame className="size-3.5" aria-hidden /> Heat map · {players[focus]?.name.split(" ").pop()}
+        </button>
+      ) : null}
       {onPitch.length === 0 ? (
         <div className="absolute inset-0 grid place-items-center text-sm text-muted">Waiting for the stream…</div>
       ) : null}

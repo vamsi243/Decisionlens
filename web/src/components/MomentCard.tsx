@@ -1,4 +1,5 @@
-import { ArrowRight, BadgeCheck, RotateCcw } from "lucide-react";
+import { ArrowRight, BadgeCheck, Download, RotateCcw } from "lucide-react";
+import { downloadJson } from "@/lib/export";
 import { motion, useReducedMotion } from "framer-motion";
 import type {
   KeyMoment,
@@ -194,7 +195,21 @@ export function MomentCard({
       {!analysis && moment.type !== "fatigue_alert" ? (
         <p className="mt-2 text-sm text-muted-2">Working out the options…</p>
       ) : null}
-      <footer className="mt-3 flex justify-end">
+      <footer className="mt-3 flex items-center justify-between gap-2">
+        {!fan && (overlay || analysis) ? (
+          <button
+            type="button"
+            onClick={() =>
+              downloadJson(`decision-lens_${moment.moment_id}.json`, overlay ?? analysis)
+            }
+            className="inline-flex items-center gap-1 rounded-md px-1.5 py-1 text-[11px] text-muted hover:bg-panel-2 hover:text-ink"
+            aria-label={`Export overlay JSON for ${moment.title}`}
+          >
+            <Download className="size-3" aria-hidden /> Overlay JSON
+          </button>
+        ) : (
+          <span />
+        )}
         <SourceBadge overlay={overlay} />
       </footer>
     </motion.article>

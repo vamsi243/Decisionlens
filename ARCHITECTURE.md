@@ -58,6 +58,8 @@ flowchart LR
 - **Frames bypass React.** At 8× there are 80 frames a second. They go into a two-frame buffer. A `requestAnimationFrame` loop interpolates between the last two and writes `transform` attributes directly, so React re-renders at most 10 times a second (the clock). A seek or a gap snaps instead of gliding. With `prefers-reduced-motion` it shows frames as they arrive.
 - **Cost at 8×:** about 16 µs to handle a message and 8 µs per interpolated sample, which is under 2 ms of main-thread time per second.
 - **Moments in a replay.** `/moments?all=true` gives the scrubber every marker up front. Missing analyses are fetched on demand, so seeking forward still fills the feed. After a seek the server republishes stats, workload and intensity immediately.
+- **Pages.** Hash routes (`#/`, `#/recap`, `#/how`), so any static host serves them with no rewrite rules. The recap and How it works pages are lazy-loaded chunks that use Lenis smooth scrolling (snap on desktop, off for reduced motion).
+- **Recap story.** `GET /recap` builds the full-time recap from the pipeline's final state (kept from the warm-up), so it works whatever the live replay is doing. Turning points are ordered by what-if swing. Each chapter's scroll progress (Framer Motion `useScroll`) picks a frame from `GET /moments/{id}/frames` for the pinned `StaticBoard`.
 - **Lazy charts.** The stats drawer (recharts) is a separate chunk loaded on first open: 457 KB initial JS (153 KB gzipped).
 
 ## Agents and router

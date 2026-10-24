@@ -8,6 +8,7 @@ import type {
   PlayerProfile,
   ReplayStatus,
   Speed,
+  TrackingFrame,
   WorkloadState,
 } from "@/types/contracts";
 
@@ -34,6 +35,13 @@ export const api = {
   overlays: (all = false) => req<Overlay[]>(`/overlays${all ? "?all=true" : ""}`),
   overlay: (id: string, lang = "en") =>
     req<Overlay>(`/overlays/${encodeURIComponent(id)}?lang=${encodeURIComponent(lang)}`),
+  heatmap: (id: string, full = false) =>
+    req<{ nx: number; ny: number; cells: number[][] }>(
+      `/players/${encodeURIComponent(id)}/heatmap${full ? "?full=true" : ""}`,
+    ),
+  frames: (momentId: string, step = 1) =>
+    req<TrackingFrame[]>(`/moments/${encodeURIComponent(momentId)}/frames?step=${step}`),
+  recap: () => req<Overlay>("/recap"),
   stats: () => req<MatchStats>("/stats"),
   workload: () => req<WorkloadState[]>("/workload"),
   intensity: () => req<IntensityPoint[]>("/intensity"),

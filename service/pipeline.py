@@ -103,6 +103,7 @@ class Pipeline:
         self.team_of = {p.player_id: p.team_id for p in self.players}
         self.state = LiveState.fresh(self.meta, self.players)
         self.checkpoints: dict[int, LiveState] = {}
+        self.final_state: LiveState | None = None  # the whole match, filled by warm_up()
         self.all_detected: list[Detected] = []
         self.detected: dict[str, Detected] = {}  # moment id -> detection (snapshot + spec)
         self.moment_bench: dict[str, list[str]] = {}  # moment id -> fresh subs at that moment
@@ -164,6 +165,13 @@ class Pipeline:
             for d in self._process(st, self.source.packet(f)):
                 self.all_detected.append(d)
                 self._register(st, d)
+        self.final_state = st
+
+    def at_full_time(self) -> Pipeline:
+        """A read-only view of this pipeline as it stands at the final whistle (after warm-up)."""
+        view = copy.copy(self)
+        view.state = self.final_state or self.state
+        return view
 
     def _register(self, st: LiveState, d: Detected) -> None:
         mid = d.moment.moment_id

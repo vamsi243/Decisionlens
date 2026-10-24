@@ -6,13 +6,14 @@ import { SettingsSheet } from "@/components/SettingsSheet";
 import { TopBar } from "@/components/TopBar";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { api } from "@/lib/api";
+import { useRoute } from "@/lib/router";
 import { connectStream } from "@/lib/stream";
 import { useMatch } from "@/state/match";
 import { usePrefs } from "@/state/prefs";
 
 /** When the replay crosses a key moment with an analysis, pause so the option map can be read. */
-function usePauseAtMoments() {
-  const pause = usePrefs((s) => s.pauseAtMoments);
+function usePauseAtMoments(enabled: boolean) {
+  const pause = usePrefs((s) => s.pauseAtMoments) && enabled;
   const done = useRef(new Set<string>());
   useEffect(
     () =>
@@ -35,6 +36,8 @@ function usePauseAtMoments() {
 const StatsDrawer = lazy(() =>
   import("@/components/StatsDrawer").then((m) => ({ default: m.StatsDrawer })),
 );
+const RecapPage = lazy(() => import("@/pages/RecapPage").then((m) => ({ default: m.RecapPage })));
+const HowPage = lazy(() => import("@/pages/HowPage").then((m) => ({ default: m.HowPage })));
 
 function Legend() {
   return (
@@ -59,13 +62,27 @@ function Legend() {
 }
 
 export function App() {
-  const [stats, setStats] = useState(false);
-  const [settings, setSettings] = useState(false);
+  const route = useRoute();
   useEffect(() => connectStream(), []);
-  usePauseAtMoments();
-
+  usePauseAtMoments(route === "live");
   return (
     <TooltipProvider>
+      {route === "live" ? (
+        <LivePage />
+      ) : (
+        <Suspense fallback={<div className="min-h-dvh bg-bg" />}>
+          {route === "recap" ? <RecapPage /> : <HowPage />}
+        </Suspense>
+      )}
+    </TooltipProvider>
+  );
+}
+
+function LivePage() {
+  const [stats, setStats] = useState(false);
+  const [settings, setSettings] = useState(false);
+  return (
+    <>
       <div className="flex min-h-dvh flex-col bg-bg">
         <TopBar onStats={() => setStats(true)} onSettings={() => setSettings(true)} />
         <main className="mx-auto grid w-full max-w-[1500px] flex-1 gap-5 px-4 py-5 lg:grid-cols-[minmax(0,1fr)_380px] lg:px-6">
@@ -85,6 +102,6 @@ export function App() {
         </Suspense>
       ) : null}
       <SettingsSheet open={settings} onOpenChange={setSettings} />
-    </TooltipProvider>
+    </>
   );
 }

@@ -16,6 +16,8 @@
 | `mcp_server/` | `context.py` (what the tools can see: the pipeline + store), `server.py` (six tools on the MCP SDK's `MCPServer`), `__main__.py` (standalone stdio server) |
 | `agents/` | `router.py` (decision table), `backend.py` (Agent Framework on Azure OpenAI), `orchestrator.py`, `facts.py`, `grounding.py`, `templates.py`, `prompts.py`, `cache.py`, `translator.py` |
 | `web/src/state/` | `frames.ts` (frame buffer + interpolation), `match.ts` (Zustand store fed by the socket), `prefs.ts` (persona, favourites, language; saved locally) |
+| `web/src/pages/` | `RecapPage.tsx` (scroll story with pinned pitch), `HowPage.tsx` (five stages + agent diagram) |
+| `web/src/lib/` | `router.ts` (hash routes), `useLenis.ts` (smooth scroll + snap), `export.ts` (overlay JSON), `words.ts` (fan wording) |
 | `web/src/components/` | `board/` (pitch, players, ball, option arrows, what-if ghost), `TopBar`, `Scrubber`, `MomentFeed`/`MomentCard`, `StatsDrawer`, `SettingsSheet`, `ui/` (shadcn-style Radix primitives) |
 
 ## Contracts in practice

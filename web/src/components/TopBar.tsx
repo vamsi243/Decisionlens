@@ -3,9 +3,8 @@ import type { Speed } from "@/types/contracts";
 import { api } from "@/lib/api";
 import { clock } from "@/lib/format";
 import { useMatch } from "@/state/match";
-import { LANGUAGES, usePrefs } from "@/state/prefs";
+import { Brand, LanguageSelect, NavLinks, PersonaToggle } from "./Nav";
 import { Button } from "./ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import { ToggleGroup, ToggleGroupItem } from "./ui/toggle-group";
 import { Tooltip } from "./ui/tooltip";
 
@@ -16,10 +15,6 @@ export function TopBar({ onStats, onSettings }: { onStats: () => void; onSetting
   const stats = useMatch((s) => s.stats);
   const status = useMatch((s) => s.status);
   const clockMs = useMatch((s) => s.clockMs);
-  const connected = useMatch((s) => s.connected);
-  const persona = usePrefs((s) => s.persona);
-  const language = usePrefs((s) => s.language);
-  const setPrefs = usePrefs((s) => s.set);
 
   const [home, away] = meta?.teams ?? [];
   const goals = (id?: string) => stats?.teams.find((t) => t.team_id === id)?.goals ?? 0;
@@ -29,13 +24,8 @@ export function TopBar({ onStats, onSettings }: { onStats: () => void; onSetting
   return (
     <header className="sticky top-0 z-30 border-b border-line bg-bg/85 backdrop-blur-md">
       <div className="mx-auto flex max-w-[1500px] flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3 lg:px-6">
-        <div className="flex items-center gap-2">
-          <span
-            className={`size-2 rounded-full ${connected ? "bg-green" : "bg-red"}`}
-            aria-label={connected ? "Connected" : "Disconnected"}
-          />
-          <span className="font-display text-base font-semibold tracking-tight">Decision Lens</span>
-        </div>
+        <Brand />
+        <NavLinks route="live" />
 
         <div className="flex items-center gap-3 rounded-md border border-line bg-surface px-3 py-1.5 shadow-sm">
           <span className="text-sm font-medium">
@@ -75,27 +65,8 @@ export function TopBar({ onStats, onSettings }: { onStats: () => void; onSetting
               </ToggleGroupItem>
             ))}
           </ToggleGroup>
-          <ToggleGroup
-            type="single"
-            value={persona}
-            onValueChange={(v) => v && setPrefs({ persona: v as "analyst" | "fan" })}
-            aria-label="Persona"
-          >
-            <ToggleGroupItem value="analyst">Analyst</ToggleGroupItem>
-            <ToggleGroupItem value="fan">Fan</ToggleGroupItem>
-          </ToggleGroup>
-          <Select value={language} onValueChange={(v) => setPrefs({ language: v })}>
-            <SelectTrigger className="h-9 w-[118px]" aria-label="Language">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {LANGUAGES.map((l) => (
-                <SelectItem key={l.code} value={l.code}>
-                  {l.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <PersonaToggle />
+          <LanguageSelect />
           <Tooltip label="Stats">
             <Button size="icon" aria-label="Open stats" onClick={onStats}>
               <BarChart3 className="size-4" />

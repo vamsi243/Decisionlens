@@ -2,11 +2,14 @@ import { ArrowDown, Flag } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import type { Overlay, Persona } from "@/types/contracts";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { activeMoment } from "@/lib/moments";
+import { minute } from "@/lib/format";
+import { activeMoment, MOMENT_LABEL } from "@/lib/moments";
 import { ensureAnalyses, ensureTranslations, revealedMoments, useMatch } from "@/state/match";
 import { usePrefs } from "@/state/prefs";
 import { MomentCard, narration, SourceBadge } from "./MomentCard";
+import { replayMoment } from "./Scrubber";
 import { Button } from "./ui/button";
+import { ToggleGroup, ToggleGroupItem } from "./ui/toggle-group";
 
 function RecapCard({ overlay, persona, lang }: { overlay: Overlay; persona: Persona; lang: string }) {
   const reduce = useReducedMotion();
@@ -46,6 +49,9 @@ export function MomentFeed() {
   const lang = usePrefs((s) => s.language);
   const favPlayer = usePrefs((s) => s.player);
   const favClub = usePrefs((s) => s.club);
+  const meta = useMatch((s) => s.meta);
+  const [scope, setScope] = useState<"all" | "club">("all");
+  const clubName = meta?.teams.find((t) => t.team_id === favClub)?.name;
 
   const moments = useMemo(
     () => revealedMoments({ seen, allMoments, clockMs }),
@@ -56,13 +62,22 @@ export function MomentFeed() {
     () => Object.values(overlays).filter((o) => o.kind === "recap" && o.t_ms <= clockMs),
     [overlays, clockMs],
   );
+  const inScope = useMemo(
+    () => (scope === "club" && favClub ? moments.filter((m) => m.team_id === favClub) : moments),
+    [moments, scope, favClub],
+  );
+  // The followed player's moments come first: a compact strip above the timeline.
+  const mine = useMemo(
+    () => (favPlayer ? moments.filter((m) => m.players.includes(favPlayer)) : []),
+    [moments, favPlayer],
+  );
   const items = useMemo(
     () =>
       [
-        ...moments.map((m) => ({ t: m.t_ms, key: m.moment_id, moment: m, recap: undefined })),
+        ...inScope.map((m) => ({ t: m.t_ms, key: m.moment_id, moment: m, recap: undefined })),
         ...recaps.map((o) => ({ t: o.t_ms, key: o.overlay_id, moment: undefined, recap: o })),
       ].sort((a, b) => a.t - b.t),
-    [moments, recaps],
+    [inScope, recaps],
   );
   const cardIds = items.map((i) => (i.recap ? i.recap.overlay_id : `ov_${i.key}`)).join();
   useEffect(() => {
@@ -79,10 +94,23 @@ export function MomentFeed() {
   return (
     <section className="relative flex min-h-0 flex-col" aria-label="Key moments">
       <div className="mb-3 flex items-center justify-between">
-        <h2 className="font-display text-sm font-semibold tracking-tight">Key moments</h2>
+        <div className="flex items-center gap-2">
+          <h2 className="font-display text-sm font-semibold tracking-tight">Key moments</h2>
+          {clubName ? (
+            <ToggleGroup
+              type="single"
+              value={scope}
+              onValueChange={(v) => v && setScope(v as "all" | "club")}
+              aria-label="Which moments"
+            >
+              <ToggleGroupItem value="all">All</ToggleGroupItem>
+              <ToggleGroupItem value="club">{clubName}</ToggleGroupItem>
+            </ToggleGroup>
+          ) : null}
+        </div>
         <span className="flex items-center gap-2 text-xs text-muted-2">
           {noTranslation && lang !== "en" ? <span>English only (no Translator key)</span> : null}
-          <span className="num">{moments.length}</span>
+          <span className="num">{inScope.length}</span>
         </span>
       </div>
       <div
@@ -93,6 +121,30 @@ export function MomentFeed() {
         }}
         className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto pb-2 pr-1"
       >
+        {favPlayer && players[favPlayer] ? (
+          <div className="rounded-lg border border-amber/40 bg-amber/5 p-3">
+            <p className="text-xs font-medium text-amber">
+              Following {players[favPlayer]!.name} · {mine.length} moment{mine.length === 1 ? "" : "s"}
+            </p>
+            {mine.length ? (
+              <ul className="mt-2 flex flex-wrap gap-1.5">
+                {mine.map((m) => (
+                  <li key={m.moment_id}>
+                    <button
+                      type="button"
+                      onClick={() => void replayMoment(m)}
+                      className="rounded-full border border-line bg-surface px-2.5 py-1 text-xs hover:bg-panel-2"
+                    >
+                      <span className="num text-amber">{minute(m.t_ms)}</span> {MOMENT_LABEL[m.type]}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="mt-1 text-xs text-muted">No key moments for them yet.</p>
+            )}
+          </div>
+        ) : null}
         {moments.length === 0 ? (
           <p className="rounded-lg border border-dashed border-line-2 p-4 text-sm text-muted">
             Moments worth explaining appear here as the match plays.

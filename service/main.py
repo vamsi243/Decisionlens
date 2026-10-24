@@ -33,7 +33,7 @@ from mcp_server.context import EngineContext
 from mcp_server.server import build_server
 from service.adapters.ws_publisher import encode
 from service.factory import Adapters, build_adapters
-from service.pipeline import Job, Pipeline, analysis_worker
+from service.pipeline import Job, Pipeline, analyse, analysis_worker
 from service.settings import get_settings
 
 log = logging.getLogger("decision_lens")
@@ -182,6 +182,48 @@ async def moment_analysis(moment_id: str) -> MomentAnalysis:
     if a is None:
         raise HTTPException(404, "analysis not ready")
     return a
+
+
+@app.get("/moments/{moment_id}/frames")
+async def moment_frames(moment_id: str, step: int = 1) -> list[dict[str, Any]]:
+    """The tracking frames around a moment (a few seconds before to a few after), for replays."""
+    d = rt.pipeline.detected.get(moment_id)
+    if d is None:
+        raise HTTPException(404, "no such moment")
+    src = rt.adapters.source
+    fr = d.moment.frame_range
+    last = min(fr.end, src.n_frames - 1)
+    return [src.packet(f).data for f in range(fr.start, last + 1, max(1, step))]
+
+
+@app.get("/players/{player_id}/heatmap")
+async def heatmap(player_id: str, full: bool = False) -> dict[str, Any]:
+    """Share of time in each 5 m cell (21 x 14), so far or (`full=true`) for the whole match."""
+    pipe = rt.pipeline.at_full_time() if full else rt.pipeline
+    w = pipe.state.workload
+    if player_id not in w.index:
+        raise HTTPException(404, "no such player")
+    cells = w.heatmap(player_id)
+    return {"nx": int(cells.shape[0]), "ny": int(cells.shape[1]), "cells": cells.round(4).tolist()}
+
+
+@app.get("/recap")
+async def recap() -> Overlay:
+    """The full-time recap for the recap page, whatever the live replay is doing (cached)."""
+    oid = "ov_recap_full_time"
+    existing = rt.adapters.store.overlay(oid)
+    if existing is not None and existing.payload.get("final"):
+        return existing
+    store = rt.adapters.store
+    for job in rt.pipeline.precompute_jobs():  # don't wait for the background warm-up
+        if store.analysis(job.detected.moment.moment_id) is None:
+            store.put_analysis(await asyncio.to_thread(analyse, job))
+    ctx = EngineContext(rt.pipeline.at_full_time(), store)
+    t_end = rt.adapters.source.n_frames * 100
+    ov = await rt.orchestrator.recap(Trigger.FULL_TIME, t_end, ctx)
+    ov = ov.model_copy(update={"payload": {**ov.payload, "final": True}})
+    rt.adapters.store.put_overlay(ov)
+    return ov
 
 
 @app.get("/stats")

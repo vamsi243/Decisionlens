@@ -273,12 +273,14 @@ class Orchestrator:
         return reason
 
     # ------------------------------------------------------------------ recaps
-    async def recap(self, trig: Trigger, t_ms: int) -> Overlay:
+    async def recap(self, trig: Trigger, t_ms: int, ctx: EngineContext | None = None) -> Overlay:
+        """Half-time / full-time recap; `ctx` lets the recap page ask about the final whistle."""
+        ctx = ctx or self.ctx
         trace = Trace(trig.value, f"recap_{trig.value}")
         mini = self.settings.azure_openai_deployment_mini
         nano = self.settings.azure_openai_deployment_nano
         cid = f"recap_{trig.value}"
-        state = self.ctx.match_state()
+        state = ctx.match_state()
         summary = await self._ask(
             trace,
             Step.INTERPRETER,
@@ -288,7 +290,7 @@ class Orchestrator:
             model=mini,
             cache_id=cid,
         )
-        facts = self.ctx.recap_facts(t_ms)
+        facts = ctx.recap_facts(t_ms)
         rf = {**facts, **({"state_summary": summary} if summary else {})}
         analyst = await self._ask(
             trace,

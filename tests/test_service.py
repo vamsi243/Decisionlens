@@ -230,4 +230,19 @@ def test_overlays_traces_and_mcp_mount(monkeypatch: pytest.MonkeyPatch) -> None:
             headers={"Accept": "application/json, text/event-stream", "Host": "127.0.0.1:8000"},
         )
         assert init.status_code == 200 and "decision-lens" in init.text
+
+        # Phase 7: replay frames for a moment, heat maps, and the full-time recap on demand
+        km = c.get("/moments", params={"all": "true"}).json()[0]
+        fr = c.get(f"/moments/{km['moment_id']}/frames").json()
+        span = km["frame_range"]
+        assert len(fr) == span["end"] - span["start"] + 1 and fr[0]["frame"] == span["start"]
+        assert c.get("/moments/nope/frames").status_code == 404
+        heat = c.get("/players/RIV_03/heatmap", params={"full": "true"}).json()
+        assert (heat["nx"], heat["ny"]) == (21, 14)
+        assert abs(sum(map(sum, heat["cells"])) - 1.0) < 0.01
+        recap = c.get("/recap").json()
+        assert recap["kind"] == "recap" and recap["payload"]["final"]
+        assert recap["payload"]["minute"] == 90
+        swings = [t["what_if"] for t in recap["payload"]["turning_points"] if "what_if" in t]
+        assert swings and swings[0]["with_swap"] - swings[0]["actual"] > 0.2
     get_settings.cache_clear()

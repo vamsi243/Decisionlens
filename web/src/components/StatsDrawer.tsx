@@ -1,6 +1,9 @@
 import { useMemo, useState } from "react";
 import { Bar, BarChart, CartesianGrid, Cell, ReferenceLine, ResponsiveContainer, Tooltip as ChartTooltip, XAxis, YAxis } from "recharts";
 import type { TeamStats, WorkloadState } from "@/types/contracts";
+import { Download } from "lucide-react";
+import { api } from "@/lib/api";
+import { downloadJson } from "@/lib/export";
 import { pct, surname } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { useMatch } from "@/state/match";
@@ -49,6 +52,15 @@ function TeamTab() {
           </div>
         ))}
       </dl>
+      <button
+        type="button"
+        onClick={() =>
+          void api.overlays(true).then((os) => downloadJson(`decision-lens_${meta.match_id}_overlays.json`, os))
+        }
+        className="mt-4 inline-flex items-center gap-1.5 rounded-md border border-line bg-surface px-3 py-1.5 text-xs shadow-sm hover:bg-panel-2"
+      >
+        <Download className="size-3.5" aria-hidden /> Export every card (time-coded JSON for broadcast)
+      </button>
     </div>
   );
 }
