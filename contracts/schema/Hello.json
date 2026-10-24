@@ -57,6 +57,15 @@
       "title": "BallState",
       "type": "object"
     },
+    "Foot": {
+      "enum": [
+        "left",
+        "right",
+        "both"
+      ],
+      "title": "Foot",
+      "type": "string"
+    },
     "FrameRange": {
       "additionalProperties": false,
       "properties": {
@@ -323,6 +332,10 @@
         "archetype": {
           "$ref": "#/$defs/Archetype"
         },
+        "foot": {
+          "$ref": "#/$defs/Foot",
+          "default": "right"
+        },
         "name": {
           "title": "Name",
           "type": "string"
@@ -336,6 +349,14 @@
         },
         "position": {
           "$ref": "#/$defs/Position"
+        },
+        "positions": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/Position"
+          },
+          "title": "Positions",
+          "type": "array"
         },
         "shirt_number": {
           "maximum": 99,

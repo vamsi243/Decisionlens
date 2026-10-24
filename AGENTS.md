@@ -15,7 +15,7 @@ Read `docs/BUILD_PLAN.md` for the full spec. These rules apply to every session.
 
 - Synthetic data only: teams *Riverside FC* and *Hillton United*, invented player names. No real clubs, players, badges.
 - $0 out of pocket: Azure free tiers + $200 credit only.
-- LLM calls only at key moments, half-time and full-time — never per frame.
+- LLM calls only at key moments, half-time and full-time, and when a viewer asks the match copilot (rate-limited per viewer) — never per frame.
 - No 3D. Permissive open-source licences only.
 
 ## Commands

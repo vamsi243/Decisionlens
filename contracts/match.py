@@ -61,6 +61,12 @@ class Position(StrEnum):
     ST = "ST"
 
 
+class Foot(StrEnum):
+    LEFT = "left"
+    RIGHT = "right"
+    BOTH = "both"
+
+
 class Archetype(StrEnum):
     GOALKEEPER = "goalkeeper"
     AERIAL_CB = "aerial_cb"
@@ -94,6 +100,9 @@ class PlayerProfile(Contract):
     name: str
     shirt_number: Annotated[int, Field(ge=1, le=99)]
     position: Position
+    # other positions the player has played; used when picking a marker
+    positions: list[Position] = []
+    foot: Foot = Foot.RIGHT
     archetype: Archetype
     starter: bool
     physical: Physical

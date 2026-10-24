@@ -1,0 +1,146 @@
+{
+  "$defs": {
+    "Foot": {
+      "enum": [
+        "left",
+        "right",
+        "both"
+      ],
+      "title": "Foot",
+      "type": "string"
+    },
+    "MarkerOption": {
+      "additionalProperties": false,
+      "description": "One candidate to mark an opponent, scored by the engine's own duel models.",
+      "properties": {
+        "aerial": {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Aerial",
+          "type": "number"
+        },
+        "fatigue": {
+          "maximum": 100,
+          "minimum": 0,
+          "title": "Fatigue",
+          "type": "number"
+        },
+        "foot": {
+          "$ref": "#/$defs/Foot"
+        },
+        "foot_match": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Foot Match"
+        },
+        "ground": {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Ground",
+          "type": "number"
+        },
+        "on_pitch": {
+          "title": "On Pitch",
+          "type": "boolean"
+        },
+        "player_id": {
+          "title": "Player Id",
+          "type": "string"
+        },
+        "position_fit": {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Position Fit",
+          "type": "number"
+        },
+        "race": {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Race",
+          "type": "number"
+        },
+        "reasons": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Reasons",
+          "type": "array"
+        },
+        "score": {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Score",
+          "type": "number"
+        }
+      },
+      "required": [
+        "player_id",
+        "on_pitch",
+        "score",
+        "aerial",
+        "ground",
+        "race",
+        "position_fit",
+        "foot",
+        "fatigue"
+      ],
+      "title": "MarkerOption",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "attacker_id": {
+      "title": "Attacker Id",
+      "type": "string"
+    },
+    "channel": {
+      "title": "Channel",
+      "type": "string"
+    },
+    "excluded": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Excluded",
+      "type": "array"
+    },
+    "options": {
+      "items": {
+        "$ref": "#/$defs/MarkerOption"
+      },
+      "title": "Options",
+      "type": "array"
+    },
+    "t_ms": {
+      "minimum": 0,
+      "title": "T Ms",
+      "type": "integer"
+    },
+    "weights": {
+      "additionalProperties": {
+        "type": "number"
+      },
+      "title": "Weights",
+      "type": "object"
+    }
+  },
+  "required": [
+    "attacker_id",
+    "t_ms",
+    "channel",
+    "weights",
+    "options"
+  ],
+  "title": "MarkingAdvice",
+  "type": "object"
+}

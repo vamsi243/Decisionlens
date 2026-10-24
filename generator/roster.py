@@ -12,6 +12,7 @@ import numpy as np
 
 from contracts import (
     Archetype,
+    Foot,
     MatchMeta,
     Physical,
     PlayerProfile,
@@ -136,6 +137,49 @@ ROSTERS: dict[str, list[RosterEntry]] = {
     ],
 }
 
+# Preferred foot: left-sided starters are left-footed; these are the exceptions and the subs.
+FOOT: dict[str, Foot] = {
+    "RIV_09": Foot.BOTH,  # Reyes-Ward finishes with either foot
+    "RIV_14": Foot.LEFT,  # Dunmore, a left-footed centre-back
+    "RIV_15": Foot.LEFT,  # Hallam can cover left back
+    "RIV_17": Foot.LEFT,
+    "HIL_07": Foot.LEFT,  # Kollmann: a left-footer on the right wing, cuts inside
+    "HIL_10": Foot.BOTH,
+    "HIL_14": Foot.LEFT,
+    "HIL_15": Foot.LEFT,
+}
+
+# Other positions each player has played (used when the copilot picks a marker).
+SECONDARY: dict[str, tuple[Position, ...]] = {
+    "RIV_02": (Position.W,),
+    "RIV_03": (Position.W,),
+    "RIV_04": (Position.DM,),
+    "RIV_05": (Position.FB,),
+    "RIV_06": (Position.CB, Position.CM),
+    "RIV_08": (Position.DM,),
+    "RIV_10": (Position.AM,),
+    "RIV_07": (Position.FB,),
+    "RIV_09": (Position.W,),
+    "RIV_11": (Position.ST,),
+    "RIV_14": (Position.FB,),
+    "RIV_15": (Position.CB, Position.W),
+    "RIV_16": (Position.DM,),
+    "RIV_17": (Position.CB,),
+    "HIL_02": (Position.W,),
+    "HIL_03": (Position.W,),
+    "HIL_04": (Position.DM,),
+    "HIL_06": (Position.CB,),
+    "HIL_08": (Position.CM,),
+    "HIL_10": (Position.CM, Position.W),
+    "HIL_07": (Position.AM,),
+    "HIL_09": (Position.CB,),
+    "HIL_11": (Position.ST,),
+    "HIL_14": (Position.FB,),
+    "HIL_15": (Position.W,),
+    "HIL_16": (Position.DM,),
+    "HIL_17": (Position.W,),
+}
+
 # Forward-run multipliers. Holt (RIV_03) bombs on all game so he is Riverside's most tired
 # player by the 71' recovery run; Kollmann (HIL_07) saves his legs so he arrives fresher.
 WORK_RATE: dict[str, float] = {"RIV_03": 1.6, "HIL_07": 0.35, "HIL_11": 0.7}
@@ -205,12 +249,16 @@ def _profile(rng: np.random.Generator, team_id: str, e: RosterEntry) -> PlayerPr
     for key, (lo, hi) in _LIMITS.items():
         phys[key] = round(float(np.clip(phys[key], lo, hi)), 3)
     skill = {k: round(float(np.clip(v, 0, 100)), 1) for k, v in skill.items()}
+    pid = f"{team_id}_{e.shirt:02d}"
+    side_foot = Foot.LEFT if (e.slot or "").startswith("L") else Foot.RIGHT
     return PlayerProfile(
-        player_id=f"{team_id}_{e.shirt:02d}",
+        player_id=pid,
         team_id=team_id,
         name=e.name,
         shirt_number=e.shirt,
         position=e.position,
+        positions=list(SECONDARY.get(pid, ())),
+        foot=FOOT.get(pid, side_foot),
         archetype=e.archetype,
         starter=e.slot is not None,
         physical=Physical(**phys),

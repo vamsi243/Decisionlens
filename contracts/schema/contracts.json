@@ -154,6 +154,65 @@
       "title": "CalibrationReport",
       "type": "object"
     },
+    "Consequence": {
+      "enum": [
+        "goal_for",
+        "shot_for",
+        "goal_against",
+        "shot_against",
+        "lost_ball",
+        "none"
+      ],
+      "title": "Consequence",
+      "type": "string"
+    },
+    "DecisionKind": {
+      "enum": [
+        "on_ball",
+        "defending"
+      ],
+      "title": "DecisionKind",
+      "type": "string"
+    },
+    "DecisionOption": {
+      "additionalProperties": false,
+      "properties": {
+        "action": {
+          "$ref": "#/$defs/ActionKind"
+        },
+        "goal_odds": {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Goal Odds",
+          "type": "number"
+        },
+        "p_success": {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "P Success",
+          "type": "number"
+        },
+        "target_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Target Id"
+        }
+      },
+      "required": [
+        "action",
+        "p_success",
+        "goal_odds"
+      ],
+      "title": "DecisionOption",
+      "type": "object"
+    },
     "Driver": {
       "additionalProperties": false,
       "description": "One reason the counterfactual differs, e.g. factor=jump_reach, delta=+12, unit=cm.",
@@ -358,6 +417,15 @@
         "period_end"
       ],
       "title": "EventType",
+      "type": "string"
+    },
+    "Foot": {
+      "enum": [
+        "left",
+        "right",
+        "both"
+      ],
+      "title": "Foot",
       "type": "string"
     },
     "FrameRange": {
@@ -578,6 +646,141 @@
         "frame_range"
       ],
       "title": "KeyMoment",
+      "type": "object"
+    },
+    "MarkerOption": {
+      "additionalProperties": false,
+      "description": "One candidate to mark an opponent, scored by the engine's own duel models.",
+      "properties": {
+        "aerial": {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Aerial",
+          "type": "number"
+        },
+        "fatigue": {
+          "maximum": 100,
+          "minimum": 0,
+          "title": "Fatigue",
+          "type": "number"
+        },
+        "foot": {
+          "$ref": "#/$defs/Foot"
+        },
+        "foot_match": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Foot Match"
+        },
+        "ground": {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Ground",
+          "type": "number"
+        },
+        "on_pitch": {
+          "title": "On Pitch",
+          "type": "boolean"
+        },
+        "player_id": {
+          "title": "Player Id",
+          "type": "string"
+        },
+        "position_fit": {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Position Fit",
+          "type": "number"
+        },
+        "race": {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Race",
+          "type": "number"
+        },
+        "reasons": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Reasons",
+          "type": "array"
+        },
+        "score": {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Score",
+          "type": "number"
+        }
+      },
+      "required": [
+        "player_id",
+        "on_pitch",
+        "score",
+        "aerial",
+        "ground",
+        "race",
+        "position_fit",
+        "foot",
+        "fatigue"
+      ],
+      "title": "MarkerOption",
+      "type": "object"
+    },
+    "MarkingAdvice": {
+      "additionalProperties": false,
+      "properties": {
+        "attacker_id": {
+          "title": "Attacker Id",
+          "type": "string"
+        },
+        "channel": {
+          "title": "Channel",
+          "type": "string"
+        },
+        "excluded": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Excluded",
+          "type": "array"
+        },
+        "options": {
+          "items": {
+            "$ref": "#/$defs/MarkerOption"
+          },
+          "title": "Options",
+          "type": "array"
+        },
+        "t_ms": {
+          "minimum": 0,
+          "title": "T Ms",
+          "type": "integer"
+        },
+        "weights": {
+          "additionalProperties": {
+            "type": "number"
+          },
+          "title": "Weights",
+          "type": "object"
+        }
+      },
+      "required": [
+        "attacker_id",
+        "t_ms",
+        "channel",
+        "weights",
+        "options"
+      ],
+      "title": "MarkingAdvice",
       "type": "object"
     },
     "MatchMeta": {
@@ -1026,11 +1229,147 @@
       "title": "PitchSize",
       "type": "object"
     },
+    "PlayerDecision": {
+      "additionalProperties": false,
+      "properties": {
+        "best": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/DecisionOption"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "chosen": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/DecisionOption"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "consequence": {
+          "$ref": "#/$defs/Consequence",
+          "default": "none"
+        },
+        "consequence_xg": {
+          "anyOf": [
+            {
+              "maximum": 1.0,
+              "minimum": 0.0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Consequence Xg"
+        },
+        "decision_id": {
+          "title": "Decision Id",
+          "type": "string"
+        },
+        "frame": {
+          "minimum": 0,
+          "title": "Frame",
+          "type": "integer"
+        },
+        "goal_odds_gain": {
+          "default": 0.0,
+          "title": "Goal Odds Gain",
+          "type": "number"
+        },
+        "kind": {
+          "$ref": "#/$defs/DecisionKind"
+        },
+        "player_id": {
+          "title": "Player Id",
+          "type": "string"
+        },
+        "positive": {
+          "default": false,
+          "title": "Positive",
+          "type": "boolean"
+        },
+        "source": {
+          "default": "engine",
+          "title": "Source",
+          "type": "string"
+        },
+        "t_ms": {
+          "minimum": 0,
+          "title": "T Ms",
+          "type": "integer"
+        },
+        "text": {
+          "additionalProperties": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object"
+          },
+          "default": {},
+          "propertyNames": {
+            "$ref": "#/$defs/Persona"
+          },
+          "title": "Text",
+          "type": "object"
+        }
+      },
+      "required": [
+        "decision_id",
+        "player_id",
+        "t_ms",
+        "frame",
+        "kind"
+      ],
+      "title": "PlayerDecision",
+      "type": "object"
+    },
+    "PlayerDecisions": {
+      "additionalProperties": false,
+      "properties": {
+        "items": {
+          "items": {
+            "$ref": "#/$defs/PlayerDecision"
+          },
+          "title": "Items",
+          "type": "array"
+        },
+        "player_id": {
+          "title": "Player Id",
+          "type": "string"
+        },
+        "t_ms": {
+          "minimum": 0,
+          "title": "T Ms",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "player_id",
+        "t_ms",
+        "items"
+      ],
+      "title": "PlayerDecisions",
+      "type": "object"
+    },
     "PlayerProfile": {
       "additionalProperties": false,
       "properties": {
         "archetype": {
           "$ref": "#/$defs/Archetype"
+        },
+        "foot": {
+          "$ref": "#/$defs/Foot",
+          "default": "right"
         },
         "name": {
           "title": "Name",
@@ -1045,6 +1384,14 @@
         },
         "position": {
           "$ref": "#/$defs/Position"
+        },
+        "positions": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/Position"
+          },
+          "title": "Positions",
+          "type": "array"
         },
         "shirt_number": {
           "maximum": 99,
@@ -1076,6 +1423,140 @@
         "skill"
       ],
       "title": "PlayerProfile",
+      "type": "object"
+    },
+    "PlayerStats": {
+      "additionalProperties": false,
+      "description": "Everything known about one player up to `t_ms`: workload plus counts from the events.",
+      "properties": {
+        "aerial_duels": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Aerial Duels",
+          "type": "integer"
+        },
+        "aerial_won": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Aerial Won",
+          "type": "integer"
+        },
+        "distance_km": {
+          "minimum": 0,
+          "title": "Distance Km",
+          "type": "number"
+        },
+        "dribbles": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Dribbles",
+          "type": "integer"
+        },
+        "dribbles_won": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Dribbles Won",
+          "type": "integer"
+        },
+        "fatigue": {
+          "maximum": 100,
+          "minimum": 0,
+          "title": "Fatigue",
+          "type": "number"
+        },
+        "fouls": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Fouls",
+          "type": "integer"
+        },
+        "goals": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Goals",
+          "type": "integer"
+        },
+        "hsr_m": {
+          "minimum": 0,
+          "title": "Hsr M",
+          "type": "number"
+        },
+        "interceptions": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Interceptions",
+          "type": "integer"
+        },
+        "on_pitch": {
+          "title": "On Pitch",
+          "type": "boolean"
+        },
+        "passes": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Passes",
+          "type": "integer"
+        },
+        "passes_completed": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Passes Completed",
+          "type": "integer"
+        },
+        "player_id": {
+          "title": "Player Id",
+          "type": "string"
+        },
+        "shots": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Shots",
+          "type": "integer"
+        },
+        "sprints": {
+          "minimum": 0,
+          "title": "Sprints",
+          "type": "integer"
+        },
+        "status": {
+          "$ref": "#/$defs/PhysicalStatus"
+        },
+        "t_ms": {
+          "minimum": 0,
+          "title": "T Ms",
+          "type": "integer"
+        },
+        "tackles": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Tackles",
+          "type": "integer"
+        },
+        "tackles_won": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Tackles Won",
+          "type": "integer"
+        },
+        "top_speed_loss_pct": {
+          "maximum": 100,
+          "minimum": 0,
+          "title": "Top Speed Loss Pct",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "player_id",
+        "t_ms",
+        "on_pitch",
+        "distance_km",
+        "hsr_m",
+        "sprints",
+        "fatigue",
+        "top_speed_loss_pct",
+        "status"
+      ],
+      "title": "PlayerStats",
       "type": "object"
     },
     "PlayerTrack": {
@@ -1670,6 +2151,9 @@
     "key_moment": {
       "$ref": "#/$defs/KeyMoment"
     },
+    "marking_advice": {
+      "$ref": "#/$defs/MarkingAdvice"
+    },
     "match_meta": {
       "$ref": "#/$defs/MatchMeta"
     },
@@ -1685,8 +2169,14 @@
     "overlay": {
       "$ref": "#/$defs/Overlay"
     },
+    "player_decisions": {
+      "$ref": "#/$defs/PlayerDecisions"
+    },
     "player_profile": {
       "$ref": "#/$defs/PlayerProfile"
+    },
+    "player_stats": {
+      "$ref": "#/$defs/PlayerStats"
     },
     "replay_status": {
       "$ref": "#/$defs/ReplayStatus"
@@ -1716,7 +2206,10 @@
     "calibration_report",
     "replay_status",
     "moment_analysis",
-    "hello"
+    "hello",
+    "player_stats",
+    "player_decisions",
+    "marking_advice"
   ],
   "title": "Contracts",
   "type": "object"

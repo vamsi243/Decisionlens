@@ -110,6 +110,9 @@ uv run python -m mcp_server --match data/samples/match_42
 | `GET /moments` (`?all=true`) | Key moments so far (or the whole replay, for the scrubber) |
 | `GET /moments/{id}/analysis` | Engine option map + what-if for a moment |
 | `GET /stats`, `/workload`, `/intensity` | Live team stats, player workload, intensity windows |
+| `GET /players/{id}/stats` | One player so far: km, fatigue, sprints, top-speed loss, passes, shots, goals, tackles, aerials, interceptions (the hover card) |
+| `GET /players/{id}/decisions` | The 2-3 decisions that cost a player most in goal odds so far, plus their best one, with analyst and fan lines (the player panel) |
+| `POST /copilot` | The match copilot over AG-UI (Server-Sent Events) for the CopilotKit chat; 40 questions an hour per caller, 600 overall |
 | `POST /replay/play`, `/pause`, `/seek {t_ms}`, `/speed {speed: 1, 2, 4 or 8}` | Replay controls |
 | `GET /overlays` (`?all=true`) | Agent cards so far: analyst + fan text, engine payload, source |
 | `GET /overlays/{id}?lang=es` | A card translated by Azure AI Translator (no model call, cached) |
@@ -121,7 +124,7 @@ uv run python -m mcp_server --match data/samples/match_42
 | `WS /ws` | `hello`, then frames, events, stats, workload, intensity, moments, analyses and status |
 
 ## Azure deploy
-Everything runs on free tiers or the free credit. You need the [Azure Developer CLI](https://aka.ms/azd) and an Azure OpenAI deployment in Foundry (created by hand: `gpt-5.4-mini`, `gpt-5.4-nano`, `gpt-4.1-mini`). The Translator key is optional.
+Everything runs on free tiers or the free credit. You need the [Azure Developer CLI](https://aka.ms/azd) and an Azure OpenAI deployment in Foundry (created by hand: `gpt-5.4-mini`, `gpt-5.4-nano`, `gpt-4.1-mini`). The Translator key is optional. azd builds the board with `pnpm` itself, so pnpm must be on your PATH (`npm install -g pnpm@9.15.9`, or `corepack enable pnpm` from an admin terminal).
 
 ```bash
 azd auth login
@@ -133,7 +136,7 @@ azd env set AZURE_TRANSLATOR_REGION <region>    # optional
 azd up
 ```
 
-`azd up` provisions `infra/` (Bicep), builds the API image in the registry (no local Docker needed), deploys the board to Static Web Apps and points it at the API. It prints the public board URL (`SERVICE_WEB_URI`).
+`azd up` provisions `infra/` (Bicep), builds the API image with your local Docker (start Docker Desktop first; ACR remote builds are blocked on free-credit subscriptions) and pushes it to the registry, deploys the board to Static Web Apps and points it at the API. It prints the public board URL (`SERVICE_WEB_URI`).
 
 | Resource | Tier | What it does | Expected cost to 10 Nov |
 | --- | --- | --- | --- |
@@ -163,7 +166,7 @@ No real matches, players, clubs, badges or footage are used anywhere.
 Azure free tiers first, everything else on the $200 free credit (see the table under Azure deploy). Nothing is upgraded to pay-as-you-go, and no Marketplace or partner models are used.
 
 ## Third-party licences
-_TODO (Phase 9)_ — all dependencies are MIT / Apache-2.0 / BSD / ISC; fonts (Inter, Geist, DM Mono) are SIL OFL.
+_TODO (Phase 9)_ — all dependencies are MIT / Apache-2.0 / BSD / ISC; fonts (Inter, Geist, DM Mono) are SIL OFL. The match copilot uses CopilotKit (`@copilotkit/react-core`, MIT), the AG-UI client (`@ag-ui/client`, MIT) and Microsoft's `agent-framework-ag-ui` (MIT); CopilotKit's hosted Intelligence service is not used.
 
 ## Licence
 MIT — see [LICENSE](LICENSE).

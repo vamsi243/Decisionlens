@@ -17,10 +17,15 @@
 | `service/telemetry.py` | Azure Monitor OpenTelemetry + Agent Framework instrumentation |
 | `mcp_server/` | `context.py` (what the tools can see: the pipeline + store), `server.py` (six tools on the MCP SDK's `MCPServer`), `__main__.py` (standalone stdio server) |
 | `agents/` | `router.py` (decision table), `backend.py` (Agent Framework on Azure OpenAI), `orchestrator.py`, `facts.py`, `grounding.py`, `templates.py`, `prompts.py`, `cache.py`, `translator.py` |
+| `engine/decisions.py` | Goal odds of each option, chosen vs best for every pass/shot/cross/dribble, lost duels that led to a shot, and the top few per player |
+| `contracts/player.py` | `PlayerStats` (hover card), `PlayerDecision(s)` (player panel), `MarkingAdvice` (copilot) |
+| `engine/matchups.py` | Who should mark whom: header, race and tackle probabilities per candidate, weighted by the attacker's type, position fit and foot |
+| `agents/copilot.py` | The match copilot: Agent Framework agent, engine tools, per-viewer thread scope and rate limit, served over AG-UI at `/copilot` |
+| `web/src/components/Copilot.tsx` | CopilotKit provider (`selfManagedAgents` → `HttpAgent`), the chat panel, screen context and the marking chart renderer |
 | `web/src/state/` | `frames.ts` (frame buffer + interpolation), `match.ts` (Zustand store fed by the socket), `prefs.ts` (persona, favourites, language; saved locally) |
-| `web/src/pages/` | `RecapPage.tsx` (scroll story with pinned pitch), `HowPage.tsx` (five stages + agent diagram) |
+| `web/src/pages/` | `HomePage.tsx` (promo page with a looping key-moment clip), `HowPage.tsx` (five stages + agent diagram), `RecapPage.tsx` (scroll story with pinned pitch, green/red bullets) |
 | `web/src/lib/` | `router.ts` (hash routes), `useLenis.ts` (smooth scroll + snap), `export.ts` (overlay JSON), `words.ts` (fan wording) |
-| `web/src/components/` | `board/` (pitch, players, ball, option arrows, what-if ghost), `TopBar`, `Scrubber`, `MomentFeed`/`MomentCard`, `StatsDrawer`, `SettingsSheet`, `ui/` (shadcn-style Radix primitives) |
+| `web/src/components/` | `board/` (pitch, players with hover cards, ball, option arrows, what-if ghost, `Table` frame with control rail and benches), `TopBar`/`Nav`, `Scrubber`, `MomentFeed`/`MomentCard` (green/red bullets), `PlayerPanel`, `StatsDrawer`, `SettingsSheet`, `ui/` (shadcn-style Radix primitives, `resizable`) |
 
 ## Contracts in practice
 - `contracts/base.py` — `Point`, `Probability`, `ProbRange` (median + 10th-90th percentile, must be ordered), pitch constants.

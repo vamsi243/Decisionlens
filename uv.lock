@@ -3,6 +3,35 @@ revision = 5
 requires-python = "==3.12.*"
 
 [[package]]
+name = "ag-ui-protocol"
+version = "0.1.22"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "pydantic" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/e8/f7/9bf788e7d3608725d022a248a58427040f4f930ab87ddb54bd29ee4d9a51/ag_ui_protocol-0.1.22.tar.gz", hash = "sha256:d21f265284a50d9fc87ad7bcbd58f737b4b16eef7b5375f13a6e925117b52046", size = 18110, upload-time = "2026-08-31T18:20:04.334Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/be/6c/af3d577e68c9474c99600e65b2c6283772aae187edca6f0f2f5cbd9f565a/ag_ui_protocol-0.1.22-py3-none-any.whl", hash = "sha256:fca13ee7820f8f53e869c19e09ddd75826c1799b27c2adb6f2e567295433c704", size = 22068, upload-time = "2026-08-31T18:20:03.43Z" },
+]
+
+[[package]]
+name = "agent-framework-ag-ui"
+version = "1.7.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "ag-ui-protocol" },
+    { name = "agent-framework-core" },
+    { name = "fastapi" },
+    { name = "httpx" },
+    { name = "sse-starlette" },
+    { name = "uvicorn", extra = ["standard"] },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/b2/4a/34f0c95bd957cfdacf835a32bec83abf7a2b65ef16826f540d5e04501c49/agent_framework_ag_ui-1.7.0.tar.gz", hash = "sha256:b1747c4861bac8c28e1e493dd29fe60f5d35dbf2502a60e1505abba86c695b2a", size = 497143, upload-time = "2026-10-22T17:01:18.342Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/ff/e9/a89ad360d97c29ef9900b97aed2872d905ecf0727992bc5dc529453a5ab3/agent_framework_ag_ui-1.7.0-py3-none-any.whl", hash = "sha256:842579ed44db618acde312b93a2054efd48659c3479e04b494eba9bf7385b788", size = 224852, upload-time = "2026-10-22T17:00:57.24Z" },
+]
+
+[[package]]
 name = "agent-framework-core"
 version = "1.23.0"
 source = { registry = "https://pypi.org/simple" }
@@ -441,6 +470,7 @@ name = "decision-lens"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [
+    { name = "agent-framework-ag-ui" },
     { name = "agent-framework-core" },
     { name = "agent-framework-openai" },
     { name = "aiohttp" },
@@ -471,6 +501,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
+    { name = "agent-framework-ag-ui", specifier = ">=1.2.0,<2" },
     { name = "agent-framework-core", specifier = ">=1.23.0" },
     { name = "agent-framework-openai", specifier = ">=1.17.0" },
     { name = "aiohttp", specifier = ">=3.14.5" },
@@ -501,19 +532,18 @@ dev = [
 
 [[package]]
 name = "fastapi"
-version = "0.162.0"
+version = "0.141.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "annotated-doc" },
-    { name = "opentelemetry-api" },
     { name = "pydantic" },
     { name = "starlette" },
     { name = "typing-extensions" },
     { name = "typing-inspection" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/e9/eb/2cf8c80abf09b2800aef0a83b41066fbfda8ee5495b7a08b9d1af40f7046/fastapi-0.162.0.tar.gz", hash = "sha256:6a22c1e2e6e32e0633ee7e170f00009a29b8228b16feb219ee42f32fd8d88a8f", size = 527867, upload-time = "2026-10-23T18:47:33.264Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/8a/02/91e3416a8fdd715abb903a952a6bec7cdd8d14eed55d415fc8595524c319/fastapi-0.141.1.tar.gz", hash = "sha256:e8822fc40db1e1858054d7a949a888695bc9bdce70139178e33bd2871a453ca1", size = 425799, upload-time = "2026-07-29T17:18:05.568Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/b4/4f/3f2c25c9b43970b5e9a08beb5e04776247edea684ddc0930f4f02f0bb6cb/fastapi-0.162.0-py3-none-any.whl", hash = "sha256:3785963de305dd09912426cb81f2d230fce98ab3521cdfe97265c8d14983128c", size = 148912, upload-time = "2026-10-23T18:47:31.734Z" },
+    { url = "https://files.pythonhosted.org/packages/cb/03/10388a42375ee7e4ac9b94eb2c5c569c8b5795e377e701c9ac3ad63de890/fastapi-0.141.1-py3-none-any.whl", hash = "sha256:bfb91aa2d334c61cb35ba9a116fc123b3d3df31640b801cf57a7a78ec3f603b3", size = 131954, upload-time = "2026-07-29T17:18:04.364Z" },
 ]
 
 [[package]]

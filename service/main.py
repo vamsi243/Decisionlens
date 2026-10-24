@@ -10,12 +10,15 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Any
 
-from fastapi import FastAPI, HTTPException, WebSocket
+from agent_framework_ag_ui import add_agent_framework_fastapi_endpoint
+from fastapi import Depends, FastAPI, HTTPException, WebSocket
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
+from agents import templates
 from agents.backend import build_backend
 from agents.cache import ResponseCache
+from agents.copilot import RateLimit, build_copilot, viewer_scope
 from agents.orchestrator import Orchestrator
 from agents.router import Trigger, route
 from agents.translator import Translator
@@ -25,7 +28,10 @@ from contracts import (
     MatchMeta,
     MatchStats,
     Overlay,
+    Persona,
+    PlayerDecisions,
     PlayerProfile,
+    PlayerStats,
     WorkloadState,
 )
 from contracts.stream import Hello, MomentAnalysis, ReplayStatus, Speed, StreamMessageType
@@ -143,6 +149,24 @@ app = FastAPI(title="Decision Lens", version="0.8.0", lifespan=lifespan)
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 
 
+def _mount_copilot() -> None:
+    """The match copilot (AG-UI, for the CopilotKit chat) at /copilot, when a model is set up.
+    Tools read the engine through `rt.ctx`, which exists once the lifespan has warmed up."""
+    settings = get_settings()
+    if build_backend(settings, settings.mcp_url) is None:
+        return
+    add_agent_framework_fastapi_endpoint(
+        app,
+        build_copilot(lambda: rt.ctx, settings, settings.mcp_url),
+        path="/copilot",
+        dependencies=[Depends(RateLimit())],
+        authorization_scope_resolver=viewer_scope,
+    )
+
+
+_mount_copilot()
+
+
 async def _mcp(scope: Any, receive: Any, send: Any) -> None:
     """The MCP server is built in the lifespan; this forwards /mcp requests to it."""
     if rt.mcp_app is None:
@@ -215,6 +239,44 @@ async def heatmap(player_id: str, full: bool = False) -> dict[str, Any]:
         raise HTTPException(404, "no such player")
     cells = w.heatmap(player_id)
     return {"nx": int(cells.shape[0]), "ny": int(cells.shape[1]), "cells": cells.round(4).tolist()}
+
+
+@app.get("/players/{player_id}/stats")
+async def player_stats(player_id: str) -> PlayerStats:
+    """Workload and event counts so far: the hover card on the board."""
+    if player_id not in rt.pipeline.team_of:
+        raise HTTPException(404, "no such player")
+    return await asyncio.to_thread(rt.pipeline.player_stats, player_id)
+
+
+@app.get("/players/{player_id}/decisions")
+async def player_decisions(player_id: str) -> PlayerDecisions:
+    """The 2-3 decisions that cost this player most so far, plus their best one (engine-ranked).
+    Lines come from templates live and from the Decisions agent after each whistle."""
+    if player_id not in rt.pipeline.team_of:
+        raise HTTPException(404, "no such player")
+    t = rt.pipeline.now_ms()
+    items = await asyncio.to_thread(rt.pipeline.player_decisions, player_id, t)
+    out = []
+    for d in items:
+        lines = rt.orchestrator.decision_lines.get(d.decision_id)
+        if lines is None:
+            f = rt.ctx.decision_facts(d)
+            lines = {
+                Persona.ANALYST: {"en": templates.decision_analyst(f)},
+                Persona.FAN: {"en": templates.decision_fan(f)},
+            }
+        out.append(
+            d.model_copy(
+                update={
+                    "text": lines,
+                    "source": "agents"
+                    if d.decision_id in rt.orchestrator.decision_lines
+                    else "engine",
+                }
+            )
+        )
+    return PlayerDecisions(player_id=player_id, t_ms=t, items=out)
 
 
 @app.get("/recap")

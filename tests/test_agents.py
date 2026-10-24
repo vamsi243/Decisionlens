@@ -83,7 +83,7 @@ def test_router_table() -> None:
     assert route(Trigger.KEY_MOMENT) == (Step.MOMENT, Step.WHAT_IF, Step.NARRATOR)
     assert route(Trigger.FATIGUE) == (Step.WHAT_IF, Step.NARRATOR)
     assert route(Trigger.LANGUAGE_CHANGE) == (Step.TRANSLATOR,)
-    assert route(Trigger.FULL_TIME) == (Step.INTERPRETER, Step.RECAP)
+    assert route(Trigger.FULL_TIME) == (Step.INTERPRETER, Step.RECAP, Step.DECISIONS)
     assert not uses_model(Trigger.FRAME) and not uses_model(Trigger.EVENT)
     assert not uses_model(Trigger.LANGUAGE_CHANGE)
     assert set(ROUTES) == set(Trigger)
@@ -224,7 +224,7 @@ def test_recap_and_fatigue_cards(ctx: EngineContext) -> None:
     orch = Orchestrator(ctx, ctx.store, Pub(), None, settings())
     ov = asyncio.run(orch.recap(Trigger.FULL_TIME, 5_400_000))
     assert ov.kind == OverlayKind.RECAP and numbers_ok(ov)
-    assert "2-2" in ov.text[Persona.ANALYST]["en"]
+    assert "1-1" in ov.text[Persona.ANALYST]["en"]
     fat = next(m for m in ctx.store.moments() if m.type == MomentType.FATIGUE_ALERT)
     fov = asyncio.run(orch.moment(ctx.store.analysis(fat.moment_id)))  # type: ignore[arg-type]
     assert fov.kind == OverlayKind.FATIGUE and numbers_ok(fov)
@@ -273,3 +273,134 @@ def test_translator_adds_a_language_without_a_model(ctx: EngineContext) -> None:
     asyncio.run(tr.overlay(ov, "es"))  # cached: no second request
     assert seen == [{"to": "es", "n": 2}]
     assert asyncio.run(Translator(settings()).overlay(ov, "es")) is None  # no key
+
+
+# --- player panel: engine-ranked decisions, stats, template and agent lines --------------------
+
+
+def test_goal_odds_are_xg_for_shots_and_threat_for_passes() -> None:
+    import numpy as np
+
+    from contracts import ActionKind
+    from engine.decisions import goal_odds
+    from engine.options import _Cand
+
+    shot = _Cand(ActionKind.SHOT, None, np.zeros(2), 0.1, lambda rng: 0.2)
+    pas = _Cand(ActionKind.PASS, "X", np.zeros(2), 0.05, lambda rng: 0.5)
+    assert goal_odds(shot, here=0.02) == pytest.approx(0.2)
+    assert goal_odds(pas, here=0.02) == pytest.approx(0.5 * 0.07)
+
+
+def test_player_decisions_rank_costly_choices_and_one_good_one(ctx: EngineContext) -> None:
+    from contracts import Consequence, DecisionKind
+
+    pell = ctx.pipeline.player_decisions("RIV_02")  # lost the 87' header that led to the goal
+    assert any(
+        d.kind == DecisionKind.DEFENDING and d.consequence == Consequence.GOAL_AGAINST for d in pell
+    )
+    scorer = ctx.pipeline.player_decisions("RIV_09")
+    assert any(d.positive and d.consequence == Consequence.GOAL_FOR for d in scorer)
+    for d in scorer:
+        assert d.positive or d.kind == DecisionKind.DEFENDING or d.goal_odds_gain > 0
+    assert sum(not d.positive for d in scorer) <= 3
+    early = ctx.pipeline.player_decisions("RIV_09", 30 * 60_000)  # nothing from the future
+    assert all(d.t_ms <= 30 * 60_000 for d in early)
+
+
+def test_player_stats_count_events(ctx: EngineContext) -> None:
+    s = ctx.pipeline.player_stats("RIV_09")
+    assert s.goals == 1 and s.shots >= s.goals
+    assert s.passes_completed <= s.passes and s.distance_km > 5
+
+
+def test_decision_lines_templates_and_agents(ctx: EngineContext) -> None:
+    from agents import templates
+
+    items = ctx.pipeline.player_decisions("RIV_09")
+    for d in items:  # templates quote only engine numbers
+        f = ctx.decision_facts(d)
+        assert check(templates.decision_analyst(f), f).ok
+        assert not numbers_in(templates.decision_fan(f))
+
+    seen: list[str] = []
+    bad: list[str] = []
+
+    def respond(agent: str, prompt: str, model: str, tools: bool) -> str:
+        assert agent == "decisions"
+        ids = [f["id"] for f in facts_of(prompt)["decisions"]]
+        lines = {
+            i: {"analyst": "The better ball was on.", "fan": "A better pass was on."} for i in ids
+        }
+        lines[ids[0]] = {"analyst": "That cost 77777% goal odds.", "fan": "Oops."}  # ungrounded
+        lines[ids[1]] = {"analyst": "Fine call.", "fan": "Three times 3 better."}  # number for fans
+        seen.extend(ids)
+        bad.extend(ids[:2])
+        return json.dumps(lines)
+
+    backend = FakeBackend(respond)
+    orch = Orchestrator(ctx, ctx.store, Pub(), backend, settings())
+    asyncio.run(orch.decision_notes(Trigger.FULL_TIME, 5_400_000))
+    assert len(backend.calls) == 2  # one call per team
+    kept = orch.decision_lines
+    assert not set(bad) & set(kept)  # the ungrounded line and the fan line with a number
+    assert set(kept) == set(seen) - set(bad)  # every other line was kept
+
+
+# --- match copilot: marking advice and tools ---------------------------------------------------
+
+
+def test_marking_advice_changes_with_the_attacker_and_follow_ups(ctx: EngineContext) -> None:
+    pipe = ctx.pipeline
+    morrow = pipe.marking_advice("HIL_09")  # a target man: mostly headers
+    kollmann = pipe.marking_advice("HIL_07")  # a winger: mostly races and one-on-ones
+    assert morrow.weights["aerial"] > morrow.weights["race"]
+    assert kollmann.weights["race"] > kollmann.weights["aerial"]
+    assert morrow.options[0].player_id != kollmann.options[0].player_id
+    scores = [o.score for o in morrow.options]
+    assert scores == sorted(scores, reverse=True)
+    first = morrow.options[0].player_id
+    nxt = pipe.marking_advice("HIL_09", [first])  # "he's busy marking someone else"
+    assert first not in {o.player_id for o in nxt.options}
+    assert nxt.options[0].player_id == morrow.options[1].player_id
+    assert all(o.player_id.startswith("RIV") for o in nxt.options)
+
+
+def test_copilot_tools_answer_from_the_engine(ctx: EngineContext) -> None:
+    from agents.copilot import build_tools
+
+    tools = {t.name: t for t in build_tools(lambda: ctx)}
+    assert {"find_player", "player_stats", "player_decisions", "best_marker", "match_state"} <= set(
+        tools
+    )
+    adv = tools["best_marker"].func(attacker="Morrow", exclude=["Varga"])
+    assert adv["attacker"]["name"] == "Dax Morrow" and adv["excluded_names"] == ["Tomas Varga"]
+    assert all("score_pct" in o and o["name"] for o in adv["options"])
+    bad = tools["best_marker"].func(attacker="Nobody at all")
+    assert "error" in bad and bad["on_pitch"]
+
+
+def test_copilot_rate_limit_per_caller_behind_a_proxy() -> None:
+    from fastapi import HTTPException
+    from starlette.requests import Request
+
+    from agents.copilot import RateLimit, client_address
+
+    def req(fwd: str, size: int = 100) -> Request:
+        headers = [(b"x-forwarded-for", fwd.encode()), (b"content-length", str(size).encode())]
+        return Request({"type": "http", "headers": headers, "client": ("10.0.0.1", 1)})
+
+    assert (
+        client_address(req("6.6.6.6, 1.2.3.4")) == "1.2.3.4"
+    )  # the proxy's entry, not the forged one
+    limit = RateLimit(per_hour=2, total=3)
+    asyncio.run(limit(req("1.1.1.1")))
+    asyncio.run(limit(req("1.1.1.1")))
+    with pytest.raises(HTTPException) as one:
+        asyncio.run(limit(req("1.1.1.1")))  # this caller is out
+    assert one.value.status_code == 429
+    asyncio.run(limit(req("2.2.2.2")))  # another caller isn't (same proxy peer address)
+    with pytest.raises(HTTPException):
+        asyncio.run(limit(req("3.3.3.3")))  # but the overall cap is reached
+    with pytest.raises(HTTPException) as big:
+        asyncio.run(RateLimit()(req("4.4.4.4", size=10_000_000)))
+    assert big.value.status_code == 413

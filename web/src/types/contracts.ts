@@ -118,6 +118,7 @@ export type Archetype =
   | "pressing_forward"
   | "target_man"
   | "winger";
+export type Foot = "left" | "right" | "both";
 export type Name1 = string;
 export type AccelMs2 = number;
 export type HeightCm = number;
@@ -130,6 +131,7 @@ export type PlayerId1 = string;
  * via the `definition` "Position".
  */
 export type Position = "GK" | "CB" | "FB" | "DM" | "CM" | "AM" | "W" | "ST";
+export type Positions = Position[];
 export type ShirtNumber = number;
 export type Aerial = number;
 export type Finishing = number;
@@ -175,6 +177,26 @@ export type Shots1 = number;
 export type WindowEndMs = number;
 export type WindowStartMs = number;
 export type Xg1 = number;
+export type AttackerId = string;
+export type Channel = string;
+export type Excluded = string[];
+export type Aerial1 = number;
+export type Fatigue = number;
+/**
+ * This interface was referenced by `Contracts`'s JSON-Schema
+ * via the `definition` "Foot".
+ */
+export type Foot1 = "left" | "right" | "both";
+export type FootMatch = boolean | null;
+export type Ground = number;
+export type OnPitch = boolean;
+export type PlayerId2 = string;
+export type PositionFit = number;
+export type Race = number;
+export type Reasons = string[];
+export type Score = number;
+export type Options = MarkerOption[];
+export type TMs5 = number;
 export type ActorId = string;
 export type BestOptionId = string;
 export type MomentId1 = string;
@@ -182,7 +204,7 @@ export type MomentId1 = string;
  * @minItems 1
  * @maxItems 4
  */
-export type Options = [Option] | [Option, Option] | [Option, Option, Option] | [Option, Option, Option, Option];
+export type Options1 = [Option] | [Option, Option] | [Option, Option, Option] | [Option, Option, Option, Option];
 /**
  * This interface was referenced by `Contracts`'s JSON-Schema
  * via the `definition` "ActionKind".
@@ -200,7 +222,7 @@ export type Low = number;
 export type Median = number;
 export type TargetId1 = string | null;
 export type XtGain = number;
-export type TMs5 = number;
+export type TMs6 = number;
 export type ActorId1 = string;
 export type PSuccess1 = number;
 /**
@@ -209,7 +231,7 @@ export type PSuccess1 = number;
  */
 export type ProfileKind = "actual" | "archetype" | "custom" | "substitute";
 export type Label = string;
-export type PlayerId2 = string | null;
+export type PlayerId3 = string | null;
 export type Delta = number;
 export type Factor = string;
 export type Text = string;
@@ -227,22 +249,67 @@ export type MomentId3 = string | null;
 export type OverlayId = string;
 export type ShowForMs = number;
 export type Source = string;
-export type TMs6 = number;
-export type DistanceM = number;
-export type Fatigue = number;
+export type TMs7 = number;
+export type GoalOdds = number;
+export type PSuccess2 = number;
+export type TargetId2 = string | null;
+export type Consequence = "goal_for" | "shot_for" | "goal_against" | "shot_against" | "lost_ball" | "none";
+export type ConsequenceXg = number | null;
+export type DecisionId = string;
+export type Frame2 = number;
+export type GoalOddsGain = number;
+/**
+ * This interface was referenced by `Contracts`'s JSON-Schema
+ * via the `definition` "DecisionKind".
+ */
+export type DecisionKind = "on_ball" | "defending";
+export type PlayerId4 = string;
+export type Positive = boolean;
+export type Source1 = string;
+export type TMs8 = number;
+export type Items = PlayerDecision[];
+export type PlayerId5 = string;
+export type TMs9 = number;
+export type AerialDuels = number;
+export type AerialWon = number;
+export type DistanceKm1 = number;
+export type Dribbles = number;
+export type DribblesWon = number;
+export type Fatigue1 = number;
+export type Fouls = number;
+export type Goals2 = number;
 export type HsrM1 = number;
-export type Accel = number;
-export type Reaction = number;
-export type Speed1 = number;
-export type PlayerId3 = string;
-export type RecentLoad = number;
+export type Interceptions1 = number;
+export type OnPitch1 = boolean;
+export type Passes1 = number;
+export type PassesCompleted1 = number;
+export type PlayerId6 = string;
+export type Shots2 = number;
 export type Sprints = number;
 /**
  * This interface was referenced by `Contracts`'s JSON-Schema
  * via the `definition` "PhysicalStatus".
  */
 export type PhysicalStatus = "fit" | "tiring" | "fatigued" | "knock";
-export type TMs7 = number;
+export type TMs10 = number;
+export type Tackles = number;
+export type TacklesWon1 = number;
+export type TopSpeedLossPct = number;
+export type DistanceM = number;
+export type Fatigue2 = number;
+export type HsrM2 = number;
+export type Accel = number;
+export type Reaction = number;
+export type Speed1 = number;
+export type PlayerId7 = string;
+export type RecentLoad = number;
+export type Sprints1 = number;
+export type TMs11 = number;
+/**
+ * This interface was referenced by `Contracts`'s JSON-Schema
+ * via the `definition` "Consequence".
+ */
+export type Consequence1 = "goal_for" | "shot_for" | "goal_against" | "shot_against" | "lost_ball" | "none";
 /**
  * This interface was referenced by `Contracts`'s JSON-Schema
  * via the `definition` "Persona".
@@ -258,12 +325,15 @@ export interface Contracts {
   hello: Hello;
   intensity_point: IntensityPoint;
   key_moment: KeyMoment;
+  marking_advice: MarkingAdvice;
   match_meta: MatchMeta;
   match_stats: MatchStats;
   moment_analysis: MomentAnalysis;
   option_set: OptionSet;
   overlay: Overlay;
+  player_decisions: PlayerDecisions;
   player_profile: PlayerProfile;
+  player_stats: PlayerStats;
   replay_status: ReplayStatus;
   tracking_frame: TrackingFrame;
   what_if: WhatIf;
@@ -447,10 +517,12 @@ export interface FrameRange {
  */
 export interface PlayerProfile {
   archetype: Archetype;
+  foot?: Foot;
   name: Name1;
   physical: Physical;
   player_id: PlayerId1;
   position: Position;
+  positions?: Positions;
   shirt_number: ShirtNumber;
   skill: Skill;
   starter: Starter;
@@ -539,6 +611,40 @@ export interface IntensityPoint {
 }
 /**
  * This interface was referenced by `Contracts`'s JSON-Schema
+ * via the `definition` "MarkingAdvice".
+ */
+export interface MarkingAdvice {
+  attacker_id: AttackerId;
+  channel: Channel;
+  excluded?: Excluded;
+  options: Options;
+  t_ms: TMs5;
+  weights: Weights;
+}
+/**
+ * One candidate to mark an opponent, scored by the engine's own duel models.
+ *
+ * This interface was referenced by `Contracts`'s JSON-Schema
+ * via the `definition` "MarkerOption".
+ */
+export interface MarkerOption {
+  aerial: Aerial1;
+  fatigue: Fatigue;
+  foot: Foot1;
+  foot_match?: FootMatch;
+  ground: Ground;
+  on_pitch: OnPitch;
+  player_id: PlayerId2;
+  position_fit: PositionFit;
+  race: Race;
+  reasons?: Reasons;
+  score: Score;
+}
+export interface Weights {
+  [k: string]: number;
+}
+/**
+ * This interface was referenced by `Contracts`'s JSON-Schema
  * via the `definition` "MomentAnalysis".
  */
 export interface MomentAnalysis {
@@ -554,8 +660,8 @@ export interface OptionSet {
   actor_id: ActorId;
   best_option_id: BestOptionId;
   moment_id: MomentId1;
-  options: Options;
-  t_ms: TMs5;
+  options: Options1;
+  t_ms: TMs6;
 }
 /**
  * This interface was referenced by `Contracts`'s JSON-Schema
@@ -612,7 +718,7 @@ export interface ProfileRef {
   archetype?: Archetype | null;
   kind: ProfileKind;
   label: Label;
-  player_id?: PlayerId2;
+  player_id?: PlayerId3;
 }
 /**
  * One reason the counterfactual differs, e.g. factor=jump_reach, delta=+12, unit=cm.
@@ -638,7 +744,7 @@ export interface Overlay {
   payload?: Payload;
   show_for_ms?: ShowForMs;
   source?: Source;
-  t_ms: TMs6;
+  t_ms: TMs7;
   text?: Text1;
 }
 export interface Payload {
@@ -651,18 +757,90 @@ export interface Text1 {
 }
 /**
  * This interface was referenced by `Contracts`'s JSON-Schema
+ * via the `definition` "PlayerDecisions".
+ */
+export interface PlayerDecisions {
+  items: Items;
+  player_id: PlayerId5;
+  t_ms: TMs9;
+}
+/**
+ * This interface was referenced by `Contracts`'s JSON-Schema
+ * via the `definition` "PlayerDecision".
+ */
+export interface PlayerDecision {
+  best?: DecisionOption | null;
+  chosen?: DecisionOption | null;
+  consequence?: Consequence;
+  consequence_xg?: ConsequenceXg;
+  decision_id: DecisionId;
+  frame: Frame2;
+  goal_odds_gain?: GoalOddsGain;
+  kind: DecisionKind;
+  player_id: PlayerId4;
+  positive?: Positive;
+  source?: Source1;
+  t_ms: TMs8;
+  text?: Text2;
+}
+/**
+ * This interface was referenced by `Contracts`'s JSON-Schema
+ * via the `definition` "DecisionOption".
+ */
+export interface DecisionOption {
+  action: ActionKind;
+  goal_odds: GoalOdds;
+  p_success: PSuccess2;
+  target_id?: TargetId2;
+}
+export interface Text2 {
+  [k: string]: {
+    [k: string]: string;
+  };
+}
+/**
+ * Everything known about one player up to `t_ms`: workload plus counts from the events.
+ *
+ * This interface was referenced by `Contracts`'s JSON-Schema
+ * via the `definition` "PlayerStats".
+ */
+export interface PlayerStats {
+  aerial_duels?: AerialDuels;
+  aerial_won?: AerialWon;
+  distance_km: DistanceKm1;
+  dribbles?: Dribbles;
+  dribbles_won?: DribblesWon;
+  fatigue: Fatigue1;
+  fouls?: Fouls;
+  goals?: Goals2;
+  hsr_m: HsrM1;
+  interceptions?: Interceptions1;
+  on_pitch: OnPitch1;
+  passes?: Passes1;
+  passes_completed?: PassesCompleted1;
+  player_id: PlayerId6;
+  shots?: Shots2;
+  sprints: Sprints;
+  status: PhysicalStatus;
+  t_ms: TMs10;
+  tackles?: Tackles;
+  tackles_won?: TacklesWon1;
+  top_speed_loss_pct: TopSpeedLossPct;
+}
+/**
+ * This interface was referenced by `Contracts`'s JSON-Schema
  * via the `definition` "WorkloadState".
  */
 export interface WorkloadState {
   distance_m: DistanceM;
-  fatigue: Fatigue;
-  hsr_m: HsrM1;
+  fatigue: Fatigue2;
+  hsr_m: HsrM2;
   modifiers?: Modifiers;
-  player_id: PlayerId3;
+  player_id: PlayerId7;
   recent_load: RecentLoad;
-  sprints: Sprints;
+  sprints: Sprints1;
   status: PhysicalStatus;
-  t_ms: TMs7;
+  t_ms: TMs11;
 }
 /**
  * Multipliers applied to a player's physical profile (1.0 = fresh).
