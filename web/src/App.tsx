@@ -7,6 +7,7 @@ import { SettingsSheet } from "@/components/SettingsSheet";
 import { TopBar } from "@/components/TopBar";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { api } from "@/lib/api";
+import { useT } from "@/lib/i18n";
 import { useRoute } from "@/lib/router";
 import { watchPrefsForSound } from "@/lib/sfx";
 import { connectStream } from "@/lib/stream";
@@ -51,6 +52,7 @@ function Grass({ children }: { children: ReactNode }) {
 }
 
 function Legend() {
+  const t = useT();
   return (
     <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 px-1 text-xs text-muted">
       <span className="inline-flex items-center gap-1.5">
@@ -60,16 +62,16 @@ function Legend() {
         <span className="size-2.5 rounded-full bg-hil ring-2 ring-[var(--hil-rim)]" /> Hillton United
       </span>
       <span className="inline-flex items-center gap-1.5">
-        <Grass><span className="h-0.5 w-4 rounded bg-white" /></Grass> best option
+        <Grass><span className="h-0.5 w-4 rounded bg-white" /></Grass> {t("best option")}
       </span>
       <span className="inline-flex items-center gap-1.5">
-        <Grass><span className="h-0.5 w-4 rounded border-t border-dashed border-white/70" /></Grass> other options
+        <Grass><span className="h-0.5 w-4 rounded border-t border-dashed border-white/70" /></Grass> {t("other options")}
       </span>
       <span className="inline-flex items-center gap-1.5">
-        <Grass><span className="size-2.5 rounded-full border border-dashed border-white" /></Grass> what-if
+        <Grass><span className="size-2.5 rounded-full border border-dashed border-white" /></Grass> {t("what-if")}
       </span>
       <span className="inline-flex items-center gap-1.5">
-        <Grass><span className="size-2 rounded-full border border-chrome bg-white" /></Grass> ball
+        <Grass><span className="size-2 rounded-full border border-chrome bg-white" /></Grass> {t("ball")}
       </span>
     </div>
   );
@@ -97,6 +99,7 @@ function LivePage() {
   const [stats, setStats] = useState(false);
   const [settings, setSettings] = useState(false);
   const boardSize = usePrefs((s) => s.boardSize);
+  const t = useT();
   const setPrefs = usePrefs((s) => s.set);
   return (
     <>
@@ -108,7 +111,7 @@ function LivePage() {
               size={boardSize}
               onSize={(v) => setPrefs({ boardSize: v })}
               left={
-                <section aria-label="Tactics table">
+                <section aria-label={t("Tactics table")}>
                   <Table onStats={() => setStats(true)} onSettings={() => setSettings(true)} />
                   <Legend />
                   <Suspense fallback={<div className="mt-6 h-[520px] rounded-2xl border border-line bg-surface" />}>

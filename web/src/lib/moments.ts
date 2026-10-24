@@ -1,16 +1,17 @@
 import type { KeyMoment, MomentAnalysis, MomentType } from "@/types/contracts";
+import { msg } from "./i18n";
 
 /** How long a moment's option map / ghost stays on the board after it happens (match ms). */
 export const SHOW_MS = 9000;
 
 export const MOMENT_LABEL: Record<MomentType, string> = {
-  aerial_duel: "Aerial duel",
-  recovery_run: "Recovery run",
-  big_chance: "Big chance",
-  line_breaking_pass: "Line-breaking pass",
-  press_turnover: "Press turnover",
-  goal: "Goal",
-  fatigue_alert: "Fatigue",
+  aerial_duel: msg("Aerial duel"),
+  recovery_run: msg("Recovery run"),
+  big_chance: msg("Big chance"),
+  line_breaking_pass: msg("Line-breaking pass"),
+  press_turnover: msg("Press turnover"),
+  goal: msg("Goal"),
+  fatigue_alert: msg("Fatigue"),
 };
 
 /** The moment the board should illustrate right now, if any. */

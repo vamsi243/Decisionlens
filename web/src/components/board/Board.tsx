@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import { frames } from "@/state/frames";
 import { useMatch } from "@/state/match";
 import { usePrefs } from "@/state/prefs";
+import { useT } from "@/lib/i18n";
 import { useUi } from "@/state/ui";
 import type { PlayerStats } from "@/types/contracts";
 import { activeMoment } from "@/lib/moments";
@@ -112,6 +113,7 @@ function HoverCard({ id }: { id: string }) {
   const w = useMatch((s) => s.workload[id]);
   const home = useMatch((s) => s.meta?.teams[0]?.team_id);
   const [stats, setStats] = useState<PlayerStats | null>(null);
+  const t = useT();
   useEffect(() => {
     let alive = true;
     void api
@@ -128,7 +130,7 @@ function HoverCard({ id }: { id: string }) {
     ["Distance", w ? km(w.distance_m) : "–"],
     ["Fatigue", w ? `${Math.round(w.fatigue)} / 100` : "–"],
     ["Sprints", w ? String(w.sprints) : "–"],
-    ["Top speed", loss ? `−${loss}%` : "full"],
+    ["Top speed", loss ? `−${loss}%` : t("full")],
   ];
   if (stats) {
     rows.push(["Passes", `${stats.passes_completed ?? 0} / ${stats.passes ?? 0}`]);
@@ -153,12 +155,12 @@ function HoverCard({ id }: { id: string }) {
       <dl className="mt-2 grid grid-cols-[auto_1fr] gap-x-3 gap-y-1">
         {rows.map(([k, v]) => (
           <div key={k} className="contents">
-            <dt className="text-muted">{k}</dt>
+            <dt className="text-muted">{t(k)}</dt>
             <dd className={cn("num text-right", k === "Fatigue" && w && w.fatigue >= 70 && "text-amber")}>{v}</dd>
           </div>
         ))}
       </dl>
-      <p className="mt-2 text-[11px] text-muted-2">Click for their key decisions</p>
+      <p className="mt-2 text-[11px] text-muted-2">{t("Click for their key decisions")}</p>
     </div>
   );
 }
@@ -175,6 +177,7 @@ export function Board() {
   const persona = usePrefs((s) => s.persona);
   const [heat, setHeat] = useState(false);
   const openPanel = useUi((s) => s.openPanel);
+  const t = useT();
   const setPrefs = usePrefs((s) => s.set);
   const [hover, setHover] = useState<string | null>(null);
   const hoverRef = useRef<string | null>(null);
@@ -276,7 +279,7 @@ export function Board() {
         viewBox={FULL_VIEW.join(" ")}
         className="block h-auto w-full select-none"
         role="img"
-        aria-label="Live tactics board"
+        aria-label={t("Live tactics board")}
       >
         <ArrowMarkers />
         <PitchSurface />
@@ -365,7 +368,7 @@ export function Board() {
             heat ? "text-amber" : "text-muted hover:text-ink",
           )}
         >
-          <Flame className="size-3.5" aria-hidden /> Heat map · {players[focus]?.name.split(" ").pop()}
+          <Flame className="size-3.5" aria-hidden /> {t("Heat map")} · {players[focus]?.name.split(" ").pop()}
         </button>
       ) : null}
       {fan ? (
@@ -381,7 +384,7 @@ export function Board() {
         </div>
       ) : null}
       {onPitch.length === 0 ? (
-        <div className="absolute inset-0 grid place-items-center text-sm text-white/80">Waiting for the stream…</div>
+        <div className="absolute inset-0 grid place-items-center text-sm text-white/80">{t("Waiting for the stream…")}</div>
       ) : null}
     </div>
   );

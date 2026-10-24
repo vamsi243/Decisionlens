@@ -1,5 +1,6 @@
 import { Aperture, Volume2, VolumeX } from "lucide-react";
 import type { ReactNode } from "react";
+import { msg, useT } from "@/lib/i18n";
 import { href, type Route } from "@/lib/router";
 import { cn } from "@/lib/utils";
 import { LANGUAGES, usePrefs } from "@/state/prefs";
@@ -8,15 +9,16 @@ import { ToggleGroup, ToggleGroupItem } from "./ui/toggle-group";
 import { useMatch } from "@/state/match";
 
 const LINKS: { route: Route; label: string }[] = [
-  { route: "home", label: "Home" },
-  { route: "how", label: "How it works" },
-  { route: "live", label: "Live" },
-  { route: "recap", label: "Recap" },
+  { route: "home", label: msg("Home") },
+  { route: "how", label: msg("How it works") },
+  { route: "live", label: msg("Live") },
+  { route: "recap", label: msg("Recap") },
 ];
 
 export function NavLinks({ route }: { route: Route }) {
+  const t = useT();
   return (
-    <nav aria-label="Pages" className="flex items-center gap-1 rounded-lg border border-line bg-panel-2 p-1">
+    <nav aria-label={t("Pages")} className="flex items-center gap-1 rounded-lg border border-line bg-panel-2 p-1">
       {LINKS.map((l) => (
         <a
           key={l.route}
@@ -27,7 +29,7 @@ export function NavLinks({ route }: { route: Route }) {
             route === l.route && "bg-surface text-ink shadow-sm",
           )}
         >
-          {l.label}
+          {t(l.label)}
         </a>
       ))}
     </nav>
@@ -36,13 +38,14 @@ export function NavLinks({ route }: { route: Route }) {
 
 export function Brand() {
   const connected = useMatch((s) => s.connected);
+  const t = useT();
   return (
     <a href={href("home")} className="flex items-center gap-2.5">
       <span className="relative grid size-9 place-items-center rounded-lg bg-white text-chrome">
         <Aperture className="size-5" aria-hidden />
         <span
           className={`absolute -right-0.5 -top-0.5 size-2.5 rounded-full ring-2 ring-chrome ${connected ? "bg-green" : "bg-red"}`}
-          aria-label={connected ? "Connected" : "Disconnected"}
+          aria-label={connected ? t("Connected") : t("Disconnected")}
         />
       </span>
       <span className="font-display text-xl font-semibold tracking-tight">Decision Lens</span>
@@ -54,13 +57,14 @@ export function Brand() {
 export function SoundToggle() {
   const on = usePrefs((s) => s.sound);
   const set = usePrefs((s) => s.set);
+  const t = useT();
   return (
     <button
       type="button"
       onClick={() => set({ sound: !on })}
       aria-pressed={on}
-      aria-label={on ? "Mute sounds" : "Turn sounds on"}
-      title={on ? "Mute sounds" : "Turn sounds on"}
+      aria-label={on ? t("Mute sounds") : t("Turn sounds on")}
+      title={on ? t("Mute sounds") : t("Turn sounds on")}
       className="grid size-10 place-items-center rounded-lg border border-line bg-panel-2 text-muted transition-colors hover:text-ink"
     >
       {on ? <Volume2 className="size-4" aria-hidden /> : <VolumeX className="size-4" aria-hidden />}
@@ -71,15 +75,16 @@ export function SoundToggle() {
 export function PersonaToggle() {
   const persona = usePrefs((s) => s.persona);
   const set = usePrefs((s) => s.set);
+  const t = useT();
   return (
     <ToggleGroup
       type="single"
       value={persona}
       onValueChange={(v) => v && set({ persona: v as "analyst" | "fan" })}
-      aria-label="Persona"
+      aria-label={t("Persona")}
     >
-      <ToggleGroupItem value="analyst">Analyst</ToggleGroupItem>
-      <ToggleGroupItem value="fan">Fan</ToggleGroupItem>
+      <ToggleGroupItem value="analyst">{t("Analyst")}</ToggleGroupItem>
+      <ToggleGroupItem value="fan">{t("Fan")}</ToggleGroupItem>
     </ToggleGroup>
   );
 }
@@ -87,9 +92,10 @@ export function PersonaToggle() {
 export function LanguageSelect() {
   const language = usePrefs((s) => s.language);
   const set = usePrefs((s) => s.set);
+  const t = useT();
   return (
     <Select value={language} onValueChange={(v) => set({ language: v })}>
-      <SelectTrigger className="h-10 w-[124px]" aria-label="Language">
+      <SelectTrigger className="h-10 w-[124px]" aria-label={t("Language")}>
         <SelectValue />
       </SelectTrigger>
       <SelectContent>

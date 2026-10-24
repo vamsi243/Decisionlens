@@ -89,7 +89,7 @@ flowchart LR
 | Every frame or event | Engine only, no model |
 | Key moment | Moment → What-if → Narrator |
 | Fatigue over 80 | What-if (fresh sub, engine) → Narrator |
-| Language change | Translator only |
+| Language change | Translator only (UI wording ships pre-translated; match text and cards are translated once and cached; the copilot is told the language) |
 | Half-time, full-time | Interpreter → Recap → Decisions (one call per team) |
 | A viewer asks the copilot | Copilot agent with engine tools (rate-limited) |
 

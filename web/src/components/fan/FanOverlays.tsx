@@ -4,6 +4,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type { KeyMoment, MatchStats, PlayerStats } from "@/types/contracts";
 import { api } from "@/lib/api";
 import { commentary } from "@/lib/commentary";
+import { msg, useT } from "@/lib/i18n";
+import { useTr } from "@/lib/tr";
 import { sfx } from "@/lib/sfx";
 import { km, surname } from "@/lib/format";
 import { MOMENT_LABEL } from "@/lib/moments";
@@ -21,10 +23,11 @@ export function CamToggle() {
   const followed = usePrefs((s) => s.player);
   const cam = usePrefs((s) => s.followCam);
   const set = usePrefs((s) => s.set);
+  const t = useT();
   if (!followed) {
     return (
       <span className="pointer-events-none absolute left-3 top-3 inline-flex items-center gap-1.5 rounded-full bg-chrome/80 px-3 py-1.5 text-xs text-white">
-        <Focus className="size-3.5" aria-hidden /> Tap a player to follow them
+        <Focus className="size-3.5" aria-hidden /> {t("Tap a player to follow them")}
       </span>
     );
   }
@@ -36,7 +39,7 @@ export function CamToggle() {
       className="absolute left-3 top-3 inline-flex items-center gap-1.5 rounded-full bg-chrome/80 px-3 py-1.5 text-xs text-white hover:bg-chrome"
     >
       {cam ? <Maximize2 className="size-3.5" aria-hidden /> : <Focus className="size-3.5" aria-hidden />}
-      {cam ? "Full pitch" : "Follow cam"}
+      {cam ? t("Full pitch") : t("Follow cam")}
     </button>
   );
 }
@@ -49,6 +52,7 @@ export function PlayerCard() {
   const w = useMatch((s) => (id ? s.workload[id] : undefined));
   const home = useMatch((s) => s.meta?.teams[0]?.team_id);
   const [stats, setStats] = useState<PlayerStats | null>(null);
+  const t = useT();
   useEffect(() => {
     setStats(null);
     if (!id) return;
@@ -70,11 +74,11 @@ export function PlayerCard() {
   const isHome = p.team_id === home;
   const bits = stats
     ? [
-        stats.goals ? `${stats.goals} goal${stats.goals > 1 ? "s" : ""}` : null,
-        stats.shots ? `${stats.shots} shot${stats.shots > 1 ? "s" : ""}` : null,
-        stats.aerial_duels ? `won ${stats.aerial_won} of ${stats.aerial_duels} headers` : null,
-        stats.tackles_won ? `${stats.tackles_won} tackle${stats.tackles_won > 1 ? "s" : ""} won` : null,
-        `${stats.passes_completed} passes`,
+        stats.goals ? t(stats.goals > 1 ? "{n} goals" : "1 goal", { n: stats.goals }) : null,
+        stats.shots ? t(stats.shots > 1 ? "{n} shots" : "1 shot", { n: stats.shots }) : null,
+        stats.aerial_duels ? t("won {a} of {b} headers", { a: stats.aerial_won ?? 0, b: stats.aerial_duels }) : null,
+        stats.tackles_won ? t(stats.tackles_won > 1 ? "{n} tackles won" : "1 tackle won", { n: stats.tackles_won }) : null,
+        t("{n} passes", { n: stats.passes_completed ?? 0 }),
       ].filter(Boolean)
     : [];
   return (
@@ -97,15 +101,15 @@ export function PlayerCard() {
           type="button"
           onClick={() => set({ player: null })}
           className="rounded-md p-1 text-muted hover:bg-panel-2 hover:text-ink"
-          aria-label="Stop following"
+          aria-label={t("Stop following")}
         >
           <X className="size-3.5" />
         </button>
       </div>
-      <p className="mt-1 text-xs text-muted">Following · {w ? km(w.distance_m) : "–"}</p>
+      <p className="mt-1 text-xs text-muted">{t("Following · {km}", { km: w ? km(w.distance_m) : "–" })}</p>
       <div className="mt-2 flex items-center gap-2 text-xs">
-        <span className="text-muted">Energy</span>
-        <div className="h-2 flex-1 overflow-hidden rounded-full bg-panel-2" aria-label={`Energy ${Math.round(energy)} of 100`}>
+        <span className="text-muted">{t("Energy")}</span>
+        <div className="h-2 flex-1 overflow-hidden rounded-full bg-panel-2" aria-label={t("Energy {n} of 100", { n: Math.round(energy) })}>
           <div
             className={cn("h-full rounded-full transition-[width] duration-700", energy > 60 ? "bg-green" : energy > 30 ? "bg-[#e0a800]" : "bg-red")}
             style={{ width: `${energy}%` }}
@@ -118,7 +122,7 @@ export function PlayerCard() {
         onClick={() => useUi.getState().openPanel(id)}
         className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-muted hover:text-ink"
       >
-        <UserRound className="size-3.5" aria-hidden /> Their big calls
+        <UserRound className="size-3.5" aria-hidden /> {t("Their big calls")}
       </button>
     </motion.div>
   );
@@ -160,12 +164,14 @@ export function MomentBanner() {
   }, [show]);
 
   const players = useMatch((s) => s.players);
+  const t = useT();
+  const tr = useTr();
   const home = meta?.teams[0]?.team_id;
   const isHome = show?.team_id === home;
   const scorer = show?.type === "goal" ? players[show.players[0] ?? ""] : undefined;
   const headline = scorer
-    ? `${surname(scorer.name)} scores for ${meta?.teams.find((t) => t.team_id === show?.team_id)?.name ?? ""}`
-    : show?.title;
+    ? t("{name} scores for {team}", { name: surname(scorer.name), team: meta?.teams.find((x) => x.team_id === show?.team_id)?.name ?? "" })
+    : tr(show?.title);
   return (
     <AnimatePresence>
       {show ? (
@@ -182,7 +188,7 @@ export function MomentBanner() {
           role="status"
         >
           <span className="text-[11px] font-semibold uppercase tracking-wide opacity-80">
-            {show.type === "goal" ? "Goal!" : MOMENT_LABEL[show.type]}
+            {show.type === "goal" ? t("Goal!") : t(MOMENT_LABEL[show.type])}
           </span>
           <span className="min-w-0 flex-1 truncate font-display text-base font-semibold">{headline}</span>
           <button
@@ -190,7 +196,7 @@ export function MomentBanner() {
             onClick={() => void replayMoment(show)}
             className="inline-flex shrink-0 items-center gap-1 rounded-full bg-black/15 px-3 py-1 text-xs font-medium hover:bg-black/25"
           >
-            <RotateCcw className="size-3.5" aria-hidden /> Watch again
+            <RotateCcw className="size-3.5" aria-hidden /> {t("Watch again")}
           </button>
         </motion.div>
       ) : null}
@@ -209,6 +215,8 @@ interface Line {
 export function CommentaryTicker() {
   const players = useMatch((s) => s.players);
   const teams = useMatch((s) => s.meta?.teams);
+  const t = useT();
+  const tr = useTr();
   const [lines, setLines] = useState<Line[]>([]);
   const seen = useRef(new Set<string>());
 
@@ -233,10 +241,10 @@ export function CommentaryTicker() {
   );
 
   return (
-    <div className="chrome flex items-center gap-3 overflow-hidden rounded-lg bg-panel-2 px-3 py-2 text-sm" aria-live="polite" aria-label="Live commentary">
-      <span className="shrink-0 text-[11px] font-semibold tracking-wide text-[#ffb547]">LIVE</span>
+    <div className="chrome flex items-center gap-3 overflow-hidden rounded-lg bg-panel-2 px-3 py-2 text-sm" aria-live="polite" aria-label={t("Live commentary")}>
+      <span className="shrink-0 text-[11px] font-semibold tracking-wide text-[#ffb547]">{t("LIVE")}</span>
       {lines.length === 0 ? (
-        <span className="text-muted">Commentary starts with the action…</span>
+        <span className="text-muted">{t("Commentary starts with the action…")}</span>
       ) : (
         <ol className="flex min-w-0 gap-4 whitespace-nowrap">
           {lines.map((l, i) => (
@@ -247,7 +255,7 @@ export function CommentaryTicker() {
               className={cn(l.big && "font-semibold text-[#ffb547]")}
             >
               <span className="num mr-1 text-xs text-muted">{l.minute}'</span>
-              {l.text}
+              {tr(l.text)}
             </motion.li>
           ))}
         </ol>
@@ -276,6 +284,7 @@ export function MomentumBar() {
   const stats = useMatch((s) => s.stats);
   const meta = useMatch((s) => s.meta);
   const history = useRef<Sample[]>([]);
+  const t = useT();
 
   const share = useMemo(() => {
     if (!stats || stats.teams.length !== 2) return null;
@@ -296,10 +305,14 @@ export function MomentumBar() {
   if (share === null || !meta) return null;
   const [home, away] = meta.teams;
   const label =
-    share > 0.6 ? `${home?.name} on top` : share < 0.4 ? `${away?.name} pressing` : "Even contest";
+    share > 0.6
+      ? t("{team} on top", { team: home?.name ?? "" })
+      : share < 0.4
+        ? t("{team} pressing", { team: away?.name ?? "" })
+        : t("Even contest");
   return (
-    <div className="chrome flex items-center gap-3 px-1 text-xs" aria-label={`Momentum: ${label}`}>
-      <span className="text-muted">Momentum</span>
+    <div className="chrome flex items-center gap-3 px-1 text-xs" aria-label={`${t("Momentum")}: ${label}`}>
+      <span className="text-muted">{t("Momentum")}</span>
       <div className="flex h-2 flex-1 overflow-hidden rounded-full" aria-hidden>
         <motion.span className="bg-riv" animate={{ width: `${share * 100}%` }} transition={{ duration: 0.8 }} />
         <span className="flex-1 bg-hil" />
@@ -320,27 +333,28 @@ export function PlayersToWatch() {
   const home = useMatch((s) => s.meta?.teams[0]?.team_id);
   const followed = usePrefs((s) => s.player);
   const set = usePrefs((s) => s.set);
+  const t = useT();
 
   const chips = useMemo(() => {
     const out = new Map<string, string>();
-    if (followed && players[followed]) out.set(followed, "following");
+    if (followed && players[followed]) out.set(followed, msg("following"));
     for (const m of Object.values(seen).sort((a, b) => a.t_ms - b.t_ms)) {
       const id = m.players[0];
-      if (m.type === "goal" && id && !out.has(id)) out.set(id, "scored");
+      if (m.type === "goal" && id && !out.has(id)) out.set(id, msg("scored"));
     }
     const on = new Set(onPitch);
     Object.values(workload)
       .filter((w) => on.has(w.player_id) && w.fatigue >= 70 && !out.has(w.player_id))
       .sort((a, b) => b.fatigue - a.fatigue)
       .slice(0, 2)
-      .forEach((w) => out.set(w.player_id, "tiring"));
+      .forEach((w) => out.set(w.player_id, msg("tiring")));
     return [...out.entries()].filter(([id]) => players[id]);
   }, [seen, workload, players, onPitch, followed]);
 
   if (!chips.length) return null;
   return (
     <div className="rounded-2xl border border-line bg-surface p-3">
-      <p className="text-xs font-medium text-muted">Players to watch</p>
+      <p className="text-xs font-medium text-muted">{t("Players to watch")}</p>
       <ul className="mt-2 flex flex-wrap gap-1.5">
         {chips.map(([id, why]) => {
           const p = players[id]!;
@@ -357,7 +371,7 @@ export function PlayersToWatch() {
                 )}
               >
                 <span className="font-medium">{p.name.split(" ").pop()}</span>
-                <span className="opacity-75">· {why}</span>
+                <span className="opacity-75">· {t(why)}</span>
               </button>
             </li>
           );

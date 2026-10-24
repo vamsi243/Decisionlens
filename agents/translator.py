@@ -16,6 +16,9 @@ from service.settings import Settings
 
 log = logging.getLogger("decision_lens.translator")
 
+BATCH = 100  # Translator v3 takes up to 1,000 texts a request; stay well inside
+MAX_CACHED = 50_000
+
 
 class Translator:
     def __init__(
@@ -26,6 +29,7 @@ class Translator:
         self.key = settings.azure_translator_key
         self.region = settings.azure_translator_region
         self.cache: dict[tuple[str, str], Overlay] = {}
+        self.strings: dict[tuple[str, str], str] = {}  # (lang, English) -> translation
 
     @property
     def available(self) -> bool:
@@ -54,6 +58,22 @@ class Translator:
         except (httpx.HTTPError, KeyError, ValueError) as exc:
             log.warning("translation to %s failed: %s", to, exc)
             return None
+
+    async def texts(self, texts: list[str], lang: str) -> list[str] | None:
+        """Engine and UI strings in `lang`, each translated once and then cached. Repeats (names,
+        templates) cost nothing; new ones go to Translator in batches. None if unavailable."""
+        if lang == "en":
+            return list(texts)
+        todo = list(dict.fromkeys(t for t in texts if t.strip() and (lang, t) not in self.strings))
+        for i in range(0, len(todo), BATCH):
+            chunk = todo[i : i + BATCH]
+            out = await self.translate(chunk, lang)
+            if out is None:
+                return None
+            if len(self.strings) > MAX_CACHED:  # a bounded cache: start again rather than grow
+                self.strings.clear()
+            self.strings.update({(lang, src): dst for src, dst in zip(chunk, out, strict=True)})
+        return [self.strings.get((lang, t), t) for t in texts]
 
     async def overlay(self, ov: Overlay, lang: str) -> Overlay | None:
         """The overlay with text in `lang` added (cached), or None if translation is unavailable."""

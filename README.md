@@ -13,7 +13,8 @@ Broadcasts show what happened, not what was possible. A fan sees a header lost a
 - **Hover a player** for distance, fatigue, sprints, passes, shots, tackles and aerials; **click** for the 2–3 decisions that cost them most in goal odds, plus their best one.
 - **Ask the match copilot** under the board: "who should mark Dax Morrow?", "he's busy, who's next?", "how many passes has Reyes-Ward completed?". Answers come from engine tools and draw a chart in the chat.
 - **Analyst or fan.** The same moment as numbers, ranges and drivers, or one plain line.
-- **Follow a club or a player**, switch language (Azure AI Translator), read the scroll-driven full-time recap.
+- **Follow a club or a player**, read the scroll-driven full-time recap.
+- **Switch language** (English, Español, Français, Português, Deutsch, हिन्दी): the whole board changes, from the menus to the cards, the commentary and the copilot's answers.
 
 Full list with status: [FEATURES.md](FEATURES.md).
 
@@ -52,7 +53,7 @@ On seed 42, pass predictions land within 1.2 percentage points of what happened 
 - **Azure OpenAI in Foundry** through **Microsoft Agent Framework** (a mini model for analyst text, recaps and the copilot, a nano model for fan lines, a fallback deployment)
 - **Model Context Protocol** server (official MCP Python SDK) exposing the engine to the agents
 - **AG-UI** (`agent-framework-ag-ui`) serving the match copilot to a CopilotKit chat
-- **Azure AI Translator** for per-card language switching
+- **Azure AI Translator** for the language switch (UI wording once at build time, match text live and cached)
 - **Azure Container Apps**, **Event Hubs**, **Cosmos DB**, **SignalR Service**, **Static Web Apps**, **Key Vault**, **Container Registry**, **Application Insights** (OpenTelemetry), deployed with **azd + Bicep**, all with one managed identity
 
 ## Quick start (local)
@@ -76,6 +77,7 @@ API on http://localhost:8000, web on http://localhost:5173. Without Azure keys i
 | Calibration | `uv run python tasks.py calibrate` |
 | Azure smoke test | `uv run python scripts/smoke_azure.py` |
 | Check a deployment | `uv run python scripts/check_deploy.py` |
+| Translate new UI wording | `uv run python scripts/i18n_strings.py` (needs the Translator key; fixes go in `scripts/i18n_glossary.json`) |
 
 ## Four pages
 | Page | What you get |
@@ -133,6 +135,7 @@ uv run python -m mcp_server --match data/samples/match_42
 | `GET /players/{id}/heatmap` (`?full=true`) | Share of time in each 5 m cell |
 | `GET /overlays` (`?all=true`) | Agent cards so far: analyst + fan text, engine payload, source |
 | `GET /overlays/{id}?lang=es` | A card translated by Azure AI Translator (no model call, cached) |
+| `POST /translate {lang, texts}` | Batch-translate engine text (moment titles, bullets, commentary); cached per string, 400 calls an hour per caller |
 | `GET /agents/traces` | Which router steps ran per trigger and where each text came from |
 | `GET /recap` | The full-time recap, whatever the live replay is doing |
 | `POST /copilot` | The match copilot over AG-UI (Server-Sent Events) for the CopilotKit chat |

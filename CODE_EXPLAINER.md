@@ -27,7 +27,8 @@
 | `web/src/components/Copilot.tsx` | CopilotKit provider (`selfManagedAgents` → `HttpAgent`), the chat panel, screen context and the marking chart renderer |
 | `web/src/state/` | `frames.ts` (frame buffer + interpolation), `match.ts` (Zustand store fed by the socket), `prefs.ts` (persona, favourites, language, board size; saved locally), `ui.ts` (which player panel is open) |
 | `web/src/pages/` | `HomePage.tsx` (promo page with a looping key-moment clip), `HowPage.tsx` (five stages + agent diagram), `RecapPage.tsx` (scroll story with pinned pitch, green/red bullets) |
-| `web/src/lib/` | `router.ts` (hash routes), `useLenis.ts` (smooth scroll + snap), `export.ts` (overlay JSON), `words.ts` (fan wording) |
+| `web/src/lib/` | `router.ts` (hash routes), `useLenis.ts` (smooth scroll + snap), `export.ts` (overlay JSON), `words.ts` (fan wording), `i18n.ts` (`t`/`msg` and the UI dictionaries), `tr.ts` (`useTr`: batched, cached translation of engine text) |
+| `web/src/i18n/` | One JSON dictionary per language, English text as the key, written by `scripts/i18n_strings.py` |
 | `web/src/components/` | `board/` (pitch, players with hover cards, ball, option arrows, what-if ghost, `Table` frame with control rail and benches), `TopBar`/`Nav`, `Scrubber`, `MomentFeed`/`MomentCard` (green/red bullets), `PlayerPanel`, `StatsDrawer`, `SettingsSheet`, `ui/` (shadcn-style Radix primitives, `resizable`) |
 
 ## Contracts in practice
@@ -118,6 +119,13 @@ Fatigue scales the inputs. At fatigue 100, top speed drops to ×0.78, accelerati
 2. `agents/copilot.py` checks the caps, scopes the thread to the viewer, and runs the Agent Framework agent.
 3. The agent calls engine tools, such as `best_marker("Morrow", exclude=["Varga"])`, which runs `Pipeline.marking_advice` on the live state.
 4. Text streams back to the chat; the `best_marker` result is drawn as a ranked chart by `useRenderTool`.
+
+## How the language switch works
+- **Fixed wording** is written in English inside `t("…")` (or `t("{team} bench", { team })` with placeholders). Text defined away from a component, such as labels in an array, is marked with `msg("…")` and passed through `t()` where it renders. `scripts/i18n_strings.py` finds every literal, has Azure AI Translator translate the new ones (placeholders protected) and writes `web/src/i18n/<lang>.json`. Football words trip a general translator (match, goal, pitch, header), so `scripts/i18n_glossary.json` holds hand-checked wording that always wins.
+- **Engine text** (moment titles, green/red bullets, commentary, profile names) changes with the match, so `useTr()` collects what is on screen, sends it to `POST /translate` in one batch every 60 ms and re-renders when it comes back. Both the browser and the server (`agents/translator.Translator.texts`) cache per string, so each line is translated once per language.
+- **Agent cards** come translated from `GET /overlays/{id}?lang=`; outside English the agent line is shown open, so the reader sees it without a click.
+- **The copilot** gets the language in its screen context and its instructions say to answer in it, keeping names and tool numbers as they are.
+- Without a Translator key the dictionaries still work; match text stays in English and the feed says so.
 
 ## Testing approach
 118 tests (`uv run python tasks.py test`), all offline: no Azure, no model calls.

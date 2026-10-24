@@ -10,6 +10,8 @@ import { clock, pct } from "@/lib/format";
 import { MOMENT_LABEL } from "@/lib/moments";
 import { href } from "@/lib/router";
 import { useLenis } from "@/lib/useLenis";
+import { useT } from "@/lib/i18n";
+import { useTr } from "@/lib/tr";
 import { swingWords } from "@/lib/words";
 import { ensureAnalyses, ensureTranslations, useMatch } from "@/state/match";
 import { usePrefs } from "@/state/prefs";
@@ -96,6 +98,8 @@ export function RecapPage() {
   const overlays = useMatch((s) => s.overlays);
   const persona = usePrefs((s) => s.persona);
   const lang = usePrefs((s) => s.language);
+  const t = useT();
+  const tr = useTr();
   const fan = persona === "fan";
 
   const [recap, setRecap] = useState<Overlay | null>(null);
@@ -163,10 +167,10 @@ export function RecapPage() {
             showLayer={showLayer}
             highlight={current?.players ?? []}
             fan={fan}
-            label={current ? `Replay: ${current.title}` : "Pitch"}
+            label={current ? t("Replay: {moment}", { moment: tr(current.title) }) : t("Pitch")}
           />
           <div className="mt-2 flex items-center justify-between text-xs text-muted">
-            <span>{current ? `${MOMENT_LABEL[current.type]} · ${current.title}` : "Scroll to replay the turning points"}</span>
+            <span>{current ? `${t(MOMENT_LABEL[current.type])} · ${tr(current.title)}` : t("Scroll to replay the turning points")}</span>
             <span className="num">{frame ? clock(frame.t_ms) : ""}</span>
           </div>
           <div className="mt-1.5 h-1 overflow-hidden rounded-full bg-line" aria-hidden>
@@ -176,7 +180,7 @@ export function RecapPage() {
 
         <main className="pb-24">
           <section data-snap className="flex min-h-[80vh] flex-col justify-center py-16">
-            <p className="text-sm font-medium uppercase tracking-wide text-amber">Full time</p>
+            <p className="text-sm font-medium uppercase tracking-wide text-amber">{t("Full time")}</p>
             <h1 className="mt-3 font-display text-4xl font-semibold tracking-tight lg:text-5xl">
               {home?.name ?? "Riverside FC"}{" "}
               <span className="tabular-nums">
@@ -185,15 +189,15 @@ export function RecapPage() {
               {away?.name ?? "Hillton United"}
             </h1>
             {error ? (
-              <p className="mt-6 text-muted">The recap needs the stream service; is it running?</p>
+              <p className="mt-6 text-muted">{t("The recap needs the stream service; is it running?")}</p>
             ) : (
               <div className="mt-8 max-w-xl">
                 {fan && recapText ? <p className="mb-4 text-xl leading-snug">{recapText}</p> : null}
-                {story.length ? <PointList points={story} fan={fan} /> : <p className="text-muted">Writing the recap…</p>}
+                {story.length ? <PointList points={story} fan={fan} /> : <p className="text-muted">{t("Writing the recap…")}</p>}
                 {!fan && recapText ? (
                   <details className="mt-4">
                     <summary className="cursor-pointer select-none text-sm font-medium text-muted hover:text-ink">
-                      Read the recap
+                      {t("Read the recap")}
                     </summary>
                     <p className="mt-2 leading-relaxed text-ink/85">{recapText}</p>
                   </details>
@@ -204,7 +208,7 @@ export function RecapPage() {
               <SourceBadge overlay={recap ?? undefined} />
             </div>
             <p className="mt-10 inline-flex items-center gap-2 text-sm text-muted">
-              <ArrowDown className="size-4 animate-bounce" aria-hidden /> Scroll to relive the {moments.length} turning points
+              <ArrowDown className="size-4 animate-bounce" aria-hidden /> {t("Scroll to relive the {n} turning points", { n: moments.length })}
             </p>
           </section>
 
@@ -216,45 +220,45 @@ export function RecapPage() {
               <Chapter key={m.moment_id} index={i} onProgress={(idx, p) => setActive({ i: idx, p })}>
                 <article className="rounded-xl border border-line bg-surface p-6 shadow-lg">
                   <p className="text-xs text-muted">
-                    <span className="num text-amber">{Math.floor(m.t_ms / 60000) + 1}'</span> · {MOMENT_LABEL[m.type]}
+                    <span className="num text-amber">{Math.floor(m.t_ms / 60000) + 1}'</span> · {t(MOMENT_LABEL[m.type])}
                   </p>
-                  <h2 className="mt-2 font-display text-2xl font-semibold tracking-tight">{m.title}</h2>
+                  <h2 className="mt-2 font-display text-2xl font-semibold tracking-tight">{tr(m.title)}</h2>
                   {text && fan ? <p className="mt-3 text-lg leading-snug">{text}</p> : null}
                   {w ? (
                     fan ? (
                       <p className="mt-4 text-lg">
-                        With {w.counterfactual.profile.label.replace(" (fresh sub)", "")}:{" "}
-                        <strong className="text-green">{swingWords(w.actual.p_success, w.counterfactual.p_success)}</strong>
+                        {t("With {swap}:", { swap: tr(w.counterfactual.profile.label.replace(" (fresh sub)", "")) })}{" "}
+                        <strong className="text-green">{tr(swingWords(w.actual.p_success, w.counterfactual.p_success))}</strong>
                       </p>
                     ) : (
                       <div className="mt-4 flex items-baseline gap-3 rounded-md bg-panel-2 p-4">
                         <span className="num text-3xl">{pct(w.actual.p_success)}</span>
                         <ArrowRight className="size-5 text-muted" aria-hidden />
                         <span className="num text-3xl text-green">{pct(w.counterfactual.p_success)}</span>
-                        <span className="ml-2 text-sm text-muted">with {w.counterfactual.profile.label}</span>
+                        <span className="ml-2 text-sm text-muted">{t("with {swap}", { swap: tr(w.counterfactual.profile.label) })}</span>
                       </div>
                     )
                   ) : null}
                   <PointList points={bullets(m, a, players, undefined, fan)} fan={fan} className="mt-4" />
                   {text && !fan ? (
-                    <details className="mt-4">
+                    <details className="mt-4" open={lang !== "en"}>
                       <summary className="cursor-pointer select-none text-xs font-medium text-muted hover:text-ink">
-                        Read the analysis
+                        {t("Read the analysis")}
                       </summary>
                       <p className="mt-1.5 text-sm leading-relaxed text-ink/85">{text}</p>
                     </details>
                   ) : null}
-                  <p className="mt-5 text-xs text-muted-2">Keep scrolling: the pitch replays the moment.</p>
+                  <p className="mt-5 text-xs text-muted-2">{t("Keep scrolling: the pitch replays the moment.")}</p>
                 </article>
               </Chapter>
             );
           })}
 
           <section data-snap className="flex min-h-[70vh] flex-col justify-center py-16">
-            <h2 className="font-display text-3xl font-semibold tracking-tight">The physical story</h2>
+            <h2 className="font-display text-3xl font-semibold tracking-tight">{t("The physical story")}</h2>
             <div className="mt-6 grid gap-4 sm:grid-cols-2">
               <div className="rounded-lg border border-line bg-surface p-5 shadow-sm">
-                <p className="text-sm text-muted">Ran furthest</p>
+                <p className="text-sm text-muted">{t("Ran furthest")}</p>
                 <ul className="mt-2 space-y-1">
                   {runners.map((r) => (
                     <li key={r.player} className="flex justify-between">
@@ -265,7 +269,7 @@ export function RecapPage() {
                 </ul>
               </div>
               <div className="rounded-lg border border-line bg-surface p-5 shadow-sm">
-                <p className="text-sm text-muted">Most fatigued</p>
+                <p className="text-sm text-muted">{t("Most fatigued")}</p>
                 <ul className="mt-2 space-y-1">
                   {tired.map((r) => (
                     <li key={r.player} className="flex justify-between">
@@ -278,10 +282,10 @@ export function RecapPage() {
             </div>
             <div className="mt-10 flex flex-wrap gap-3">
               <a href={href("live")} className="rounded-md bg-ink px-4 py-2 text-sm font-medium text-surface">
-                Back to the live board
+                {t("Back to the live board")}
               </a>
               <a href={href("how")} className="rounded-md border border-line bg-surface px-4 py-2 text-sm font-medium">
-                How it works
+                {t("How it works")}
               </a>
             </div>
           </section>

@@ -1,6 +1,7 @@
 import { Radio } from "lucide-react";
 import { stopClip } from "@/lib/clip";
 import { clock } from "@/lib/format";
+import { useT } from "@/lib/i18n";
 import { useMatch } from "@/state/match";
 import { HeaderShell } from "./Nav";
 import { Button } from "./ui/button";
@@ -12,6 +13,7 @@ export function TopBar() {
   const clockMs = useMatch((s) => s.clockMs);
   const live = useMatch((s) => s.server?.live ?? false);
   const clip = useMatch((s) => s.clip);
+  const t = useT();
 
   const [home, away] = meta?.teams ?? [];
   const goals = (id?: string) => stats?.teams.find((t) => t.team_id === id)?.goals ?? 0;
@@ -24,11 +26,11 @@ export function TopBar() {
         live ? (
           clip ? (
             <Button variant="primary" size="sm" onClick={stopClip}>
-              <Radio className="size-3.5" aria-hidden /> Back to live
+              <Radio className="size-3.5" aria-hidden /> {t("Back to live")}
             </Button>
           ) : (
             <span className="inline-flex items-center gap-1.5 rounded-md bg-[#3a1212] px-2.5 py-1 text-xs font-semibold tracking-wide text-[#ff6b62]">
-              <span className="size-1.5 animate-pulse rounded-full bg-[#ff6b62]" aria-hidden /> LIVE
+              <span className="size-1.5 animate-pulse rounded-full bg-[#ff6b62]" aria-hidden /> {t("LIVE")}
             </span>
           )
         ) : null

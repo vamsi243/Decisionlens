@@ -275,6 +275,28 @@ def test_translator_adds_a_language_without_a_model(ctx: EngineContext) -> None:
     assert asyncio.run(Translator(settings()).overlay(ov, "es")) is None  # no key
 
 
+def test_engine_strings_translate_once_then_come_from_the_cache() -> None:
+    calls: list[int] = []
+
+    def handler(req: httpx.Request) -> httpx.Response:
+        body = json.loads(req.content)
+        calls.append(len(body))
+        return httpx.Response(
+            200, json=[{"translations": [{"text": "ES " + b["Text"]}]} for b in body]
+        )
+
+    s = settings().model_copy(update={"azure_translator_key": "test"})
+    tr = Translator(s, transport=httpx.MockTransport(handler))
+    texts = ["Morrow wins the header", "Best option", "Morrow wins the header"]
+    out = asyncio.run(tr.texts(texts, "es"))
+    assert out == ["ES Morrow wins the header", "ES Best option", "ES Morrow wins the header"]
+    assert calls == [2]  # duplicates sent once
+    again = asyncio.run(tr.texts(["Best option", "Varga clears the danger"], "es"))
+    assert again == ["ES Best option", "ES Varga clears the danger"] and calls == [2, 1]
+    assert asyncio.run(tr.texts(texts, "en")) == texts  # English is a no-op
+    assert asyncio.run(Translator(settings()).texts(texts, "es")) is None  # no key
+
+
 # --- player panel: engine-ranked decisions, stats, template and agent lines --------------------
 
 

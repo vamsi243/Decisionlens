@@ -71,6 +71,7 @@ export const api = {
   frames: (momentId: string, step = 1) =>
     req<TrackingFrame[]>(`/moments/${encodeURIComponent(momentId)}/frames?step=${step}`),
   recap: () => req<Overlay>("/recap"),
+  translate: (lang: string, texts: string[]) => post<{ texts: string[] }>("/translate", { lang, texts }),
   stats: () => req<MatchStats>("/stats"),
   workload: () => req<WorkloadState[]>("/workload"),
   intensity: () => req<IntensityPoint[]>("/intensity"),

@@ -11,10 +11,12 @@ import { Sparkles } from "lucide-react";
 import { useMemo, type ReactNode } from "react";
 import { z } from "zod";
 import { API_URL } from "@/lib/api";
+import { msg, useT } from "@/lib/i18n";
+import { useTr } from "@/lib/tr";
 import { activeMoment } from "@/lib/moments";
 import { cn } from "@/lib/utils";
 import { useMatch } from "@/state/match";
-import { usePrefs } from "@/state/prefs";
+import { LANGUAGES, usePrefs } from "@/state/prefs";
 import { useUi } from "@/state/ui";
 
 /** The live page's CopilotKit provider, talking AG-UI straight to the stream service's /copilot. */
@@ -34,7 +36,12 @@ function viewerId(): string {
 
 export function CopilotProvider({ children }: { children: ReactNode }) {
   const agents = useMemo(
-    () => ({ default: new HttpAgent({ url: `${API_URL}/copilot`, headers: { "X-Viewer-Id": viewerId() } }) }),
+    () => ({
+      default: new HttpAgent({
+        url: `${API_URL}/copilot`,
+        headers: { "X-Viewer-Id": viewerId() },
+      }),
+    }),
     [],
   );
   // No inspector: it adds a dev HUD that loads fonts and notices from third-party hosts.
@@ -67,25 +74,40 @@ interface Advice {
   excluded_names: string[];
 }
 
+const SIDE: Record<string, string> = {
+  left: msg("left"),
+  centre: msg("centre"),
+  right: msg("right"),
+};
+
 const PARTS = [
-  ["aerial", "bg-riv", "headers"],
-  ["ground", "bg-[#eb6834]", "tackles"],
-  ["race", "bg-green", "foot races"],
+  ["aerial", "bg-riv", msg("headers")],
+  ["ground", "bg-[#eb6834]", msg("tackles")],
+  ["race", "bg-green", msg("foot races")],
 ] as const;
 
 /** The best_marker tool result as a ranked, stacked bar chart inside the chat. */
 function MarkingChart({ advice }: { advice: Advice }) {
+  const t = useT();
+  const tr = useTr();
   return (
     <div className="dl-tokens my-2 rounded-xl border border-line bg-surface p-3.5 text-ink">
       <p className="text-xs text-muted">
-        Marking {advice.attacker.name} ({advice.attacker.type}) · {advice.minute}' · plays down the {advice.channel}
-        {advice.excluded_names.length ? ` · ruled out: ${advice.excluded_names.join(", ")}` : ""}
+        {t("Marking {name} ({type}) · {minute}' · plays down the {side}", {
+          name: advice.attacker.name,
+          type: tr(advice.attacker.type),
+          minute: advice.minute,
+          side: t(SIDE[advice.channel] ?? advice.channel),
+        })}
+        {advice.excluded_names.length
+          ? ` · ${t("ruled out: {names}", { names: advice.excluded_names.join(", ") })}`
+          : ""}
       </p>
       <div className="mt-2 flex flex-wrap gap-3 text-[11px] text-muted">
         {PARTS.map(([k, c, label]) => (
           <span key={k} className="inline-flex items-center gap-1">
             <span className={cn("size-2.5 rounded-sm", c)} />
-            {label} {Math.round(advice.weights[k] * 100)}%
+            {t(label)} {Math.round(advice.weights[k] * 100)}%
           </span>
         ))}
       </div>
@@ -94,16 +116,31 @@ function MarkingChart({ advice }: { advice: Advice }) {
           <li key={o.player_id}>
             <div className="flex items-baseline justify-between gap-2 text-sm">
               <span className={cn(i === 0 && "font-semibold")}>
-                {i + 1}. {o.name} <span className="text-xs text-muted">· {o.position}{o.on_pitch ? "" : " · bench"}</span>
+                {i + 1}. {o.name}{" "}
+                <span className="text-xs text-muted">
+                  · {o.position}
+                  {o.on_pitch ? "" : ` · ${t("bench")}`}
+                </span>
               </span>
               <span className="num text-sm">{o.score_pct}%</span>
             </div>
-            <div className="mt-1 flex h-2.5 overflow-hidden rounded-full bg-panel-2" aria-hidden>
+            <div
+              className="mt-1 flex h-2.5 overflow-hidden rounded-full bg-panel-2"
+              aria-hidden
+            >
               {PARTS.map(([k, c]) => (
-                <span key={k} className={c} style={{ width: `${advice.weights[k] * o[k] * 100}%` }} />
+                <span
+                  key={k}
+                  className={c}
+                  style={{ width: `${advice.weights[k] * o[k] * 100}%` }}
+                />
               ))}
             </div>
-            {o.reasons.length ? <p className="mt-1 text-[11px] text-muted">{o.reasons.join(" · ")}</p> : null}
+            {o.reasons.length ? (
+              <p className="mt-1 text-[11px] text-muted">
+                {o.reasons.map((r) => tr(r)).join(" · ")}
+              </p>
+            ) : null}
           </li>
         ))}
       </ol>
@@ -125,7 +162,9 @@ function MatchCopilotInner() {
   // Minute-level selectors: the board ticks at 10 Hz, the chat context shouldn't.
   const minute = useMatch((s) => Math.floor(s.clockMs / 60_000) + 1);
   const momentTitle = useMatch(
-    (s) => activeMoment(s.seen, s.analyses, s.clockMs, s.pinned)?.moment.title ?? null,
+    (s) =>
+      activeMoment(s.seen, s.analyses, s.clockMs, s.pinned)?.moment.title ??
+      null,
   );
   const meta = useMatch((s) => s.meta);
   const stats = useMatch((s) => s.stats);
@@ -133,7 +172,11 @@ function MatchCopilotInner() {
   const persona = usePrefs((s) => s.persona);
   const followed = usePrefs((s) => s.player);
   const panel = useUi((s) => s.panel);
-  const goals = (stats?.teams ?? []).map((t) => `${t.team_id}:${t.goals}`).join(",");
+  const lang = usePrefs((s) => s.language);
+  const t = useT();
+  const goals = (stats?.teams ?? [])
+    .map((t) => `${t.team_id}:${t.goals}`)
+    .join(",");
 
   // What the viewer is looking at, so answers follow the screen.
   const context = useMemo(
@@ -147,16 +190,24 @@ function MatchCopilotInner() {
             .filter(Boolean)
             .map((g) => {
               const [id, n] = g.split(":");
-              return [meta?.teams.find((m) => m.team_id === id)?.name ?? id, Number(n)];
+              return [
+                meta?.teams.find((m) => m.team_id === id)?.name ?? id,
+                Number(n),
+              ];
             }),
         ),
-        viewer: persona === "fan" ? "fan: plain words, at most two numbers" : "analyst",
-        following: followed ? players[followed]?.name ?? null : null,
-        player_panel_open_for: panel ? players[panel]?.name ?? null : null,
+        viewer:
+          persona === "fan"
+            ? "fan: plain words, at most two numbers"
+            : "analyst",
+        following: followed ? (players[followed]?.name ?? null) : null,
+        player_panel_open_for: panel ? (players[panel]?.name ?? null) : null,
         key_moment_on_screen: momentTitle,
+        // answers come back in this language (names stay as they are)
+        language: LANGUAGES.find((l) => l.code === lang)?.label ?? "English",
       },
     }),
-    [minute, goals, meta, persona, followed, panel, players, momentTitle],
+    [minute, goals, meta, persona, followed, panel, players, momentTitle, lang],
   );
   useAgentContext(context);
 
@@ -165,52 +216,109 @@ function MatchCopilotInner() {
       suggestions:
         persona === "fan"
           ? [
-              { title: "Who's been the best?", message: "Who has been the best player so far, and why?" },
-              { title: "Why did Pell lose that?", message: "Why did Jonah Pell lose the header to Dax Morrow?" },
-              { title: "Who's out of puff?", message: "Who is the most tired player right now?" },
-              { title: "Who should mark Morrow?", message: "Who should mark Dax Morrow right now?" },
+              {
+                title: t("Who's been the best?"),
+                message: t("Who has been the best player so far, and why?"),
+              },
+              {
+                title: t("Why did Pell lose that?"),
+                message: t("Why did Jonah Pell lose the header to Dax Morrow?"),
+              },
+              {
+                title: t("Who's out of puff?"),
+                message: t("Who is the most tired player right now?"),
+              },
+              {
+                title: t("Who should mark Morrow?"),
+                message: t("Who should mark Dax Morrow right now?"),
+              },
             ]
           : [
-              { title: "Who should mark Morrow?", message: "Who should mark Dax Morrow right now?" },
-              { title: "Who's tiring?", message: "Who is most tired, and who on the bench could replace them?" },
-              { title: "Reyes-Ward's passing", message: "How many passes has Callum Reyes-Ward completed?" },
-              { title: "Kollmann's big calls", message: "What were Ezra Kollmann's key decisions?" },
+              {
+                title: t("Who should mark Morrow?"),
+                message: t("Who should mark Dax Morrow right now?"),
+              },
+              {
+                title: t("Who's tiring?"),
+                message: t(
+                  "Who is most tired, and who on the bench could replace them?",
+                ),
+              },
+              {
+                title: t("Reyes-Ward's passing"),
+                message: t("How many passes has Callum Reyes-Ward completed?"),
+              },
+              {
+                title: t("Kollmann's big calls"),
+                message: t("What were Ezra Kollmann's key decisions?"),
+              },
             ],
       available: "always",
     },
-    [persona],
+    [persona, lang],
   );
 
   useRenderTool(
     {
       name: "best_marker",
-      parameters: z.object({ attacker: z.string(), exclude: z.array(z.string()).nullish() }),
+      parameters: z.object({
+        attacker: z.string(),
+        exclude: z.array(z.string()).nullish(),
+      }),
       render: ({ status, parameters, result }) => {
         const advice = parse<Advice>(result);
         if (status !== "complete" || !advice) {
           return (
-            <p className="my-2 text-xs text-muted">Scoring every possible marker for {parameters?.attacker ?? "…"}…</p>
+            <p className="my-2 text-xs text-muted">
+              {t("Scoring every possible marker for {name}…", {
+                name: parameters?.attacker ?? "…",
+              })}
+            </p>
           );
         }
         return <MarkingChart advice={advice} />;
       },
     },
-    [],
+    [lang],
   );
 
   return (
-    <section aria-label="Match copilot" className="mt-6 overflow-hidden rounded-2xl border border-line bg-surface shadow-sm">
+    <section
+      aria-label={t("Match copilot")}
+      className="mt-6 overflow-hidden rounded-2xl border border-line bg-surface shadow-sm"
+    >
       <header className="flex items-center gap-2 border-b border-line px-4 py-3">
         <span className="grid size-7 place-items-center rounded-lg bg-chrome text-white">
           <Sparkles className="size-3.5" aria-hidden />
         </span>
         <div>
-          <h2 className="font-display text-sm font-semibold tracking-tight">Match copilot</h2>
-          <p className="text-xs text-muted">Ask about any player or matchup. Every number comes from the engine.</p>
+          <h2 className="font-display text-sm font-semibold tracking-tight">
+            {t("Match copilot")}
+          </h2>
+          <p className="text-xs text-muted">
+            {t(
+              "Ask about any player or matchup. Every number comes from the engine.",
+            )}
+          </p>
         </div>
       </header>
       <div className="copilot-chat h-[460px]">
-        <CopilotChat agentId="default" />
+        <CopilotChat
+          agentId="default"
+          labels={{
+            chatInputPlaceholder: t("Ask about the match…"),
+            welcomeMessageText: t("Ask me anything about the match."),
+            chatDisclaimerText: t(
+              "AI can make mistakes. Please verify important information.",
+            ),
+            assistantMessageToolbarCopyMessageLabel: t("Copy"),
+            assistantMessageToolbarRegenerateLabel: t("Regenerate"),
+            assistantMessageToolbarThumbsUpLabel: t("Good answer"),
+            assistantMessageToolbarThumbsDownLabel: t("Bad answer"),
+            userMessageToolbarCopyMessageLabel: t("Copy"),
+            userMessageToolbarEditMessageLabel: t("Edit"),
+          }}
+        />
       </div>
     </section>
   );

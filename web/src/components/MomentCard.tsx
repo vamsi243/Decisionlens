@@ -12,7 +12,9 @@ import type {
   WorkloadState,
 } from "@/types/contracts";
 import { minute, pct, surname } from "@/lib/format";
+import { useT } from "@/lib/i18n";
 import { MOMENT_LABEL } from "@/lib/moments";
+import { useTr } from "@/lib/tr";
 import { cn } from "@/lib/utils";
 import { useMatch } from "@/state/match";
 import { usePrefs } from "@/state/prefs";
@@ -37,6 +39,7 @@ export function narration(o: Overlay | undefined, persona: Persona, lang: string
 }
 
 export function SourceBadge({ overlay }: { overlay?: Overlay }) {
+  const t = useT();
   if (!overlay) return null;
   const agents = overlay.source === "agents" || overlay.source === "mixed";
   return (
@@ -44,12 +47,12 @@ export function SourceBadge({ overlay }: { overlay?: Overlay }) {
       className="inline-flex items-center gap-1 text-[11px] text-muted-2"
       title={
         agents
-          ? "Written by the agents; every number checked against the engine"
-          : "Written from engine numbers (no model call)"
+          ? t("Written by the agents; every number checked against the engine")
+          : t("Written from engine numbers (no model call)")
       }
     >
       <BadgeCheck className="size-3 text-green" aria-hidden />
-      {agents ? "agents · grounded" : "engine card"}
+      {agents ? t("agents · grounded") : t("engine card")}
     </span>
   );
 }
@@ -143,9 +146,11 @@ export function bullets(
 
 /** Green ▲ / red ▼ rows: what raised the chance and what lowered it. */
 export function PointList({ points, fan, className }: { points: Point[]; fan: boolean; className?: string }) {
+  const t = useT();
+  const tr = useTr();
   if (!points.length) return null;
   return (
-    <ul className={cn("space-y-1", className)} aria-label="What helped and what hurt">
+    <ul className={cn("space-y-1", className)} aria-label={t("What helped and what hurt")}>
       {points.map((b) => (
         <li
           key={b.key}
@@ -158,8 +163,8 @@ export function PointList({ points, fan, className }: { points: Point[]; fan: bo
           <span aria-hidden className="mt-[3px] text-[10px] leading-none">
             {b.up ? "▲" : "▼"}
           </span>
-          <span className="sr-only">{b.up ? "Raises the chance:" : "Lowers the chance:"}</span>
-          <span className="tabular-nums">{b.text}</span>
+          <span className="sr-only">{b.up ? t("Raises the chance:") : t("Lowers the chance:")}</span>
+          <span className="tabular-nums">{tr(b.text)}</span>
         </li>
       ))}
     </ul>
@@ -193,6 +198,8 @@ export function MomentCard({
   const home = team !== undefined && team.team_id === teams?.[0]?.team_id;
   const setPrefs = usePrefs((s) => s.set);
   const followed = usePrefs((s) => s.player);
+  const t = useT();
+  const tr = useTr();
 
   if (fan) {
     const swingLine = w
@@ -218,24 +225,24 @@ export function MomentCard({
           )}
         >
           <span className="num">{minute(moment.t_ms)}</span>
-          <span>{MOMENT_LABEL[moment.type]}</span>
+          <span>{t(MOMENT_LABEL[moment.type])}</span>
           {team ? <span className="ml-auto">{team.name}</span> : null}
         </header>
         <div className="p-4">
-          <h3 className="font-display text-xl font-semibold leading-snug tracking-tight">{moment.title}</h3>
+          <h3 className="font-display text-xl font-semibold leading-snug tracking-tight">{tr(moment.title)}</h3>
           {text ? <p className="mt-2 text-base leading-snug text-ink/85">{text}</p> : null}
           {swingLine && !(text && text.includes(swing(w!.actual.p_success, w!.counterfactual.p_success))) ? (
-            <p className="mt-3 rounded-lg bg-green/10 px-3 py-2 text-sm text-green">{swingLine}</p>
+            <p className="mt-3 rounded-lg bg-green/10 px-3 py-2 text-sm text-green">{tr(swingLine)}</p>
           ) : null}
           {points.length ? (
-            <ul className="mt-3 flex flex-wrap gap-1.5" aria-label="What helped and what hurt">
+            <ul className="mt-3 flex flex-wrap gap-1.5" aria-label={t("What helped and what hurt")}>
               {points.map((b) => (
                 <li
                   key={b.key}
                   className={cn("rounded-full px-2.5 py-1 text-xs", b.up ? "bg-green/10 text-green" : "bg-red/10 text-red")}
                 >
                   <span aria-hidden>{b.up ? "▲ " : "▼ "}</span>
-                  {b.text}
+                  {tr(b.text)}
                 </li>
               ))}
             </ul>
@@ -246,7 +253,7 @@ export function MomentCard({
               onClick={() => void replayMoment(moment)}
               className="inline-flex items-center gap-1.5 rounded-full bg-chrome px-3 py-1.5 text-xs font-medium text-white hover:bg-chrome/85"
             >
-              <RotateCcw className="size-3.5" aria-hidden /> Watch again
+              <RotateCcw className="size-3.5" aria-hidden /> {t("Watch again")}
             </button>
             {star ? (
               <button
@@ -254,7 +261,7 @@ export function MomentCard({
                 onClick={() => setPrefs({ player: star.player_id, followCam: true })}
                 className="inline-flex items-center gap-1.5 rounded-full border border-line-2 px-3 py-1.5 text-xs font-medium hover:bg-panel-2"
               >
-                <Star className="size-3.5" aria-hidden /> Follow {surname(star.name)}
+                <Star className="size-3.5" aria-hidden /> {t("Follow {name}", { name: surname(star.name) })}
               </button>
             ) : null}
           </div>
@@ -278,7 +285,7 @@ export function MomentCard({
     >
       <header className="flex items-center gap-2 text-xs text-muted">
         <span className="num text-amber">{minute(moment.t_ms)}</span>
-        <span className="rounded-full bg-panel-2 px-2 py-0.5 font-medium text-ink">{MOMENT_LABEL[moment.type]}</span>
+        <span className="rounded-full bg-panel-2 px-2 py-0.5 font-medium text-ink">{t(MOMENT_LABEL[moment.type])}</span>
         {team ? (
           <span className={cn("font-medium", home ? "text-riv-ink" : "text-hil-ink")}>{team.short_name}</span>
         ) : null}
@@ -286,13 +293,13 @@ export function MomentCard({
           type="button"
           onClick={() => void replayMoment(moment)}
           className="ml-auto inline-flex items-center gap-1 rounded-md px-1.5 py-1 hover:bg-panel-2 hover:text-ink"
-          aria-label={`Replay ${moment.title}`}
+          aria-label={t("Replay {moment}", { moment: tr(moment.title) })}
         >
-          <RotateCcw className="size-3.5" /> Replay
+          <RotateCcw className="size-3.5" /> {t("Replay")}
         </button>
       </header>
       <h3 className={cn("mt-2 font-display font-semibold tracking-tight", fan ? "text-lg" : "text-base")}>
-        {moment.title}
+        {tr(moment.title)}
       </h3>
 
       {w && !fan ? (
@@ -309,13 +316,15 @@ export function MomentCard({
               {pct(w.counterfactual.p_success)}
             </span>
             <span className="text-xs text-muted">
-              {actor ? surname(actor.name) : "Actual"} → {w.counterfactual.profile.label}
+              {actor ? surname(actor.name) : t("Actual")} → {tr(w.counterfactual.profile.label)}
             </span>
           </div>
           {spread(w.actual.range) || spread(w.counterfactual.range) ? (
             <p className="num mt-0.5 text-xs text-muted-2">
-              range {pct(w.actual.range.low)}–{pct(w.actual.range.high)} → {pct(w.counterfactual.range.low)}–
-              {pct(w.counterfactual.range.high)}
+              {t("range {from} → {to}", {
+                from: `${pct(w.actual.range.low)}–${pct(w.actual.range.high)}`,
+                to: `${pct(w.counterfactual.range.low)}–${pct(w.counterfactual.range.high)}`,
+              })}
             </p>
           ) : null}
         </div>
@@ -338,16 +347,16 @@ export function MomentCard({
       <PointList points={points} fan={fan} className="mt-3" />
 
       {text && !fan ? (
-        <details className="mt-3">
+        <details className="mt-3" open={lang !== "en"}>
           <summary className="cursor-pointer select-none text-xs font-medium text-muted hover:text-ink">
-            Read the analysis
+            {t("Read the analysis")}
           </summary>
           <p className="mt-1.5 text-sm leading-relaxed text-ink/85">{text}</p>
         </details>
       ) : null}
 
       {!analysis && moment.type !== "fatigue_alert" ? (
-        <p className="mt-2 text-sm text-muted-2">Working out the options…</p>
+        <p className="mt-2 text-sm text-muted-2">{t("Working out the options…")}</p>
       ) : null}
       <footer className="mt-3 flex items-center justify-between gap-2">
         {!fan && (overlay || analysis) ? (
@@ -357,9 +366,9 @@ export function MomentCard({
               downloadJson(`decision-lens_${moment.moment_id}.json`, overlay ?? analysis)
             }
             className="inline-flex items-center gap-1 rounded-md px-1.5 py-1 text-[11px] text-muted hover:bg-panel-2 hover:text-ink"
-            aria-label={`Export overlay JSON for ${moment.title}`}
+            aria-label={t("Export overlay JSON for {moment}", { moment: tr(moment.title) })}
           >
-            <Download className="size-3" aria-hidden /> Overlay JSON
+            <Download className="size-3" aria-hidden /> {t("Overlay JSON")}
           </button>
         ) : (
           <span />

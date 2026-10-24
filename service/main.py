@@ -335,6 +335,33 @@ async def overlay(overlay_id: str, lang: str = "en") -> Overlay:
     return translated
 
 
+LANGS = {"es", "fr", "pt", "de", "hi"}  # the board's language menu (besides English)
+
+
+class TranslateBody(BaseModel):
+    lang: str
+    texts: list[str]
+
+
+_translate_limit = RateLimit(per_hour=400, total=4000)
+
+
+@app.post("/translate", dependencies=[Depends(_translate_limit)])
+async def translate(body: TranslateBody) -> dict[str, list[str]]:
+    """Engine and UI text in another language via Azure AI Translator, cached per string (no
+    model call). Bounded: known languages only, at most 200 texts of 600 characters a request."""
+    if body.lang == "en":
+        return {"texts": body.texts}
+    if body.lang not in LANGS:
+        raise HTTPException(400, "unsupported language")
+    if len(body.texts) > 200 or any(len(t) > 600 for t in body.texts):
+        raise HTTPException(413, "too much text in one request")
+    out = await rt.translator.texts(body.texts, body.lang)
+    if out is None:
+        raise HTTPException(503, "translation unavailable (no Translator key configured)")
+    return {"texts": out}
+
+
 @app.get("/agents/traces")
 async def agent_traces() -> list[dict[str, Any]]:
     """Which router steps ran for each trigger and where each text came from."""

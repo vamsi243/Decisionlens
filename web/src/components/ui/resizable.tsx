@@ -1,5 +1,6 @@
 import { GripVertical } from "lucide-react";
 import { useEffect, useRef, useState, type KeyboardEvent, type PointerEvent, type ReactNode } from "react";
+import { useT } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
 const MIN = 40;
@@ -35,6 +36,7 @@ export function ResizableSplit({
   onSize: (pct: number) => void;
 }) {
   const wide = useWide();
+  const t = useT();
   const row = useRef<HTMLDivElement>(null);
   const [dragging, setDragging] = useState(false);
 
@@ -72,7 +74,7 @@ export function ResizableSplit({
       <div
         role="separator"
         aria-orientation="vertical"
-        aria-label="Resize the pitch"
+        aria-label={t("Resize the pitch")}
         aria-valuemin={MIN}
         aria-valuemax={MAX}
         aria-valuenow={Math.round(size)}
@@ -83,7 +85,7 @@ export function ResizableSplit({
         onPointerCancel={up}
         onKeyDown={key}
         onDoubleClick={() => onSize(64)}
-        title="Drag to resize the pitch (double-click to reset)"
+        title={t("Drag to resize the pitch (double-click to reset)")}
         className="group relative mx-2 flex w-4 shrink-0 cursor-col-resize items-center justify-center outline-none"
       >
         <span

@@ -3,6 +3,8 @@ import { useEffect, useState } from "react";
 import type { PlayerDecision, PlayerDecisions, PlayerStats } from "@/types/contracts";
 import { api } from "@/lib/api";
 import { pct } from "@/lib/format";
+import { msg, useT } from "@/lib/i18n";
+import { useTr } from "@/lib/tr";
 import { activeMoment } from "@/lib/moments";
 import { cn } from "@/lib/utils";
 import { useMatch } from "@/state/match";
@@ -40,10 +42,11 @@ function useLive<T>(id: string | null, load: (id: string) => Promise<T>): T | nu
 }
 
 function Tile({ label, value, tone }: { label: string; value: string; tone?: "warn" }) {
+  const t = useT();
   return (
     <div className="rounded-lg bg-panel-2 px-3 py-2">
-      <p className="text-[11px] text-muted">{label}</p>
-      <p className={cn("num mt-0.5 text-base font-medium", tone === "warn" && "text-amber")}>{value}</p>
+      <p className="text-[11px] text-muted">{t(label)}</p>
+      <p className={cn("num mt-0.5 text-base font-medium", tone === "warn" && "text-amber")}>{t(value)}</p>
     </div>
   );
 }
@@ -56,7 +59,7 @@ function StatsGrid({ s }: { s: PlayerStats }) {
     ["Distance", `${s.distance_km.toFixed(1)} km`],
     ["Fatigue", `${Math.round(s.fatigue)} / 100`, s.fatigue >= 70 ? "warn" : undefined],
     ["Sprints", String(s.sprints)],
-    ["Top speed", s.top_speed_loss_pct ? `−${s.top_speed_loss_pct}%` : "full", s.top_speed_loss_pct >= 10 ? "warn" : undefined],
+    ["Top speed", s.top_speed_loss_pct ? `−${s.top_speed_loss_pct}%` : msg("full"), s.top_speed_loss_pct >= 10 ? "warn" : undefined],
     ["Passes", `${s.passes_completed ?? 0} / ${s.passes ?? 0}`],
     ["Shots · goals", `${s.shots ?? 0} · ${s.goals ?? 0}`],
     ["Tackles won", `${s.tackles_won ?? 0} / ${s.tackles ?? 0}`],
@@ -77,7 +80,9 @@ export { StatsGrid };
 function DecisionRow({ d, fan, live }: { d: PlayerDecision; fan: boolean; live: boolean }) {
   // the minute is already in the row header
   const text = d.text?.[fan ? "fan" : "analyst"]?.en?.replace(/^\d+'\s*/, "");
-  const kind = d.positive ? "Best decision" : d.kind === "defending" ? "Defending" : "On the ball";
+  const t = useT();
+  const tr = useTr();
+  const kind = t(d.positive ? msg("Best decision") : d.kind === "defending" ? msg("Defending") : msg("On the ball"));
   const minute = Math.floor(d.t_ms / 60_000) + 1;
   return (
     <li className="rounded-xl border border-line bg-surface p-3.5">
@@ -92,7 +97,7 @@ function DecisionRow({ d, fan, live }: { d: PlayerDecision; fan: boolean; live: 
               void api.seek(Math.max(0, d.t_ms - 4000)).then(() => api.play());
             }}
             className="ml-auto inline-flex items-center gap-1 rounded-md px-1.5 py-1 hover:bg-panel-2 hover:text-ink"
-            aria-label={`Replay the ${minute}th minute`}
+            aria-label={t("Replay minute {minute}", { minute })}
           >
             <RotateCcw className="size-3.5" aria-hidden /> Replay
           </button>
@@ -108,7 +113,7 @@ function DecisionRow({ d, fan, live }: { d: PlayerDecision; fan: boolean; live: 
           {d.positive ? "▲" : "▼"}
         </span>
         <span className="sr-only">{d.positive ? "Good decision:" : "Costly decision:"}</span>
-        <span>{text}</span>
+        <span>{tr(text)}</span>
       </p>
     </li>
   );
@@ -132,6 +137,8 @@ export function PlayerPanel() {
   const stats = useLive<PlayerStats>(id, loadStats);
   const decisions = useLive<PlayerDecisions>(id, loadDecisions);
   const fan = persona === "fan";
+  const t = useT();
+  const tr = useTr();
 
   const team = teams?.find((t) => t.team_id === p?.team_id);
   const home = team !== undefined && team.team_id === teams?.[0]?.team_id;
@@ -157,39 +164,39 @@ export function PlayerPanel() {
               onClick={() => setPrefs({ player: followed === id ? null : id })}
               aria-pressed={followed === id}
             >
-              <Star className="size-3.5" aria-hidden /> {followed === id ? "Following" : "Follow"}
+              <Star className="size-3.5" aria-hidden /> {followed === id ? t("Following") : t("Follow")}
             </Button>
 
-            <section aria-label="Stats">
-              <h3 className="mb-2 text-xs font-medium uppercase tracking-wide text-muted">So far</h3>
-              {stats ? <StatsGrid s={stats} /> : <p className="text-sm text-muted">Loading…</p>}
+            <section aria-label={t("Stats")}>
+              <h3 className="mb-2 text-xs font-medium uppercase tracking-wide text-muted">{t("So far")}</h3>
+              {stats ? <StatsGrid s={stats} /> : <p className="text-sm text-muted">{t("Loading…")}</p>}
             </section>
 
             {inMoment ? (
-              <section aria-label="This moment" className="rounded-xl border border-amber/40 bg-amber/5 p-3.5">
-                <p className="text-xs font-medium text-amber">In this moment</p>
-                <p className="mt-1 font-display font-semibold tracking-tight">{inMoment.moment.title}</p>
+              <section aria-label={t("This moment")} className="rounded-xl border border-amber/40 bg-amber/5 p-3.5">
+                <p className="text-xs font-medium text-amber">{t("In this moment")}</p>
+                <p className="mt-1 font-display font-semibold tracking-tight">{tr(inMoment.moment.title)}</p>
                 {w ? (
                   <p className="mt-1 text-sm">
                     <span className="num">{pct(w.actual.p_success)}</span>
                     <ArrowRight className="mx-1 inline size-3.5 text-muted" aria-hidden />
                     <span className="num text-green">{pct(w.counterfactual.p_success)}</span>{" "}
-                    <span className="text-muted">with {w.counterfactual.profile.label}</span>
+                    <span className="text-muted">{t("with {swap}", { swap: tr(w.counterfactual.profile.label) })}</span>
                   </p>
                 ) : null}
               </section>
             ) : null}
 
-            <section aria-label="Decisions">
+            <section aria-label={t("Decisions")}>
               <h3 className="mb-2 flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-muted">
                 <Footprints className="size-3.5" aria-hidden />
-                {fan ? "The big calls" : "Decisions that shaped the game"}
+                {fan ? t("The big calls") : t("Decisions that shaped the game")}
               </h3>
               {!decisions ? (
-                <p className="text-sm text-muted">Weighing every decision…</p>
+                <p className="text-sm text-muted">{t("Weighing every decision…")}</p>
               ) : decisions.items.length === 0 ? (
                 <p className="rounded-xl border border-dashed border-line-2 p-4 text-sm text-muted">
-                  Nothing worth flagging yet: no costly choices and no standout one.
+                  {t("Nothing worth flagging yet: no costly choices and no standout one.")}
                 </p>
               ) : (
                 <ul className="flex flex-col gap-2.5">
@@ -199,10 +206,10 @@ export function PlayerPanel() {
                 </ul>
               )}
               <p className="mt-3 text-[11px] leading-relaxed text-muted-2">
-                Ranked by the engine by goal odds, the chance the move ends in a goal.
+                {t("Ranked by the engine by goal odds, the chance the move ends in a goal.")}{" "}
                 {decisions?.items.some((d) => d.source === "agents")
-                  ? " Lines written by the agents at the last whistle."
-                  : " The agents rewrite these lines at half-time and full-time."}
+                  ? t("Lines written by the agents at the last whistle.")
+                  : t("The agents rewrite these lines at half-time and full-time.")}
               </p>
             </section>
           </div>

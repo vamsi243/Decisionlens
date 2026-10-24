@@ -1,6 +1,7 @@
 import { BarChart3, Pause, Play, Settings2 } from "lucide-react";
 import type { Speed } from "@/types/contracts";
 import { api } from "@/lib/api";
+import { useT } from "@/lib/i18n";
 import { sfx } from "@/lib/sfx";
 import { surname } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -23,6 +24,7 @@ function ControlRail({ onStats, onSettings }: { onStats: () => void; onSettings:
   const playing = status?.playing ?? false;
   // Fans get play/pause and settings; speeds and the stats drawer are analyst tools.
   const fan = usePrefs((s) => s.persona) === "fan";
+  const t = useT();
   return (
     <div className="chrome flex items-center gap-2 rounded-lg bg-panel-2 p-1.5 lg:flex-col">
       {/* A shared live broadcast can't be paused or sped up. */}
@@ -31,7 +33,7 @@ function ControlRail({ onStats, onSettings }: { onStats: () => void; onSettings:
           <Button
             variant="primary"
             size="icon"
-            aria-label={playing ? "Pause" : "Play"}
+            aria-label={playing ? t("Pause") : t("Play")}
             onClick={() => {
               sfx.tap();
               void (playing ? api.pause() : api.play());
@@ -49,7 +51,7 @@ function ControlRail({ onStats, onSettings }: { onStats: () => void; onSettings:
               sfx.tap();
               void api.speed(Number(v) as Speed);
             }}
-            aria-label="Replay speed"
+            aria-label={t("Replay speed")}
             className="border-0 lg:flex-col"
           >
             {SPEEDS.map((s) => (
@@ -63,14 +65,14 @@ function ControlRail({ onStats, onSettings }: { onStats: () => void; onSettings:
       )}
       <div className="ml-auto flex items-center gap-2 lg:ml-0 lg:mt-auto lg:flex-col">
         {fan ? null : (
-          <Tooltip label="Stats">
-            <Button size="icon" variant="ghost" aria-label="Open stats" onClick={onStats}>
+          <Tooltip label={t("Stats")}>
+            <Button size="icon" variant="ghost" aria-label={t("Open stats")} onClick={onStats}>
               <BarChart3 className="size-4" />
             </Button>
           </Tooltip>
         )}
-        <Tooltip label="Settings">
-          <Button size="icon" variant="ghost" aria-label="Open settings" onClick={onSettings}>
+        <Tooltip label={t("Settings")}>
+          <Button size="icon" variant="ghost" aria-label={t("Open settings")} onClick={onSettings}>
             <Settings2 className="size-4" />
           </Button>
         </Tooltip>
@@ -85,6 +87,7 @@ function BenchStrip() {
   const players = useMatch((s) => s.players);
   const onPitch = useMatch((s) => s.onPitch);
   const focus = usePrefs((s) => s.player);
+  const t = useT();
   if (!meta || onPitch.length === 0) return null;
   const on = new Set(onPitch);
   return (
@@ -96,7 +99,7 @@ function BenchStrip() {
         return (
           <div key={team.team_id} className={cn("flex flex-wrap items-center gap-1.5", i === 1 && "sm:justify-end")}>
             <span className={cn("text-[11px] font-medium uppercase tracking-wide", i === 0 ? "text-white" : "text-hil")}>
-              {team.short_name} bench
+              {t("{team} bench", { team: team.short_name })}
             </span>
             {bench.map((p) => (
               <button

@@ -1,6 +1,7 @@
 import * as Dialog from "@radix-ui/react-dialog";
 import { X } from "lucide-react";
 import { forwardRef, type ComponentPropsWithoutRef, type ElementRef, type ReactNode } from "react";
+import { useT } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
 export const Sheet = Dialog.Root;
@@ -40,7 +41,7 @@ export const SheetContent = forwardRef<ElementRef<typeof Dialog.Content>, SheetC
               <Dialog.Description className="sr-only">{title}</Dialog.Description>
             )}
           </div>
-          <Dialog.Close className="rounded-md p-1.5 text-muted hover:bg-panel-2 hover:text-ink" aria-label="Close">
+          <Dialog.Close className="rounded-md p-1.5 text-muted hover:bg-panel-2 hover:text-ink" aria-label={useT()("Close")}>
             <X className="size-4" />
           </Dialog.Close>
         </div>

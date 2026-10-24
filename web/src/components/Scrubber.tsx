@@ -5,6 +5,8 @@ import { clock, minute } from "@/lib/format";
 import { playClip } from "@/lib/clip";
 import { MOMENT_LABEL } from "@/lib/moments";
 import { useMatch } from "@/state/match";
+import { useT } from "@/lib/i18n";
+import { useTr } from "@/lib/tr";
 import { sfx } from "@/lib/sfx";
 import { Tooltip } from "./ui/tooltip";
 
@@ -27,6 +29,8 @@ export function Scrubber() {
   const clockMs = useMatch((s) => s.clockMs);
   const moments = useMatch((s) => s.allMoments);
   const live = useMatch((s) => s.server?.live ?? false);
+  const t = useT();
+  const tr = useTr();
   const bar = useRef<HTMLDivElement>(null);
   const [drag, setDrag] = useState<number | null>(null);
 
@@ -61,7 +65,7 @@ export function Scrubber() {
           <div
             ref={bar}
             role="slider"
-            aria-label="Match timeline"
+            aria-label={t("Match timeline")}
             data-live={live}
             aria-valuemin={0}
             aria-valuemax={duration}
@@ -87,10 +91,10 @@ export function Scrubber() {
           </div>
           <div className="pointer-events-none absolute top-0 h-full w-px bg-line-2" style={{ left: `${halftime * 100}%` }} />
           {visible.map((m) => (
-            <Tooltip key={m.moment_id} label={`${minute(m.t_ms)} ${MOMENT_LABEL[m.type]} · ${m.title}`}>
+            <Tooltip key={m.moment_id} label={`${minute(m.t_ms)} ${t(MOMENT_LABEL[m.type])} · ${tr(m.title)}`}>
               <button
                 type="button"
-                aria-label={`Replay ${MOMENT_LABEL[m.type]} at ${minute(m.t_ms)}`}
+                aria-label={t("Replay {moment} at {minute}", { moment: t(MOMENT_LABEL[m.type]), minute: minute(m.t_ms) })}
                 onClick={() => void replayMoment(m)}
                 className="absolute top-0 size-3 -translate-x-1/2 rotate-45 rounded-[3px] bg-amber shadow-sm ring-2 ring-panel-2 transition-transform duration-200 hover:scale-125 focus-visible:outline-none focus-visible:ring-ink/40"
                 style={{ left: `${(m.t_ms / duration) * 100}%` }}
