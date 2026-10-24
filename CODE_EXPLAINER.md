@@ -44,8 +44,35 @@ _TODO_
 ## How one key moment becomes a card
 _TODO_
 
-## The probability maths
-_TODO (Phase 3)_
+## The probability maths (`engine/`)
+
+**Getting somewhere** (`physics.arrival_time`). A player drifts on his current velocity for his reaction time, then accelerates from rest at `a` up to top speed `v`:
+
+```
+d_acc = v² / 2a
+t(d)  = reaction + √(2d / a)                  if d ≤ d_acc
+      = reaction + v/a + (d − d_acc) / v      otherwise   (d = distance minus a 1 m control radius)
+```
+Fatigue scales the inputs. At fatigue 100, top speed drops to ×0.78, acceleration to ×0.70 and reaction time rises to ×1.40.
+
+**Ball flight.** A ground pass slows with drag: `s(t) = D (1 − e^{−kt}) / (1 − e^{−kT})`, with k = 0.35 and an average speed of 11.5 m/s. Passes longer than 32 m are lofted: k = 0.25, 15 m/s, and they can only be intercepted in the last 25% of their flight.
+
+**Who wins a race.** `P(player first) = σ((t_ball − t_player − margin) / 0.45 s)`, the same logistic used everywhere.
+
+| Probability | Formula |
+| --- | --- |
+| Pass success | `Π_defenders (1 − 0.85·max_lane σ(…)) × P(receiver arrives) × σ(3.6 + (passing − 70)/15 − 1.8·pressure − 0.03·d)` |
+| Pass difficulty | `100 × (0.8·(1 − p) + 0.2·pressure)` |
+| Aerial duel | Bradley–Terry: `w = arrival × σ((reach − ball height)/12 cm) × e^{(reach − 250)/40 + (aerial − 70)/50}`, defender ×1.3 |
+| xG | `σ(0.2 − 0.16·dist + 0.9·angle − 1.2·pressure − 1.2·header + (finishing − 70)/40)` |
+| Recovery run | `1 − Π_path (1 − 0.35·σ((t_carrier − t_chaser)/0.5))`, with the carrier at 75% of top speed toward the box edge |
+| xT | analytic grid: `0.004 + 0.03·(x/105)² + 0.55·xG(x, y)` |
+
+**Ranges.** 300 Monte Carlo runs jitter every player's reaction time (sd 0.04 s) and speed and acceleration (sd 5%); the range is the 10th–90th percentile. Before and after a swap share the same seed.
+
+**What-if drivers.** The engine compares the attributes that matter for the moment, all fatigue-adjusted: reach, aerial rating, reaction and fatigue for a header; top speed, acceleration, reaction and fatigue for a recovery run. They come out as plain text ("+32 cm reach", "fresher legs (fatigue 70 → 0)"). The drivers' numbers come from the engine too.
+
+**Adding a moment type:** add it to `MomentType`, write a branch in `moments.evaluate` and `spec_for_event`, list its driver factors in `whatif.FACTORS` and its preferred archetype in `PREFERRED_ARCHETYPE`.
 
 ## Extending
 _TODO_

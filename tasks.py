@@ -61,18 +61,31 @@ def replay() -> int:
     return run([sys.executable, "-m", "uvicorn", "service.main:app", "--port", "8000"])
 
 
+def calibrate() -> int:
+    return run([sys.executable, "-m", "engine.calibration", "data/samples/match_42"])
+
+
 def schema() -> int:
     return run([sys.executable, "-m", "contracts.export"]) or run(pnpm("types"), cwd=WEB)
 
 
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("task", choices=["dev", "test", "lint", "generate", "replay", "schema"])
+    parser.add_argument(
+        "task", choices=["dev", "test", "lint", "generate", "replay", "schema", "calibrate"]
+    )
     parser.add_argument("--seed", type=int, default=42)
     a = parser.parse_args()
     if a.task == "generate":
         return generate(a.seed)
-    return {"dev": dev, "test": test, "lint": lint, "replay": replay, "schema": schema}[a.task]()
+    return {
+        "dev": dev,
+        "test": test,
+        "lint": lint,
+        "replay": replay,
+        "schema": schema,
+        "calibrate": calibrate,
+    }[a.task]()
 
 
 if __name__ == "__main__":

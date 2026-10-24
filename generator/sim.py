@@ -26,7 +26,10 @@ from typing import Any
 import numpy as np
 
 from contracts import Archetype, Event, EventType, Outcome, Period, Point
-from generator import rules
+from engine import probability as P
+from engine.fatigue import FatigueModel
+from engine.physics import LOFT_DISTANCE, Kinematics, flight_params
+from engine.profiles import effective_reach_cm
 from generator.roster import AWAY, HOME, WORK_RATE, Roster
 
 HZ = 10
@@ -114,7 +117,7 @@ class MatchSim:
         self.is_gk = np.array([p.profile.archetype == Archetype.GOALKEEPER for p in ps])
         self.vmax = np.array([p.profile.physical.max_speed_ms for p in ps])
         self.acc = np.array([p.profile.physical.accel_ms2 for p in ps])
-        self.reach = np.array([p.profile.physical.jump_reach_cm for p in ps])
+        self.react = np.array([p.profile.physical.reaction_s for p in ps])
         self.aerial = np.array([p.profile.skill.aerial for p in ps])
         self.tackle = np.array([p.profile.skill.tackle for p in ps])
         self.carry_skill = np.array(
@@ -133,7 +136,7 @@ class MatchSim:
         self.pos = np.zeros((n, 2))
         self.shape = np.zeros((n, 2))  # low-pass filtered shape targets
         self.vel = np.zeros((n, 2))
-        self.fatigue = np.zeros(n)
+        self.fm = FatigueModel(n)  # the engine's fatigue model: same maths the app explains
         self.run_until = np.zeros(n)
         self.run_target = np.zeros((n, 2))
         self.press_block = np.zeros(n)
@@ -162,6 +165,9 @@ class MatchSim:
         self.scripted = False
         self.overrides: dict[int, tuple[Target, bool]] = {}
         self.director: list[tuple[float, Callable[[MatchSim], Script]]] = []
+        # Spells of pressure (start_s, end_s, team): big moments come in intense spells, so the
+        # attacking side runs and shoots more and duels are fiercer around scripted moments.
+        self.spells: list[tuple[float, float, int]] = []
         self.active: Script | None = None
         self.subs: list[tuple[float, int, int]] = []  # (time_s, out, in)
         self.knocks: list[tuple[float, int]] = []
@@ -177,8 +183,30 @@ class MatchSim:
             mask &= ~self.is_gk
         return np.flatnonzero(mask)
 
+    @property
+    def fatigue(self) -> np.ndarray:
+        return self.fm.fatigue
+
+    def spell_team(self) -> int:
+        """Team on top in the current spell of pressure, or -1."""
+        return next((tm for a, b, tm in self.spells if a <= self.t < b), -1)
+
     def speed_mod(self) -> np.ndarray:
-        return 1.0 - 0.0022 * self.fatigue
+        return self.fm.speed_mod()
+
+    def kin(self, idx: np.ndarray | list[int]) -> Kinematics:
+        """Engine kinematics for players `idx`, scaled by their current fatigue."""
+        ix = np.asarray(idx, int)
+        return Kinematics(
+            pos=self.pos[ix],
+            vel=self.vel[ix],
+            vmax=(self.vmax * self.fm.speed_mod())[ix],
+            accel=(self.acc * self.fm.accel_mod())[ix],
+            reaction=(self.react * self.fm.reaction_mod())[ix],
+        )
+
+    def reach(self, i: int) -> float:
+        return effective_reach_cm(self.profiles[i], self.fm.modifiers(i))
 
     def nearest(self, idx: np.ndarray, xy: np.ndarray) -> tuple[int, float]:
         d = np.linalg.norm(self.pos[idx] - xy, axis=1)
@@ -187,7 +215,7 @@ class MatchSim:
 
     def pressure_on(self, i: int) -> float:
         _, d = self.nearest(self.on_team(1 - self.team[i]), self.pos[i])
-        return rules.pressure_from_distance(d)
+        return P.pressure_from_distance(d)
 
     def gk_of(self, team: int) -> int:
         return int(self.on_team(team)[self.is_gk[self.on_team(team)]][0])
@@ -469,6 +497,8 @@ class MatchSim:
 
     def _start_runs(self, team: int, idx: np.ndarray, bx: float, draws: np.ndarray) -> None:
         rate = self.run_rate[idx] * np.where(self.overlapper[idx] & (bx > 45.0), 2.0, 1.0)
+        if self.spell_team() == team:
+            rate = rate * 3.0
         start = (self.run_until[idx] <= self.t) & (draws[idx, 0] < rate * DT) & (idx != self.owner)
         for i in idx[start]:
             fx = min(bx + 10.0 + 14.0 * draws[i, 1], 93.0)
@@ -507,17 +537,14 @@ class MatchSim:
         desired = np.where(dist > 1e-6, d / np.maximum(dist, 1e-6), 0.0) * speed
         dv = desired - self.vel
         dvn = np.linalg.norm(dv, axis=1, keepdims=True)
-        lim = (self.acc * self.speed_mod())[:, None] * DT * 1.6
+        lim = (self.acc * self.fm.accel_mod())[:, None] * DT * 1.6
         dv = np.where(dvn > lim, dv / np.maximum(dvn, 1e-9) * lim, dv)
         self.vel[on] += dv[on]
         self.pos[on] += self.vel[on] * DT
         self.pos[on] = np.clip(self.pos[on], [-2.0, -2.0], [L + 2.0, W + 2.0])
 
     def _update_fatigue(self) -> None:
-        speed = np.linalg.norm(self.vel, axis=1)
-        gain = 0.07 * np.maximum(0.0, speed - 5.0) ** 1.3 + 0.007
-        recover = np.where(speed < 2.0, 0.006, 0.0)
-        self.fatigue = np.clip(self.fatigue + (gain - recover) * DT * self.on, 0.0, 100.0)
+        self.fm.step(np.linalg.norm(self.vel, axis=1), DT, self.on.astype(float))
 
     # ------------------------------------------------------------------ ball
     def _update_ball(self) -> None:
@@ -610,6 +637,7 @@ class MatchSim:
         z_end: float,
         on_arrive: Callable[[], None],
         roles: list[tuple[int, np.ndarray]],
+        k: float | None = None,
     ) -> Flight:
         start = self.ball[:2].copy()
         d = float(np.linalg.norm(end - start))
@@ -621,7 +649,7 @@ class MatchSim:
             T=max(0.3, d / speed_avg),
             peak=peak,
             z_end=z_end,
-            k=0.25 if peak > 1.0 else 0.35,
+            k=k if k is not None else (0.25 if peak > 1.0 else 0.35),
             on_arrive=on_arrive,
         )
         self.flight = fl
@@ -639,10 +667,11 @@ class MatchSim:
         pressure = self.pressure_on(o)
         u = self.rng.random(4)
         if not self.is_gk[o]:
-            dist, angle = rules.goal_geometry(fx, fy)
+            dist, angle = P.goal_geometry(fx, fy)
             if dist < 26.0:
-                xg = rules.xg(dist, angle, pressure)
-                if dist < 24.0 and u[0] < min(0.7, 0.03 + 1.3 * xg):
+                xg = P.xg(dist, angle, pressure, False, self.profiles[o].skill.finishing)
+                eager = 1.6 if self.spell_team() == team else 1.0
+                if dist < 26.0 and u[0] < min(0.8, eager * (0.03 + 1.3 * xg)):
                     self._shoot(o, pressure)
                     return
             if fx > 76.0 and abs(fy - 34.0) > 15.0 and u[1] < 0.22:
@@ -660,27 +689,36 @@ class MatchSim:
         start = self.pos[o]
         recv = np.clip(self.pos[mates] + self.vel[mates] * 0.6, [1, 1], [L - 1, W - 1])
         dists = np.linalg.norm(recv - start, axis=1)
-        lane = np.array([_seg_dist(self.pos[opps], start, r)[0].min() for r in recv])
-        space = np.array([np.linalg.norm(self.pos[opps] - r, axis=1).min() for r in recv])
         progress = np.array([rel(team, r)[0] for r in recv]) - rel(team, start)[0]
-        p = np.array(
-            [
-                rules.pass_success(d, lc, sp, pressure, self.passing[o])
-                for d, lc, sp in zip(dists, lane, space, strict=True)
-            ]
-        )
-        utility = p * (1.0 + 0.03 * np.clip(progress, -15, 40)) - (1 - p) * 0.8
+        defenders = self.kin(opps)
+        evals = [
+            P.pass_success(
+                start, r, self.kin([m]), defenders, passing=self.passing[o], pressure=pressure
+            )
+            for m, r in zip(mates, recv, strict=True)
+        ]
+        p = np.array([e.p for e in evals])
+        utility = p * (1.0 + 0.025 * np.clip(progress, -15, 40)) - (1 - p) * 1.6
         utility[self.is_gk[mates] & (pressure < 0.6)] -= 0.6
         utility[dists < 4.0] -= 0.5
-        if utility.max() < 0.55 and pressure < 0.35 and not self.is_gk[o]:
+        if utility.max() < 0.45 and pressure < 0.35 and not self.is_gk[o]:
             self.hold_until = self.t + 0.7  # nothing on: keep carrying
             return
-        w = np.exp((utility - utility.max()) * 6.0)
+        w = np.exp((utility - utility.max()) * 8.0)
         k = int(np.searchsorted(np.cumsum(w) / w.sum(), u))
         k = min(k, len(mates) - 1)
         m = int(mates[k])
         success = bool(self.rng.random() < p[k])
-        self._pass(o, m, success, pressure=pressure)
+        ev = evals[k]
+        self._pass(
+            o,
+            m,
+            success,
+            end=recv[k],
+            interceptor=int(opps[ev.interceptor]) if ev.interceptor >= 0 else None,
+            intercept_frac=ev.intercept_frac,
+            pressure=pressure,
+        )
 
     def _pass(
         self,
@@ -690,6 +728,7 @@ class MatchSim:
         *,
         end: np.ndarray | None = None,
         interceptor: int | None = None,
+        intercept_frac: float | None = None,
         lofted: bool | None = None,
         pressure: float | None = None,
         tags: tuple[str, ...] = (),
@@ -702,9 +741,10 @@ class MatchSim:
             else np.clip(self.pos[m] + self.vel[m] * 0.6, [1, 1], [L - 1, W - 1])
         )
         d = float(np.linalg.norm(recv_pt - start))
-        lofted = d > 32.0 if lofted is None else lofted
+        lofted = d > LOFT_DISTANCE if lofted is None else lofted
         peak = min(10.0, 0.16 * d) if lofted else 0.0
-        speed_avg = 15.0 if lofted else 11.5
+        T, k = flight_params(d, lofted)
+        speed_avg = max(d, 0.1) / T
         if pressure is None:
             pressure = self.pressure_on(o)
         if success:
@@ -717,13 +757,16 @@ class MatchSim:
                 z_end=BALL_R,
                 on_arrive=lambda: self._arrive(m),
                 roles=[(m, recv_pt)],
+                k=k,
             )
         else:
             opps = self.on_team(1 - team, outfield=True)
             lane_d, _ = _seg_dist(self.pos[opps], start, recv_pt)
             j = int(opps[np.argmin(lane_d)]) if interceptor is None else interceptor
-            _, fj = _seg_dist(self.pos[j : j + 1], start, recv_pt)
-            ip = start + (recv_pt - start) * float(np.clip(fj[0], 0.35, 0.95))
+            if intercept_frac is None:
+                _, fj = _seg_dist(self.pos[j : j + 1], start, recv_pt)
+                intercept_frac = float(fj[0])
+            ip = start + (recv_pt - start) * float(np.clip(intercept_frac, 0.35, 0.95))
             fl = self.kick(
                 "pass",
                 o,
@@ -733,6 +776,7 @@ class MatchSim:
                 z_end=BALL_R,
                 on_arrive=lambda: self._arrive(j, intercept=True),
                 roles=[(j, ip), (m, recv_pt)],
+                k=k,
             )
         self.emit(
             EventType.PASS,
@@ -766,8 +810,8 @@ class MatchSim:
     ) -> None:
         team = int(self.team[o])
         fx, fy = rel(team, self.ball[:2])
-        dist, angle = rules.goal_geometry(fx, fy)
-        xg = rules.xg(dist, angle, pressure, header)
+        dist, angle = P.goal_geometry(fx, fy)
+        xg = P.xg(dist, angle, pressure, header, self.profiles[o].skill.finishing)
         u = self.rng.random(3)
         scored = bool(u[0] < xg) if goal is None else goal
         gk = self.gk_of(1 - team)
@@ -827,13 +871,19 @@ class MatchSim:
         mates = self.on_team(team, outfield=True)
         att, _ = self.nearest(mates[mates != o], landing)
         dfd, _ = self.nearest(self.on_team(1 - team, outfield=True), landing)
-        p_att = rules.aerial_win(
-            self.reach[att] * self.speed_mod()[att],
+        t_ball = float(np.linalg.norm(landing - self.ball[:2])) / 17.0
+        p_att = P.aerial_win(
+            self.kin([att]),
+            self.reach(att),
             self.aerial[att],
-            self.reach[dfd] * self.speed_mod()[dfd],
+            self.kin([dfd]),
+            self.reach(dfd),
             self.aerial[dfd],
+            landing,
+            2.4,
+            t_ball,
         )
-        att_wins = bool(u[2] < 0.6 * p_att)  # defenders attack the ball facing it
+        att_wins = bool(u[2] < p_att)
         self._delivery(o, att, dfd, landing, att_wins, pressure, ())
 
     def _delivery(
@@ -928,11 +978,13 @@ class MatchSim:
             return
         j, d = self.nearest(idx, self.pos[o])
         u = self.rng.random(4)
-        if d > 1.5 or u[3] > DUEL_HAZARD * DT:  # a challenge happens at a steady rate in contact
+        hazard = DUEL_HAZARD * (2.0 if self.spell_team() >= 0 else 1.0)
+        if d > 1.5 or u[3] > hazard * DT:  # a challenge happens at a steady rate in contact
             return
         start = self.pos[o].copy()
         if self.profiles[o].archetype in DRIBBLERS and u[0] < 0.6:
-            ok = bool(u[1] < rules.dribble_success(self.carry_skill[o], self.tackle[j]))
+            legs = float(self.fm.accel_mod()[o] / self.fm.accel_mod()[j])
+            ok = bool(u[1] < P.duel_success(self.carry_skill[o], self.tackle[j], legs))
             self.emit(
                 EventType.DRIBBLE,
                 team_id=team,
@@ -955,7 +1007,8 @@ class MatchSim:
             )
             self._gain(j)
             return
-        ok = bool(u[1] < rules.tackle_success(self.tackle[j], self.carry_skill[o]))
+        legs = float(self.fm.accel_mod()[j] / self.fm.accel_mod()[o])
+        ok = bool(u[1] < P.duel_success(self.tackle[j], self.carry_skill[o], legs))
         if not ok and u[2] < 0.22:
             self.emit(EventType.FOUL, team_id=1 - team, player_id=j, target_id=o, start=start)
             self.press_block[j] = self.t + 4.0
@@ -987,13 +1040,14 @@ class MatchSim:
                 player_id=j,
                 target_id=o,
                 start=self.pos[j].copy(),
-                pressure=rules.pressure_from_distance(d),
+                pressure=P.pressure_from_distance(d),
             )
 
     # ------------------------------------------------------------------ squad changes
     def _substitutions(self) -> None:
         while self.knocks and self.t >= self.knocks[0][0]:
             _, i = self.knocks.pop(0)
+            self.fm.knocked[i] = True
             self.emit(
                 EventType.KNOCK,
                 team_id=int(self.team[i]),

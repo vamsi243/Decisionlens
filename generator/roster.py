@@ -20,6 +20,7 @@ from contracts import (
     TeamColours,
     TeamMeta,
 )
+from engine.profiles import ARCHETYPE_BASE
 
 HOME, AWAY = 0, 1
 TEAM_IDS = ("RIV", "HIL")
@@ -51,19 +52,6 @@ FORMATIONS: dict[str, dict[str, tuple[float, float]]] = {
         "LW": (50, 57),
         "ST": (59, 34),
     },
-}
-
-# height_cm, max_speed_ms, accel_ms2, reaction_s, jump_reach_cm, passing, aerial, tackle, finishing
-ARCHETYPE_BASE: dict[Archetype, tuple[float, ...]] = {
-    Archetype.GOALKEEPER: (190, 7.4, 3.0, 0.22, 250, 58, 72, 30, 10),
-    Archetype.AERIAL_CB: (193, 8.3, 3.2, 0.26, 270, 58, 88, 80, 30),
-    Archetype.BALL_PLAYING_CB: (185, 8.6, 3.5, 0.24, 255, 80, 70, 75, 30),
-    Archetype.OVERLAPPING_FB: (177, 9.4, 4.2, 0.23, 240, 70, 50, 68, 35),
-    Archetype.DEEP_PLAYMAKER: (180, 8.4, 3.6, 0.22, 245, 90, 55, 62, 50),
-    Archetype.BOX_TO_BOX: (182, 9.0, 3.9, 0.23, 250, 76, 64, 70, 60),
-    Archetype.PRESSING_FORWARD: (181, 9.3, 4.1, 0.21, 248, 70, 60, 50, 78),
-    Archetype.TARGET_MAN: (194, 8.4, 3.3, 0.25, 275, 64, 90, 40, 80),
-    Archetype.WINGER: (175, 9.8, 4.4, 0.21, 235, 74, 42, 40, 70),
 }
 
 POSITION_OF_SLOT = {

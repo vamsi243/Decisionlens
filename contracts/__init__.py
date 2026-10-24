@@ -35,6 +35,13 @@ from contracts.match import (
     TeamColours,
     TeamMeta,
 )
+from contracts.stats import (
+    CalibrationBin,
+    CalibrationReport,
+    IntensityPoint,
+    MatchStats,
+    TeamStats,
+)
 from contracts.tracking import (
     BallState,
     Event,
@@ -54,12 +61,16 @@ __all__ = [
     "ActionKind",
     "Archetype",
     "BallState",
+    "CalibrationBin",
+    "CalibrationReport",
     "Driver",
     "Event",
     "EventType",
     "FrameRange",
+    "IntensityPoint",
     "KeyMoment",
     "MatchMeta",
+    "MatchStats",
     "Modifiers",
     "MomentType",
     "Option",
@@ -83,6 +94,7 @@ __all__ = [
     "Skill",
     "TeamColours",
     "TeamMeta",
+    "TeamStats",
     "TrackingFrame",
     "WhatIf",
     "WorkloadState",

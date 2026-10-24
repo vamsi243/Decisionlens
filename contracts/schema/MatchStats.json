@@ -1,0 +1,127 @@
+{
+  "$defs": {
+    "TeamStats": {
+      "additionalProperties": false,
+      "properties": {
+        "avg_pass_distance_m": {
+          "minimum": 0,
+          "title": "Avg Pass Distance M",
+          "type": "number"
+        },
+        "avg_pass_speed_ms": {
+          "minimum": 0,
+          "title": "Avg Pass Speed Ms",
+          "type": "number"
+        },
+        "distance_km": {
+          "minimum": 0,
+          "title": "Distance Km",
+          "type": "number"
+        },
+        "goals": {
+          "minimum": 0,
+          "title": "Goals",
+          "type": "integer"
+        },
+        "interceptions": {
+          "minimum": 0,
+          "title": "Interceptions",
+          "type": "integer"
+        },
+        "max_shot_speed_ms": {
+          "minimum": 0,
+          "title": "Max Shot Speed Ms",
+          "type": "number"
+        },
+        "pass_accuracy": {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Pass Accuracy",
+          "type": "number"
+        },
+        "passes": {
+          "minimum": 0,
+          "title": "Passes",
+          "type": "integer"
+        },
+        "passes_completed": {
+          "minimum": 0,
+          "title": "Passes Completed",
+          "type": "integer"
+        },
+        "possession": {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Possession",
+          "type": "number"
+        },
+        "shots": {
+          "minimum": 0,
+          "title": "Shots",
+          "type": "integer"
+        },
+        "shots_on_target": {
+          "minimum": 0,
+          "title": "Shots On Target",
+          "type": "integer"
+        },
+        "tackles_won": {
+          "minimum": 0,
+          "title": "Tackles Won",
+          "type": "integer"
+        },
+        "team_id": {
+          "title": "Team Id",
+          "type": "string"
+        },
+        "xg": {
+          "minimum": 0,
+          "title": "Xg",
+          "type": "number"
+        }
+      },
+      "required": [
+        "team_id",
+        "possession",
+        "passes",
+        "passes_completed",
+        "pass_accuracy",
+        "avg_pass_distance_m",
+        "avg_pass_speed_ms",
+        "shots",
+        "shots_on_target",
+        "goals",
+        "xg",
+        "max_shot_speed_ms",
+        "tackles_won",
+        "interceptions",
+        "distance_km"
+      ],
+      "title": "TeamStats",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "t_ms": {
+      "minimum": 0,
+      "title": "T Ms",
+      "type": "integer"
+    },
+    "teams": {
+      "items": {
+        "$ref": "#/$defs/TeamStats"
+      },
+      "maxItems": 2,
+      "minItems": 2,
+      "title": "Teams",
+      "type": "array"
+    }
+  },
+  "required": [
+    "t_ms",
+    "teams"
+  ],
+  "title": "MatchStats",
+  "type": "object"
+}

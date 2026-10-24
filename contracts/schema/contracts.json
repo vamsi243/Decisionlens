@@ -71,6 +71,89 @@
       "title": "BallState",
       "type": "object"
     },
+    "CalibrationBin": {
+      "additionalProperties": false,
+      "properties": {
+        "count": {
+          "minimum": 0,
+          "title": "Count",
+          "type": "integer"
+        },
+        "hi": {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Hi",
+          "type": "number"
+        },
+        "lo": {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Lo",
+          "type": "number"
+        },
+        "observed": {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Observed",
+          "type": "number"
+        },
+        "predicted": {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Predicted",
+          "type": "number"
+        }
+      },
+      "required": [
+        "lo",
+        "hi",
+        "count",
+        "predicted",
+        "observed"
+      ],
+      "title": "CalibrationBin",
+      "type": "object"
+    },
+    "CalibrationReport": {
+      "additionalProperties": false,
+      "properties": {
+        "bins": {
+          "items": {
+            "$ref": "#/$defs/CalibrationBin"
+          },
+          "title": "Bins",
+          "type": "array"
+        },
+        "brier": {
+          "minimum": 0,
+          "title": "Brier",
+          "type": "number"
+        },
+        "ece": {
+          "minimum": 0,
+          "title": "Ece",
+          "type": "number"
+        },
+        "model": {
+          "title": "Model",
+          "type": "string"
+        },
+        "samples": {
+          "minimum": 0,
+          "title": "Samples",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "model",
+        "samples",
+        "brier",
+        "ece",
+        "bins"
+      ],
+      "title": "CalibrationReport",
+      "type": "object"
+    },
     "Driver": {
       "additionalProperties": false,
       "description": "One reason the counterfactual differs, e.g. factor=jump_reach, delta=+12, unit=cm.",
@@ -298,6 +381,77 @@
       "title": "FrameRange",
       "type": "object"
     },
+    "IntensityPoint": {
+      "additionalProperties": false,
+      "description": "Match intensity for one 5-minute window (0-100, computable live; see engine.metrics).",
+      "properties": {
+        "dangerous_turnovers": {
+          "minimum": 0,
+          "title": "Dangerous Turnovers",
+          "type": "integer"
+        },
+        "duels": {
+          "minimum": 0,
+          "title": "Duels",
+          "type": "integer"
+        },
+        "goals": {
+          "minimum": 0,
+          "title": "Goals",
+          "type": "integer"
+        },
+        "hsr_m": {
+          "minimum": 0,
+          "title": "Hsr M",
+          "type": "number"
+        },
+        "index": {
+          "maximum": 100.0,
+          "minimum": 0.0,
+          "title": "Index",
+          "type": "number"
+        },
+        "pressures": {
+          "minimum": 0,
+          "title": "Pressures",
+          "type": "integer"
+        },
+        "shots": {
+          "minimum": 0,
+          "title": "Shots",
+          "type": "integer"
+        },
+        "window_end_ms": {
+          "minimum": 0,
+          "title": "Window End Ms",
+          "type": "integer"
+        },
+        "window_start_ms": {
+          "minimum": 0,
+          "title": "Window Start Ms",
+          "type": "integer"
+        },
+        "xg": {
+          "minimum": 0,
+          "title": "Xg",
+          "type": "number"
+        }
+      },
+      "required": [
+        "window_start_ms",
+        "window_end_ms",
+        "index",
+        "hsr_m",
+        "duels",
+        "shots",
+        "pressures",
+        "xg",
+        "goals",
+        "dangerous_turnovers"
+      ],
+      "title": "IntensityPoint",
+      "type": "object"
+    },
     "KeyMoment": {
       "additionalProperties": false,
       "properties": {
@@ -428,6 +582,31 @@
         "teams"
       ],
       "title": "MatchMeta",
+      "type": "object"
+    },
+    "MatchStats": {
+      "additionalProperties": false,
+      "properties": {
+        "t_ms": {
+          "minimum": 0,
+          "title": "T Ms",
+          "type": "integer"
+        },
+        "teams": {
+          "items": {
+            "$ref": "#/$defs/TeamStats"
+          },
+          "maxItems": 2,
+          "minItems": 2,
+          "title": "Teams",
+          "type": "array"
+        }
+      },
+      "required": [
+        "t_ms",
+        "teams"
+      ],
+      "title": "MatchStats",
       "type": "object"
     },
     "Modifiers": {
@@ -1088,6 +1267,106 @@
       "title": "TeamMeta",
       "type": "object"
     },
+    "TeamStats": {
+      "additionalProperties": false,
+      "properties": {
+        "avg_pass_distance_m": {
+          "minimum": 0,
+          "title": "Avg Pass Distance M",
+          "type": "number"
+        },
+        "avg_pass_speed_ms": {
+          "minimum": 0,
+          "title": "Avg Pass Speed Ms",
+          "type": "number"
+        },
+        "distance_km": {
+          "minimum": 0,
+          "title": "Distance Km",
+          "type": "number"
+        },
+        "goals": {
+          "minimum": 0,
+          "title": "Goals",
+          "type": "integer"
+        },
+        "interceptions": {
+          "minimum": 0,
+          "title": "Interceptions",
+          "type": "integer"
+        },
+        "max_shot_speed_ms": {
+          "minimum": 0,
+          "title": "Max Shot Speed Ms",
+          "type": "number"
+        },
+        "pass_accuracy": {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Pass Accuracy",
+          "type": "number"
+        },
+        "passes": {
+          "minimum": 0,
+          "title": "Passes",
+          "type": "integer"
+        },
+        "passes_completed": {
+          "minimum": 0,
+          "title": "Passes Completed",
+          "type": "integer"
+        },
+        "possession": {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Possession",
+          "type": "number"
+        },
+        "shots": {
+          "minimum": 0,
+          "title": "Shots",
+          "type": "integer"
+        },
+        "shots_on_target": {
+          "minimum": 0,
+          "title": "Shots On Target",
+          "type": "integer"
+        },
+        "tackles_won": {
+          "minimum": 0,
+          "title": "Tackles Won",
+          "type": "integer"
+        },
+        "team_id": {
+          "title": "Team Id",
+          "type": "string"
+        },
+        "xg": {
+          "minimum": 0,
+          "title": "Xg",
+          "type": "number"
+        }
+      },
+      "required": [
+        "team_id",
+        "possession",
+        "passes",
+        "passes_completed",
+        "pass_accuracy",
+        "avg_pass_distance_m",
+        "avg_pass_speed_ms",
+        "shots",
+        "shots_on_target",
+        "goals",
+        "xg",
+        "max_shot_speed_ms",
+        "tackles_won",
+        "interceptions",
+        "distance_km"
+      ],
+      "title": "TeamStats",
+      "type": "object"
+    },
     "TrackingFrame": {
       "additionalProperties": false,
       "properties": {
@@ -1234,14 +1513,23 @@
   },
   "description": "Bundle model so one schema carries every record as a shared $def.",
   "properties": {
+    "calibration_report": {
+      "$ref": "#/$defs/CalibrationReport"
+    },
     "event": {
       "$ref": "#/$defs/Event"
+    },
+    "intensity_point": {
+      "$ref": "#/$defs/IntensityPoint"
     },
     "key_moment": {
       "$ref": "#/$defs/KeyMoment"
     },
     "match_meta": {
       "$ref": "#/$defs/MatchMeta"
+    },
+    "match_stats": {
+      "$ref": "#/$defs/MatchStats"
     },
     "option_set": {
       "$ref": "#/$defs/OptionSet"
@@ -1271,7 +1559,10 @@
     "key_moment",
     "option_set",
     "what_if",
-    "overlay"
+    "overlay",
+    "match_stats",
+    "intensity_point",
+    "calibration_report"
   ],
   "title": "Contracts",
   "type": "object"

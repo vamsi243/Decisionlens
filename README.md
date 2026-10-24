@@ -21,6 +21,21 @@ _TODO — see [FEATURES.md](FEATURES.md)._
 | 71' | Tired full-back beaten on a recovery run — Kollmann (HIL_07) outruns Holt (RIV_03) |
 | 86' | Late aerial duel at the back post — Morrow (HIL_09) out-jumps Pell (RIV_02) and scores |
 
+## The engine
+Every number in the app comes from `engine/`, never from a language model. It holds:
+- live metrics, workload and fatigue;
+- pass, aerial-duel, xG and recovery-run probabilities;
+- an option map with expected threat;
+- what-if swaps with Monte Carlo ranges.
+
+The generator samples its outcomes from these same models, so the match and the explanations always agree. Check it yourself:
+
+```bash
+uv run python tasks.py calibrate
+```
+
+On seed 42, pass predictions land within 2.2 percentage points of what happened (ECE 0.022).
+
 ## Microsoft and Azure tech
 _TODO (Phase 8)_
 

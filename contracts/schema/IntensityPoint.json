@@ -1,0 +1,71 @@
+{
+  "additionalProperties": false,
+  "description": "Match intensity for one 5-minute window (0-100, computable live; see engine.metrics).",
+  "properties": {
+    "dangerous_turnovers": {
+      "minimum": 0,
+      "title": "Dangerous Turnovers",
+      "type": "integer"
+    },
+    "duels": {
+      "minimum": 0,
+      "title": "Duels",
+      "type": "integer"
+    },
+    "goals": {
+      "minimum": 0,
+      "title": "Goals",
+      "type": "integer"
+    },
+    "hsr_m": {
+      "minimum": 0,
+      "title": "Hsr M",
+      "type": "number"
+    },
+    "index": {
+      "maximum": 100.0,
+      "minimum": 0.0,
+      "title": "Index",
+      "type": "number"
+    },
+    "pressures": {
+      "minimum": 0,
+      "title": "Pressures",
+      "type": "integer"
+    },
+    "shots": {
+      "minimum": 0,
+      "title": "Shots",
+      "type": "integer"
+    },
+    "window_end_ms": {
+      "minimum": 0,
+      "title": "Window End Ms",
+      "type": "integer"
+    },
+    "window_start_ms": {
+      "minimum": 0,
+      "title": "Window Start Ms",
+      "type": "integer"
+    },
+    "xg": {
+      "minimum": 0,
+      "title": "Xg",
+      "type": "number"
+    }
+  },
+  "required": [
+    "window_start_ms",
+    "window_end_ms",
+    "index",
+    "hsr_m",
+    "duels",
+    "shots",
+    "pressures",
+    "xg",
+    "goals",
+    "dangerous_turnovers"
+  ],
+  "title": "IntensityPoint",
+  "type": "object"
+}

@@ -12,9 +12,12 @@ from pathlib import Path
 from pydantic import BaseModel
 
 from contracts import (
+    CalibrationReport,
     Event,
+    IntensityPoint,
     KeyMoment,
     MatchMeta,
+    MatchStats,
     OptionSet,
     Overlay,
     PlayerProfile,
@@ -35,6 +38,9 @@ RECORDS: dict[str, type[BaseModel]] = {
     "OptionSet": OptionSet,
     "WhatIf": WhatIf,
     "Overlay": Overlay,
+    "MatchStats": MatchStats,
+    "IntensityPoint": IntensityPoint,
+    "CalibrationReport": CalibrationReport,
 }
 
 
@@ -50,6 +56,9 @@ class Contracts(BaseModel):
     option_set: OptionSet
     what_if: WhatIf
     overlay: Overlay
+    match_stats: MatchStats
+    intensity_point: IntensityPoint
+    calibration_report: CalibrationReport
 
 
 def _dump(path: Path, schema: dict[str, object]) -> None:

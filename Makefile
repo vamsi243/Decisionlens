@@ -1,7 +1,7 @@
 SEED ?= 42
 RUN := uv run python tasks.py
 
-.PHONY: dev test lint generate replay schema deploy
+.PHONY: dev test lint generate replay schema calibrate deploy
 
 dev:
 	$(RUN) dev
@@ -20,6 +20,9 @@ replay:
 
 schema:
 	$(RUN) schema
+
+calibrate:
+	$(RUN) calibrate
 
 deploy:
 	azd up

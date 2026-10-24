@@ -103,14 +103,14 @@ def recovery_run(sim: MatchSim) -> Script:
     h_rb, h_rw = sim.pid("HIL_02"), sim.pid("HIL_07")
     sim.override(lb, (67, 62))
     sim.override(h_rb, (64, 59))
-    sim.override(h_rw, (50, 57))
+    sim.override(h_rw, (58, 58))
     yield from sim.scripted_restart(HOME, (60, 48), cm, wait_s=4)
     yield from sim.wait(1.2)
     yield from sim.scripted_pass(cm, lb, False, end=(68, 61), interceptor=h_rb, lofted=False)
-    sim.override(h_rw, (33, 57))
+    sim.override(h_rw, (37, 57))
     sim.override(lb, lambda: sim.pos[h_rw])
     yield from sim.wait(0.3)
-    yield from sim.scripted_pass(h_rb, h_rw, True, end=(35, 57), lofted=True, tags=("counter",))
+    yield from sim.scripted_pass(h_rb, h_rw, True, end=(38, 57), lofted=True, tags=("counter",))
     sim.override(h_rw, (17, 50), urgent=False)
     yield from sim.until(lambda: sim.pos[h_rw][0] < 24.0, 6)
     sim.emit(
@@ -131,7 +131,12 @@ def aerial_duel(sim: MatchSim) -> Script:
     sim.override(st, (9, 29))
     sim.override(rb, (8, 27))
     yield from sim.scripted_restart(AWAY, (22, 62), rw, wait_s=5)
-    yield from sim.wait(0.8)
+
+    def near(i: int, xy: tuple[float, float]) -> bool:
+        return float(np.linalg.norm(sim.pos[i] - np.array(xy))) < 2.0
+
+    yield from sim.until(lambda: near(st, (9, 29)) and near(rb, (8, 27)), 8)
+    yield from sim.wait(0.5)
     landing = np.array([5.6, 27.2])
     sim.override(st, landing + np.array([0.6, 0.4]))
     sim.override(rb, landing + np.array([-0.5, -0.4]))
@@ -157,6 +162,7 @@ class ScriptedMoment:
     kind: MomentType
     minute: float
     run: Callable[[MatchSim], Script]
+    team: int  # the side on top in the spell of pressure around the moment
 
     @property
     def start_s(self) -> float:
@@ -164,11 +170,11 @@ class ScriptedMoment:
 
 
 SCRIPTED_MOMENTS = [
-    ScriptedMoment(MomentType.LINE_BREAKING_PASS, 23.0, line_breaking_pass),
-    ScriptedMoment(MomentType.PRESS_TURNOVER, 38.0, press_turnover),
-    ScriptedMoment(MomentType.BIG_CHANCE, 57.0, big_chance),
-    ScriptedMoment(MomentType.RECOVERY_RUN, 71.0, recovery_run),
-    ScriptedMoment(MomentType.AERIAL_DUEL, 86.0, aerial_duel),
+    ScriptedMoment(MomentType.LINE_BREAKING_PASS, 23.0, line_breaking_pass, HOME),
+    ScriptedMoment(MomentType.PRESS_TURNOVER, 38.0, press_turnover, AWAY),
+    ScriptedMoment(MomentType.BIG_CHANCE, 57.0, big_chance, HOME),
+    ScriptedMoment(MomentType.RECOVERY_RUN, 71.0, recovery_run, AWAY),
+    ScriptedMoment(MomentType.AERIAL_DUEL, 86.0, aerial_duel, AWAY),
 ]
 
 # (minute, out, in): substitutions keep every player in a scripted moment on the pitch, and
@@ -182,10 +188,17 @@ SUBSTITUTIONS = [
 KNOCKS = [(64.0, "HIL_08")]
 
 
+def spell(m: ScriptedMoment) -> tuple[float, float, int]:
+    """Up to 2 min before to 90 s after the moment, kept inside its 5-minute window."""
+    window_start = (m.start_s // 300.0) * 300.0
+    return max(window_start, m.start_s - 120.0), min(window_start + 300.0, m.start_s + 90.0), m.team
+
+
 def install(sim: MatchSim) -> None:
     """Register scripted moments, substitutions and knocks on a simulator."""
     full = sim.period_s >= 45 * 60
     if full:
         sim.director = [(m.start_s, m.run) for m in SCRIPTED_MOMENTS]
+        sim.spells = [spell(m) for m in SCRIPTED_MOMENTS]
         sim.subs = [(m * 60.0, sim.pid(a), sim.pid(b)) for m, a, b in SUBSTITUTIONS]
         sim.knocks = [(m * 60.0, sim.pid(p)) for m, p in KNOCKS]

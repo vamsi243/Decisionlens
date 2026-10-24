@@ -1,0 +1,85 @@
+{
+  "$defs": {
+    "CalibrationBin": {
+      "additionalProperties": false,
+      "properties": {
+        "count": {
+          "minimum": 0,
+          "title": "Count",
+          "type": "integer"
+        },
+        "hi": {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Hi",
+          "type": "number"
+        },
+        "lo": {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Lo",
+          "type": "number"
+        },
+        "observed": {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Observed",
+          "type": "number"
+        },
+        "predicted": {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Predicted",
+          "type": "number"
+        }
+      },
+      "required": [
+        "lo",
+        "hi",
+        "count",
+        "predicted",
+        "observed"
+      ],
+      "title": "CalibrationBin",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "bins": {
+      "items": {
+        "$ref": "#/$defs/CalibrationBin"
+      },
+      "title": "Bins",
+      "type": "array"
+    },
+    "brier": {
+      "minimum": 0,
+      "title": "Brier",
+      "type": "number"
+    },
+    "ece": {
+      "minimum": 0,
+      "title": "Ece",
+      "type": "number"
+    },
+    "model": {
+      "title": "Model",
+      "type": "string"
+    },
+    "samples": {
+      "minimum": 0,
+      "title": "Samples",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "model",
+    "samples",
+    "brier",
+    "ece",
+    "bins"
+  ],
+  "title": "CalibrationReport",
+  "type": "object"
+}

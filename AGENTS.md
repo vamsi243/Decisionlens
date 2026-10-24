@@ -30,6 +30,7 @@ Read `docs/BUILD_PLAN.md` for the full spec. These rules apply to every session.
 | `make generate SEED=42` | `uv run python tasks.py generate --seed 42` |
 | `make replay` | `uv run python tasks.py replay` |
 | `make schema` | `uv run python tasks.py schema` |
+| `make calibrate` | `uv run python tasks.py calibrate` |
 
 Web uses pnpm through corepack: run `corepack pnpm <cmd>` from inside `web/` (corepack reads its pinned version there).
 
