@@ -11,6 +11,8 @@
 | `agents/` | Router, orchestrator and the five agents |
 | `web/` | React tactics board |
 | `tasks.py` | Cross-platform task runner used by the Makefile |
+| `service/` | `ports.py` (interfaces), `adapters/` (file replay, memory store, WebSocket, Azure stubs), `pipeline.py`, `main.py` (REST + WS) |
+| `infra/` | Bicep for the Phase 4 hello deploy (registry, Container Apps, managed identity) |
 
 ## Contracts in practice
 - `contracts/base.py` — `Point`, `Probability`, `ProbRange` (median + 10th-90th percentile, must be ordered), pitch constants.
@@ -39,7 +41,17 @@
 **Adding an archetype:** add it to `contracts.Archetype`, give it a row in `ARCHETYPE_BASE` (and optionally `RUN_RATE` / `DRIBBLERS` in `sim.py`), then regenerate the schema with `make schema`.
 
 ## How one frame travels
-_TODO_
+1. `FileReplay.next_packet()` waits until the frame is due: `clock start + n × 0.1 s / speed`. If it falls more than 1 s behind, it drops the backlog.
+2. `Pipeline.handle()` passes the packet to `_process()`. That updates `WorkloadTracker` (distance, high-speed running, sprints, heat, fatigue), `StatsTracker`, `IntensityTracker` and `MomentDetector`, all held in `LiveState`.
+3. The raw frame bytes are wrapped as `{"type":"frame","data":…}` and fanned out to every WebSocket client's queue.
+4. Every 10th frame a `MatchStats` snapshot is stored and published.
+
+## How one key moment becomes a card
+1. `MomentDetector.on_event()` sees, say, an `aerial_duel` the defender lost inside his own box.
+2. It builds a `KeyMoment` (id `km_<frame>_<type>`) and a `MomentSpec`: "does RIV_02 win this header, asked at the moment of the cross?". It also takes a `Snapshot` of the cross frame from its 20 s ring buffer.
+3. The pipeline stores and publishes the moment, then queues a `Job`, along with the players still on the bench.
+4. `analysis_worker` runs `engine.whatif.what_if` (fresh aerial centre-back from the bench) and, for on-ball moments, `engine.options.option_set` in a thread. The result is stored and published as `analysis`.
+5. Phase 6 adds the agents that turn this analysis into analyst and fan cards.
 
 ## How one key moment becomes a card
 _TODO_

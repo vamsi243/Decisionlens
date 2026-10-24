@@ -381,6 +381,50 @@
       "title": "FrameRange",
       "type": "object"
     },
+    "Hello": {
+      "additionalProperties": false,
+      "properties": {
+        "meta": {
+          "$ref": "#/$defs/MatchMeta"
+        },
+        "moments": {
+          "items": {
+            "$ref": "#/$defs/KeyMoment"
+          },
+          "title": "Moments",
+          "type": "array"
+        },
+        "players": {
+          "items": {
+            "$ref": "#/$defs/PlayerProfile"
+          },
+          "title": "Players",
+          "type": "array"
+        },
+        "stats": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/MatchStats"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "status": {
+          "$ref": "#/$defs/ReplayStatus"
+        }
+      },
+      "required": [
+        "meta",
+        "players",
+        "status",
+        "moments"
+      ],
+      "title": "Hello",
+      "type": "object"
+    },
     "IntensityPoint": {
       "additionalProperties": false,
       "description": "Match intensity for one 5-minute window (0-100, computable live; see engine.metrics).",
@@ -636,6 +680,41 @@
         }
       },
       "title": "Modifiers",
+      "type": "object"
+    },
+    "MomentAnalysis": {
+      "additionalProperties": false,
+      "properties": {
+        "moment": {
+          "$ref": "#/$defs/KeyMoment"
+        },
+        "options": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/OptionSet"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "what_if": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/WhatIf"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "moment"
+      ],
+      "title": "MomentAnalysis",
       "type": "object"
     },
     "MomentType": {
@@ -1145,6 +1224,58 @@
       "title": "ProfileRef",
       "type": "object"
     },
+    "ReplayStatus": {
+      "additionalProperties": false,
+      "properties": {
+        "duration_ms": {
+          "minimum": 0,
+          "title": "Duration Ms",
+          "type": "integer"
+        },
+        "frame": {
+          "minimum": 0,
+          "title": "Frame",
+          "type": "integer"
+        },
+        "live": {
+          "default": false,
+          "title": "Live",
+          "type": "boolean"
+        },
+        "period": {
+          "$ref": "#/$defs/Period"
+        },
+        "playing": {
+          "title": "Playing",
+          "type": "boolean"
+        },
+        "speed": {
+          "enum": [
+            1,
+            2,
+            4,
+            8
+          ],
+          "title": "Speed",
+          "type": "integer"
+        },
+        "t_ms": {
+          "minimum": 0,
+          "title": "T Ms",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "playing",
+        "speed",
+        "frame",
+        "t_ms",
+        "period",
+        "duration_ms"
+      ],
+      "title": "ReplayStatus",
+      "type": "object"
+    },
     "Scenario": {
       "additionalProperties": false,
       "properties": {
@@ -1519,6 +1650,9 @@
     "event": {
       "$ref": "#/$defs/Event"
     },
+    "hello": {
+      "$ref": "#/$defs/Hello"
+    },
     "intensity_point": {
       "$ref": "#/$defs/IntensityPoint"
     },
@@ -1531,6 +1665,9 @@
     "match_stats": {
       "$ref": "#/$defs/MatchStats"
     },
+    "moment_analysis": {
+      "$ref": "#/$defs/MomentAnalysis"
+    },
     "option_set": {
       "$ref": "#/$defs/OptionSet"
     },
@@ -1539,6 +1676,9 @@
     },
     "player_profile": {
       "$ref": "#/$defs/PlayerProfile"
+    },
+    "replay_status": {
+      "$ref": "#/$defs/ReplayStatus"
     },
     "tracking_frame": {
       "$ref": "#/$defs/TrackingFrame"
@@ -1562,7 +1702,10 @@
     "overlay",
     "match_stats",
     "intensity_point",
-    "calibration_report"
+    "calibration_report",
+    "replay_status",
+    "moment_analysis",
+    "hello"
   ],
   "title": "Contracts",
   "type": "object"

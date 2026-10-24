@@ -1,0 +1,637 @@
+{
+  "$defs": {
+    "Archetype": {
+      "enum": [
+        "goalkeeper",
+        "aerial_cb",
+        "ball_playing_cb",
+        "overlapping_fb",
+        "deep_playmaker",
+        "box_to_box",
+        "pressing_forward",
+        "target_man",
+        "winger"
+      ],
+      "title": "Archetype",
+      "type": "string"
+    },
+    "FrameRange": {
+      "additionalProperties": false,
+      "properties": {
+        "end": {
+          "minimum": 0,
+          "title": "End",
+          "type": "integer"
+        },
+        "start": {
+          "minimum": 0,
+          "title": "Start",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "start",
+        "end"
+      ],
+      "title": "FrameRange",
+      "type": "object"
+    },
+    "KeyMoment": {
+      "additionalProperties": false,
+      "properties": {
+        "event_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Event Id"
+        },
+        "frame_range": {
+          "$ref": "#/$defs/FrameRange"
+        },
+        "importance": {
+          "default": 0.5,
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Importance",
+          "type": "number"
+        },
+        "moment_id": {
+          "title": "Moment Id",
+          "type": "string"
+        },
+        "players": {
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Players",
+          "type": "array"
+        },
+        "t_ms": {
+          "minimum": 0,
+          "title": "T Ms",
+          "type": "integer"
+        },
+        "team_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Team Id"
+        },
+        "title": {
+          "default": "",
+          "title": "Title",
+          "type": "string"
+        },
+        "type": {
+          "$ref": "#/$defs/MomentType"
+        }
+      },
+      "required": [
+        "moment_id",
+        "t_ms",
+        "type",
+        "players",
+        "frame_range"
+      ],
+      "title": "KeyMoment",
+      "type": "object"
+    },
+    "MatchMeta": {
+      "additionalProperties": false,
+      "properties": {
+        "match_id": {
+          "title": "Match Id",
+          "type": "string"
+        },
+        "period_length_ms": {
+          "default": 2700000,
+          "exclusiveMinimum": 0,
+          "title": "Period Length Ms",
+          "type": "integer"
+        },
+        "pitch": {
+          "$ref": "#/$defs/PitchSize",
+          "default": {
+            "length": 105.0,
+            "width": 68.0
+          }
+        },
+        "seed": {
+          "title": "Seed",
+          "type": "integer"
+        },
+        "synthetic": {
+          "default": true,
+          "title": "Synthetic",
+          "type": "boolean"
+        },
+        "teams": {
+          "items": {
+            "$ref": "#/$defs/TeamMeta"
+          },
+          "maxItems": 2,
+          "minItems": 2,
+          "title": "Teams",
+          "type": "array"
+        },
+        "tracking_hz": {
+          "default": 10,
+          "maximum": 50,
+          "minimum": 1,
+          "title": "Tracking Hz",
+          "type": "integer"
+        },
+        "venue": {
+          "default": "Synthetic Stadium",
+          "title": "Venue",
+          "type": "string"
+        }
+      },
+      "required": [
+        "match_id",
+        "seed",
+        "teams"
+      ],
+      "title": "MatchMeta",
+      "type": "object"
+    },
+    "MatchStats": {
+      "additionalProperties": false,
+      "properties": {
+        "t_ms": {
+          "minimum": 0,
+          "title": "T Ms",
+          "type": "integer"
+        },
+        "teams": {
+          "items": {
+            "$ref": "#/$defs/TeamStats"
+          },
+          "maxItems": 2,
+          "minItems": 2,
+          "title": "Teams",
+          "type": "array"
+        }
+      },
+      "required": [
+        "t_ms",
+        "teams"
+      ],
+      "title": "MatchStats",
+      "type": "object"
+    },
+    "MomentType": {
+      "enum": [
+        "aerial_duel",
+        "recovery_run",
+        "big_chance",
+        "line_breaking_pass",
+        "press_turnover",
+        "goal",
+        "fatigue_alert"
+      ],
+      "title": "MomentType",
+      "type": "string"
+    },
+    "Period": {
+      "enum": [
+        "1H",
+        "2H"
+      ],
+      "title": "Period",
+      "type": "string"
+    },
+    "Physical": {
+      "additionalProperties": false,
+      "properties": {
+        "accel_ms2": {
+          "maximum": 8,
+          "minimum": 1,
+          "title": "Accel Ms2",
+          "type": "number"
+        },
+        "height_cm": {
+          "maximum": 210,
+          "minimum": 150,
+          "title": "Height Cm",
+          "type": "number"
+        },
+        "jump_reach_cm": {
+          "maximum": 320,
+          "minimum": 180,
+          "title": "Jump Reach Cm",
+          "type": "number"
+        },
+        "max_speed_ms": {
+          "maximum": 11,
+          "minimum": 5,
+          "title": "Max Speed Ms",
+          "type": "number"
+        },
+        "reaction_s": {
+          "maximum": 0.6,
+          "minimum": 0.1,
+          "title": "Reaction S",
+          "type": "number"
+        }
+      },
+      "required": [
+        "height_cm",
+        "max_speed_ms",
+        "accel_ms2",
+        "reaction_s",
+        "jump_reach_cm"
+      ],
+      "title": "Physical",
+      "type": "object"
+    },
+    "PitchSize": {
+      "additionalProperties": false,
+      "properties": {
+        "length": {
+          "default": 105.0,
+          "title": "Length",
+          "type": "number"
+        },
+        "width": {
+          "default": 68.0,
+          "title": "Width",
+          "type": "number"
+        }
+      },
+      "title": "PitchSize",
+      "type": "object"
+    },
+    "PlayerProfile": {
+      "additionalProperties": false,
+      "properties": {
+        "archetype": {
+          "$ref": "#/$defs/Archetype"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "physical": {
+          "$ref": "#/$defs/Physical"
+        },
+        "player_id": {
+          "title": "Player Id",
+          "type": "string"
+        },
+        "position": {
+          "$ref": "#/$defs/Position"
+        },
+        "shirt_number": {
+          "maximum": 99,
+          "minimum": 1,
+          "title": "Shirt Number",
+          "type": "integer"
+        },
+        "skill": {
+          "$ref": "#/$defs/Skill"
+        },
+        "starter": {
+          "title": "Starter",
+          "type": "boolean"
+        },
+        "team_id": {
+          "title": "Team Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "player_id",
+        "team_id",
+        "name",
+        "shirt_number",
+        "position",
+        "archetype",
+        "starter",
+        "physical",
+        "skill"
+      ],
+      "title": "PlayerProfile",
+      "type": "object"
+    },
+    "Position": {
+      "enum": [
+        "GK",
+        "CB",
+        "FB",
+        "DM",
+        "CM",
+        "AM",
+        "W",
+        "ST"
+      ],
+      "title": "Position",
+      "type": "string"
+    },
+    "ReplayStatus": {
+      "additionalProperties": false,
+      "properties": {
+        "duration_ms": {
+          "minimum": 0,
+          "title": "Duration Ms",
+          "type": "integer"
+        },
+        "frame": {
+          "minimum": 0,
+          "title": "Frame",
+          "type": "integer"
+        },
+        "live": {
+          "default": false,
+          "title": "Live",
+          "type": "boolean"
+        },
+        "period": {
+          "$ref": "#/$defs/Period"
+        },
+        "playing": {
+          "title": "Playing",
+          "type": "boolean"
+        },
+        "speed": {
+          "enum": [
+            1,
+            2,
+            4,
+            8
+          ],
+          "title": "Speed",
+          "type": "integer"
+        },
+        "t_ms": {
+          "minimum": 0,
+          "title": "T Ms",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "playing",
+        "speed",
+        "frame",
+        "t_ms",
+        "period",
+        "duration_ms"
+      ],
+      "title": "ReplayStatus",
+      "type": "object"
+    },
+    "Skill": {
+      "additionalProperties": false,
+      "properties": {
+        "aerial": {
+          "maximum": 100.0,
+          "minimum": 0.0,
+          "title": "Aerial",
+          "type": "number"
+        },
+        "finishing": {
+          "maximum": 100.0,
+          "minimum": 0.0,
+          "title": "Finishing",
+          "type": "number"
+        },
+        "passing": {
+          "maximum": 100.0,
+          "minimum": 0.0,
+          "title": "Passing",
+          "type": "number"
+        },
+        "tackle": {
+          "maximum": 100.0,
+          "minimum": 0.0,
+          "title": "Tackle",
+          "type": "number"
+        }
+      },
+      "required": [
+        "passing",
+        "aerial",
+        "tackle",
+        "finishing"
+      ],
+      "title": "Skill",
+      "type": "object"
+    },
+    "TeamColours": {
+      "additionalProperties": false,
+      "properties": {
+        "primary": {
+          "pattern": "^#[0-9a-fA-F]{6}$",
+          "title": "Primary",
+          "type": "string"
+        },
+        "secondary": {
+          "pattern": "^#[0-9a-fA-F]{6}$",
+          "title": "Secondary",
+          "type": "string"
+        }
+      },
+      "required": [
+        "primary",
+        "secondary"
+      ],
+      "title": "TeamColours",
+      "type": "object"
+    },
+    "TeamMeta": {
+      "additionalProperties": false,
+      "properties": {
+        "colours": {
+          "$ref": "#/$defs/TeamColours"
+        },
+        "formation": {
+          "pattern": "^\\d(-\\d){2,4}$",
+          "title": "Formation",
+          "type": "string"
+        },
+        "is_home": {
+          "title": "Is Home",
+          "type": "boolean"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "short_name": {
+          "maxLength": 4,
+          "title": "Short Name",
+          "type": "string"
+        },
+        "team_id": {
+          "title": "Team Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "team_id",
+        "name",
+        "short_name",
+        "formation",
+        "colours",
+        "is_home"
+      ],
+      "title": "TeamMeta",
+      "type": "object"
+    },
+    "TeamStats": {
+      "additionalProperties": false,
+      "properties": {
+        "avg_pass_distance_m": {
+          "minimum": 0,
+          "title": "Avg Pass Distance M",
+          "type": "number"
+        },
+        "avg_pass_speed_ms": {
+          "minimum": 0,
+          "title": "Avg Pass Speed Ms",
+          "type": "number"
+        },
+        "distance_km": {
+          "minimum": 0,
+          "title": "Distance Km",
+          "type": "number"
+        },
+        "goals": {
+          "minimum": 0,
+          "title": "Goals",
+          "type": "integer"
+        },
+        "interceptions": {
+          "minimum": 0,
+          "title": "Interceptions",
+          "type": "integer"
+        },
+        "max_shot_speed_ms": {
+          "minimum": 0,
+          "title": "Max Shot Speed Ms",
+          "type": "number"
+        },
+        "pass_accuracy": {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Pass Accuracy",
+          "type": "number"
+        },
+        "passes": {
+          "minimum": 0,
+          "title": "Passes",
+          "type": "integer"
+        },
+        "passes_completed": {
+          "minimum": 0,
+          "title": "Passes Completed",
+          "type": "integer"
+        },
+        "possession": {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Possession",
+          "type": "number"
+        },
+        "shots": {
+          "minimum": 0,
+          "title": "Shots",
+          "type": "integer"
+        },
+        "shots_on_target": {
+          "minimum": 0,
+          "title": "Shots On Target",
+          "type": "integer"
+        },
+        "tackles_won": {
+          "minimum": 0,
+          "title": "Tackles Won",
+          "type": "integer"
+        },
+        "team_id": {
+          "title": "Team Id",
+          "type": "string"
+        },
+        "xg": {
+          "minimum": 0,
+          "title": "Xg",
+          "type": "number"
+        }
+      },
+      "required": [
+        "team_id",
+        "possession",
+        "passes",
+        "passes_completed",
+        "pass_accuracy",
+        "avg_pass_distance_m",
+        "avg_pass_speed_ms",
+        "shots",
+        "shots_on_target",
+        "goals",
+        "xg",
+        "max_shot_speed_ms",
+        "tackles_won",
+        "interceptions",
+        "distance_km"
+      ],
+      "title": "TeamStats",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "meta": {
+      "$ref": "#/$defs/MatchMeta"
+    },
+    "moments": {
+      "items": {
+        "$ref": "#/$defs/KeyMoment"
+      },
+      "title": "Moments",
+      "type": "array"
+    },
+    "players": {
+      "items": {
+        "$ref": "#/$defs/PlayerProfile"
+      },
+      "title": "Players",
+      "type": "array"
+    },
+    "stats": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/MatchStats"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "status": {
+      "$ref": "#/$defs/ReplayStatus"
+    }
+  },
+  "required": [
+    "meta",
+    "players",
+    "status",
+    "moments"
+  ],
+  "title": "Hello",
+  "type": "object"
+}

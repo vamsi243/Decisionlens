@@ -12,6 +12,8 @@ class Settings(BaseSettings):
     run_mode: Literal["local", "azure"] = "local"
     match_dir: str = "data/samples/match_42"
     replay_speed: float = 1.0
+    replay_autoplay: bool = False
+    precompute_analysis: bool = True
 
     azure_openai_endpoint: str = ""
     azure_openai_api_key: str = ""

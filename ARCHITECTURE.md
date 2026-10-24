@@ -12,10 +12,37 @@ flowchart LR
 ```
 
 ## Local vs Azure
-_TODO (Phase 8)_
+The service talks to infrastructure only through three ports (`service/ports.py`). `RUN_MODE` picks the adapters in one factory (`service/factory.py`):
+
+| Port | `RUN_MODE=local` | `RUN_MODE=azure` (Phase 8) |
+| --- | --- | --- |
+| `StreamSource` (frames, events, pacing) | `FileReplay`: JSONL at 1/2/4/8×, pause, seek | `EventHubsSource` |
+| `StateStore` (moments, analyses, overlays, stats) | `MemoryStore` | `CosmosStore` |
+| `Publisher` (fan-out to boards) | `WebSocketPublisher` | `SignalRPublisher` |
+
+```mermaid
+flowchart LR
+  SRC[StreamSource] -->|FramePacket| PIPE[Pipeline]
+  PIPE -->|WorkloadTracker / StatsTracker / IntensityTracker| ST[(StateStore)]
+  PIPE -->|MomentDetector| Q[[analysis queue]]
+  Q --> W[analysis worker<br/>options + what-if in a thread] --> ST
+  PIPE --> PUB[Publisher] --> B[boards]
+  W --> PUB
+```
+
+**Seeking.** At start-up the pipeline replays the whole match silently (about 3 s). It saves a copy of its state every match minute and collects every key moment, then warms the analysis cache. A seek restores the nearest checkpoint and fast-forwards at most 599 frames. A test checks the result is identical to a straight replay.
+
+**Backpressure.** Each WebSocket client has its own bounded queue. A slow browser drops its oldest messages instead of stalling the pipeline.
 
 ## Process flow
-_TODO_
+1. **Ingest.** The source emits a `FramePacket` (tracking frame + events) on the replay clock.
+2. **Interpret.** Workload, fatigue, team stats and intensity update incrementally.
+3. **Publish.** The frame is forwarded byte-for-byte; stats go out every second, workload every 5 s, intensity every minute.
+4. **Detect.** `MomentDetector` checks the frame and its events against the key-moment rules.
+5. **Analyse.** A detected moment is queued; a worker computes the option map and the what-if off the event loop.
+6. **Store.** Moments and analyses go to the `StateStore`, keyed by deterministic ids.
+7. **Explain** (Phase 6). The agents turn the analysis into grounded cards.
+8. **Render** (Phase 5). The board draws frames, cards, arrows and ghosts.
 
 ## Agents and router
 _TODO (Phase 6)_

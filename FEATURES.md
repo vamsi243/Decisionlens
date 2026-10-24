@@ -5,7 +5,7 @@ Status: **done** / **partial** / **todo** / **cut**. Priority: M must, S should,
 | # | Feature | Pri | Status | How to see it | Stage |
 | --- | --- | --- | --- | --- | --- |
 | F1 | Synthetic match generator | M | done — seeded and deterministic, all 5 scripted moments, outcomes sampled from the engine | `make generate SEED=42`, then `uv run python scripts/dot_viewer.py data/samples/match_42 --start 85:58 --end 86:18` | Ingest |
-| F2 | Live stream of events + 10 Hz tracking | M | todo | | Ingest |
+| F2 | Live stream of events + 10 Hz tracking | M | done — `FileReplay` at 1×/2×/4×/8× with pause and seek; WebSocket `/ws`; rate tested at every speed | `make replay`, connect to `ws://localhost:8000/ws` | Ingest |
 | F3 | Tactics board | M | todo | | Render |
 | F4 | Name tags + speed/distance badges | M | todo | | Render |
 | F5 | Live stats | M | partial — engine `StatsTracker` (a test recounts it from raw events); UI in Phase 5 | `engine/metrics.py` | Interpret |
@@ -13,7 +13,7 @@ Status: **done** / **partial** / **todo** / **cut**. Priority: M must, S should,
 | F7 | Workload | M | partial — `WorkloadTracker`: distance, high-speed running, sprints, heat map; matches tracking within 1% (tested) | `engine/metrics.py` | Interpret |
 | F8 | Fatigue score and status | M | partial — shared fatigue model; modifiers feed every probability and also slow players in the generator | `engine/fatigue.py` | Interpret |
 | F9 | Match intensity index | M | partial — 5-minute index; every key-moment window sits above the match median (tested); chart in Phase 5 | `engine/metrics.py` | Interpret |
-| F10 | Key-moment detector | M | todo | | Explain |
+| F10 | Key-moment detector | M | done — rules over events and tracking (never the scripted tags); flags all 5 scripted moments plus goals, real big chances and fatigue alerts (17 on seed 42) | `GET /moments?all=true` | Explain |
 | F11 | Option map | M | partial — up to 4 options, each with p_success, P10–P90 range, xT gain and path; rendering in Phase 5 | `engine/options.py` | Explain |
 | F12 | What-if swap | M | partial — archetype, custom or fresh-sub swap; before → after with ranges and drivers | `engine/whatif.py` | Explain |
 | F13 | Grounded agent explanations | M | todo | | Explain |

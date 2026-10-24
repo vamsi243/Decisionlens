@@ -280,7 +280,13 @@ class MatchSim:
 
     # ------------------------------------------------------------------ director
     def _run_director(self) -> None:
-        if self.active is None and self.director and self.t >= self.director[0][0]:
+        kickoff_pending = self.mode == DEAD and self.restart is not None and self.restart.kickoff
+        if (
+            self.active is None
+            and self.director
+            and self.t >= self.director[0][0]
+            and not kickoff_pending  # let a goal's kickoff happen before staging a scene
+        ):
             _, factory = self.director.pop(0)
             self.active = factory(self)
             self.scripted = True

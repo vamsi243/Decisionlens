@@ -1,0 +1,14 @@
+.git
+.venv
+.env
+.env.*
+**/__pycache__
+.pytest_cache
+.mypy_cache
+.ruff_cache
+.azure
+web
+docs
+tests
+infra
+data/samples/*/tracking.jsonl

@@ -1,0 +1,17 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/Azure/azure-dev/main/schemas/v1.0/azure.yaml.json
+# Phase 4: hello-world deploy of the stream service. Phase 8 adds the full stack.
+name: decision-lens
+metadata:
+  template: decision-lens@0.4.0
+infra:
+  provider: bicep
+  path: infra
+  module: main
+services:
+  api:
+    project: .
+    language: python
+    host: containerapp
+    docker:
+      path: ./Dockerfile
+      remoteBuild: true

@@ -1,0 +1,62 @@
+{
+  "$defs": {
+    "Period": {
+      "enum": [
+        "1H",
+        "2H"
+      ],
+      "title": "Period",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "duration_ms": {
+      "minimum": 0,
+      "title": "Duration Ms",
+      "type": "integer"
+    },
+    "frame": {
+      "minimum": 0,
+      "title": "Frame",
+      "type": "integer"
+    },
+    "live": {
+      "default": false,
+      "title": "Live",
+      "type": "boolean"
+    },
+    "period": {
+      "$ref": "#/$defs/Period"
+    },
+    "playing": {
+      "title": "Playing",
+      "type": "boolean"
+    },
+    "speed": {
+      "enum": [
+        1,
+        2,
+        4,
+        8
+      ],
+      "title": "Speed",
+      "type": "integer"
+    },
+    "t_ms": {
+      "minimum": 0,
+      "title": "T Ms",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "playing",
+    "speed",
+    "frame",
+    "t_ms",
+    "period",
+    "duration_ms"
+  ],
+  "title": "ReplayStatus",
+  "type": "object"
+}

@@ -59,8 +59,28 @@ API on http://localhost:8000, web on http://localhost:5173.
 | Generate a match | `uv run python tasks.py generate --seed 42` (`make generate SEED=42`) |
 | Azure smoke test | `uv run python scripts/smoke_azure.py` |
 
+## The stream service
+`uv run python tasks.py dev` (or `make replay` for the API alone) serves the sample match on http://localhost:8000:
+
+| Endpoint | What it does |
+| --- | --- |
+| `GET /match`, `GET /players` | Match metadata, replay status, squads |
+| `GET /moments` (`?all=true`) | Key moments so far (or the whole replay, for the scrubber) |
+| `GET /moments/{id}/analysis` | Engine option map + what-if for a moment |
+| `GET /stats`, `/workload`, `/intensity` | Live team stats, player workload, intensity windows |
+| `POST /replay/play`, `/pause`, `/seek {t_ms}`, `/speed {speed: 1, 2, 4 or 8}` | Replay controls |
+| `GET /overlays/{id}` | A rendered card (from Phase 6) |
+| `WS /ws` | `hello`, then frames, events, stats, workload, intensity, moments, analyses and status |
+
 ## Azure deploy
-_TODO (Phase 8): `azd up`._
+Phase 4 ships a hello-world deploy of the stream service to Azure Container Apps (Phase 8 adds the rest):
+
+```bash
+azd auth login
+azd up
+```
+
+This creates a resource group with a Basic container registry (the image is built remotely in it, so local Docker is not needed), a Container Apps environment (consumption, scales to zero), a small Log Analytics workspace, and the `api` container app, which pulls with a managed identity. Remove it all with `azd down --purge`.
 
 ## Environment variables
 See [.env.example](.env.example).

@@ -25,6 +25,7 @@ from contracts import (
     WhatIf,
     WorkloadState,
 )
+from contracts.stream import Hello, MomentAnalysis, ReplayStatus
 
 SCHEMA_DIR = Path(__file__).parent / "schema"
 
@@ -41,6 +42,9 @@ RECORDS: dict[str, type[BaseModel]] = {
     "MatchStats": MatchStats,
     "IntensityPoint": IntensityPoint,
     "CalibrationReport": CalibrationReport,
+    "ReplayStatus": ReplayStatus,
+    "MomentAnalysis": MomentAnalysis,
+    "Hello": Hello,
 }
 
 
@@ -59,6 +63,9 @@ class Contracts(BaseModel):
     match_stats: MatchStats
     intensity_point: IntensityPoint
     calibration_report: CalibrationReport
+    replay_status: ReplayStatus
+    moment_analysis: MomentAnalysis
+    hello: Hello
 
 
 def _dump(path: Path, schema: dict[str, object]) -> None:
