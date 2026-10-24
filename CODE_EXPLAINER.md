@@ -12,7 +12,9 @@
 | `web/` | React tactics board |
 | `tasks.py` | Cross-platform task runner used by the Makefile |
 | `service/` | `ports.py` (interfaces), `adapters/` (file replay, memory store, WebSocket, Azure stubs), `pipeline.py`, `main.py` (REST + WS) |
-| `infra/` | Bicep for the Phase 4 hello deploy (registry, Container Apps, managed identity) |
+| `infra/` | `main.bicep` (resource group + parameters), `resources.bicep` (every Azure resource, role assignments), `hooks/` (writes the board's `config.json` with the API URL) |
+| `service/adapters/` | `file_replay.py`, `memory_store.py`, `ws_publisher.py` (local); `event_hubs.py` (broadcaster, live source, loopback), `cosmos.py` (write-through store), `signalr.py` (REST publisher + hybrid fan-out) |
+| `service/telemetry.py` | Azure Monitor OpenTelemetry + Agent Framework instrumentation |
 | `mcp_server/` | `context.py` (what the tools can see: the pipeline + store), `server.py` (six tools on the MCP SDK's `MCPServer`), `__main__.py` (standalone stdio server) |
 | `agents/` | `router.py` (decision table), `backend.py` (Agent Framework on Azure OpenAI), `orchestrator.py`, `facts.py`, `grounding.py`, `templates.py`, `prompts.py`, `cache.py`, `translator.py` |
 | `web/src/state/` | `frames.ts` (frame buffer + interpolation), `match.ts` (Zustand store fed by the socket), `prefs.ts` (persona, favourites, language; saved locally) |

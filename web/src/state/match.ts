@@ -13,7 +13,7 @@ import type {
   TrackingFrame,
   WorkloadState,
 } from "@/types/contracts";
-import { api } from "@/lib/api";
+import { api, type ServerConfig } from "@/lib/api";
 import { frames } from "./frames";
 
 const CLOCK_EVERY_MS = 100; // real time between clock updates to React
@@ -36,6 +36,8 @@ interface MatchState {
   noTranslation: boolean; // the server has no Translator key: cards stay in English
   events: Event[];
   pinned: string | null; // moment the user asked to replay / inspect
+  server: ServerConfig | null; // live broadcast? SignalR?
+  clip: { momentId: string; index: number; total: number } | null; // personal replay (live mode)
 
   setConnected: (c: boolean) => void;
   hello: (h: Hello) => void;
@@ -51,6 +53,8 @@ interface MatchState {
   setWorkload: (w: WorkloadState[]) => void;
   setIntensity: (i: IntensityPoint[]) => void;
   pin: (id: string | null) => void;
+  setServer: (c: ServerConfig) => void;
+  setClip: (c: MatchState["clip"]) => void;
 }
 
 let lastClockSet = 0;
@@ -72,6 +76,8 @@ export const useMatch = create<MatchState>((set, get) => ({
   noTranslation: false,
   events: [],
   pinned: null,
+  server: null,
+  clip: null,
 
   setConnected: (connected) => set({ connected }),
 
@@ -89,6 +95,7 @@ export const useMatch = create<MatchState>((set, get) => ({
   },
 
   frame: (f) => {
+    if (get().clip) return; // a personal replay owns the board until it ends
     frames.push(f);
     const now = performance.now();
     const ids = f.players.map((p) => p.id);
@@ -129,6 +136,8 @@ export const useMatch = create<MatchState>((set, get) => ({
     set((s) => ({ workload: { ...s.workload, ...Object.fromEntries(w.map((x) => [x.player_id, x])) } })),
   setIntensity: (intensity) => set({ intensity }),
   pin: (pinned) => set({ pinned }),
+  setServer: (server) => set({ server }),
+  setClip: (clip) => set({ clip }),
 }));
 
 /**

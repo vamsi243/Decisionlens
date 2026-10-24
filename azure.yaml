@@ -1,12 +1,21 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/Azure/azure-dev/main/schemas/v1.0/azure.yaml.json
-# Phase 4: hello-world deploy of the stream service. Phase 8 adds the full stack.
+# Decision Lens: `azd up` provisions infra/ (Bicep) and deploys both services.
 name: decision-lens
 metadata:
-  template: decision-lens@0.4.0
+  template: decision-lens@0.8.0
 infra:
   provider: bicep
   path: infra
   module: main
+hooks:
+  # Tell the board where the API lives (read at runtime from /config.json, no rebuild needed).
+  postprovision:
+    posix:
+      shell: sh
+      run: ./infra/hooks/postprovision.sh
+    windows:
+      shell: pwsh
+      run: ./infra/hooks/postprovision.ps1
 services:
   api:
     project: .
@@ -15,3 +24,8 @@ services:
     docker:
       path: ./Dockerfile
       remoteBuild: true
+  web:
+    project: ./web
+    language: js
+    host: staticwebapp
+    dist: dist

@@ -11,7 +11,8 @@ import type {
   WorkloadState,
 } from "@/types/contracts";
 import { useMatch } from "@/state/match";
-import { api, WS_URL } from "./api";
+import { HubConnectionBuilder, LogLevel } from "@microsoft/signalr";
+import { api, wsUrl } from "./api";
 
 type Message =
   | { type: "hello"; data: Hello }
@@ -53,6 +54,34 @@ function dispatch(msg: Message) {
   }
 }
 
+let signalr: ReturnType<HubConnectionBuilder["build"]> | null = null;
+
+/**
+ * Azure: the low-rate messages (moments, analyses, cards, status) arrive over Azure SignalR
+ * Service; frames stay on the service WebSocket. The token comes from our /negotiate endpoint.
+ */
+async function connectSignalR() {
+  if (signalr) return;
+  try {
+    const first = await api.negotiate();
+    signalr = new HubConnectionBuilder()
+      .withUrl(first.url, { accessTokenFactory: async () => (await api.negotiate()).accessToken })
+      .withAutomaticReconnect()
+      .configureLogging(LogLevel.Warning)
+      .build();
+    signalr.on("message", (raw: string) => {
+      try {
+        dispatch(JSON.parse(raw) as Message);
+      } catch {
+        /* ignore malformed */
+      }
+    });
+    await signalr.start();
+  } catch {
+    signalr = null; // REST fetches still fill moments and cards
+  }
+}
+
 /** Connect to the stream and keep reconnecting with backoff. Returns a disconnect function. */
 export function connectStream(): () => void {
   let ws: WebSocket | null = null;
@@ -61,10 +90,17 @@ export function connectStream(): () => void {
   let timer: ReturnType<typeof setTimeout> | undefined;
 
   const open = () => {
-    ws = new WebSocket(WS_URL);
+    ws = new WebSocket(wsUrl());
     ws.onopen = () => {
       retry = 0;
       useMatch.getState().setConnected(true);
+      api
+        .config()
+        .then((cfg) => {
+          useMatch.getState().setServer(cfg);
+          if (cfg.signalr) void connectSignalR();
+        })
+        .catch(() => undefined);
       api.moments(true).then(useMatch.getState().setAllMoments).catch(() => undefined);
       api.intensity().then(useMatch.getState().setIntensity).catch(() => undefined);
       api

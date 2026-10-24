@@ -3,6 +3,16 @@
   "contentVersion": "1.0.0.0",
   "parameters": {
     "environmentName": { "value": "${AZURE_ENV_NAME}" },
-    "location": { "value": "${AZURE_LOCATION}" }
+    "location": { "value": "${AZURE_LOCATION}" },
+    "staticWebAppLocation": { "value": "${AZURE_STATIC_WEB_APP_LOCATION=eastus2}" },
+    "openAiEndpoint": { "value": "${AZURE_OPENAI_ENDPOINT}" },
+    "openAiApiKey": { "value": "${AZURE_OPENAI_API_KEY}" },
+    "openAiUseManagedIdentity": { "value": "${AZURE_OPENAI_USE_MANAGED_IDENTITY=false}" },
+    "openAiDeploymentMini": { "value": "${AZURE_OPENAI_DEPLOYMENT_MINI=gpt-5.4-mini}" },
+    "openAiDeploymentNano": { "value": "${AZURE_OPENAI_DEPLOYMENT_NANO=gpt-5.4-nano}" },
+    "openAiDeploymentFallback": { "value": "${AZURE_OPENAI_DEPLOYMENT_FALLBACK=gpt-4.1-mini}" },
+    "translatorKey": { "value": "${AZURE_TRANSLATOR_KEY}" },
+    "translatorRegion": { "value": "${AZURE_TRANSLATOR_REGION}" },
+    "cosmosFreeTier": { "value": "${COSMOS_FREE_TIER=true}" }
   }
 }

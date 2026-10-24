@@ -12,8 +12,29 @@ import type {
   WorkloadState,
 } from "@/types/contracts";
 
-export const API_URL = (import.meta.env.VITE_API_URL ?? "http://localhost:8000").replace(/\/$/, "");
-export const WS_URL = `${API_URL.replace(/^http/, "ws")}/ws`;
+/**
+ * Where the stream service lives. A deployed build reads it at runtime from `/config.json`
+ * (written by the azd post-provision hook), so one build works anywhere; locally it falls back to
+ * VITE_API_URL or localhost:8000.
+ */
+export let API_URL = (import.meta.env.VITE_API_URL ?? "http://localhost:8000").replace(/\/$/, "");
+export const wsUrl = () => `${API_URL.replace(/^http/, "ws")}/ws`;
+
+export async function loadRuntimeConfig(): Promise<void> {
+  try {
+    const res = await fetch("/config.json", { cache: "no-store" });
+    if (!res.ok) return;
+    const cfg = (await res.json()) as { apiUrl?: string };
+    if (cfg.apiUrl) API_URL = cfg.apiUrl.replace(/\/$/, "");
+  } catch {
+    /* no runtime config: keep the build-time default */
+  }
+}
+
+export interface ServerConfig {
+  live: boolean;
+  signalr: boolean;
+}
 
 async function req<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`${API_URL}${path}`, {
@@ -28,6 +49,8 @@ const post = <T>(path: string, body?: unknown) =>
   req<T>(path, { method: "POST", body: body === undefined ? undefined : JSON.stringify(body) });
 
 export const api = {
+  config: () => req<ServerConfig>("/config"),
+  negotiate: () => req<{ url: string; accessToken: string }>("/negotiate"),
   match: () => req<{ meta: MatchMeta; status: ReplayStatus }>("/match"),
   players: () => req<PlayerProfile[]>("/players"),
   moments: (all = false) => req<KeyMoment[]>(`/moments${all ? "?all=true" : ""}`),

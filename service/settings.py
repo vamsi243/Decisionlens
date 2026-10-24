@@ -29,6 +29,20 @@ class Settings(BaseSettings):
     azure_openai_reasoning_effort: str = "minimal"
 
     azure_translator_endpoint: str = "https://api.cognitive.microsofttranslator.com"
+
+    # Azure (Phase 8): all reached with the app's managed identity, no keys
+    eventhub_namespace: str = ""  # fully qualified, e.g. evhns-x.servicebus.windows.net
+    eventhub_name: str = "match"
+    eventhub_consumer_group: str = "$Default"
+    broadcast_producer: bool = True  # run the replay job that feeds Event Hubs in-process
+    live_simulation: bool = False  # local: run the live-broadcast path without Event Hubs
+    cosmos_endpoint: str = ""
+    cosmos_database: str = "decisionlens"
+    cosmos_container: str = "state"
+    signalr_endpoint: str = ""  # e.g. https://sigr-x.service.signalr.net
+    signalr_hub: str = "decisionlens"
+    applicationinsights_connection_string: str = ""
+    use_managed_identity_for_openai: bool = False
     azure_translator_key: str = ""
     azure_translator_region: str = ""
 

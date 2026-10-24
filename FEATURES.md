@@ -5,7 +5,7 @@ Status: **done** / **partial** / **todo** / **cut**. Priority: M must, S should,
 | # | Feature | Pri | Status | How to see it | Stage |
 | --- | --- | --- | --- | --- | --- |
 | F1 | Synthetic match generator | M | done — seeded and deterministic, all 5 scripted moments, outcomes sampled from the engine | `make generate SEED=42`, then `uv run python scripts/dot_viewer.py data/samples/match_42 --start 85:58 --end 86:18` | Ingest |
-| F2 | Live stream of events + 10 Hz tracking | M | done — `FileReplay` at 1×/2×/4×/8× with pause and seek; WebSocket `/ws`; rate tested at every speed | `make replay`, connect to `ws://localhost:8000/ws` | Ingest |
+| F2 | Live stream of events + 10 Hz tracking | M | done — locally: `FileReplay` at 1×/2×/4×/8× with pause and seek; in Azure: a shared live broadcast through Event Hubs on wall-clock time with personal moment clips; rate tested | `make replay`; `LIVE_SIMULATION=true` for the live path | Ingest |
 | F3 | Tactics board | M | done — SVG pitch, 22 players, ball with a fading trail; 60 fps interpolation between 10 Hz frames; resizes with the window | `make dev` → http://localhost:5173 | Render |
 | F4 | Name tags + speed/distance badges | M | done — speed badge above 25 km/h (7 m/s); a distance badge as each new kilometre is passed; name tags for the focused player and players in a moment | board | Render |
 | F5 | Live stats | M | done — engine `StatsTracker` (a test recounts it from raw events); team tab in the stats drawer | chart icon → Team | Interpret |
@@ -26,4 +26,4 @@ Status: **done** / **partial** / **todo** / **cut**. Priority: M must, S should,
 | F20 | Calibration chart | S | partial — `make calibrate` prints reliability bins, Brier score and ECE; chart in Phase 9 | `engine/calibration.py` | Explain |
 | F21 | Overlay JSON export | S | done — "Overlay JSON" on every analyst card, and "export every card" in the stats drawer (time-coded, both personas, engine payload) | analyst card footer | Render |
 | F22 | Custom profile builder | C | todo | | Personalize |
-| F23 | Application Insights traces | S | todo | | — |
+| F23 | Application Insights traces | S | partial — OpenTelemetry via Azure Monitor: one trace per trigger (moment, half-time, full-time) with a child span per agent step, plus Agent Framework's GenAI spans; verified to run locally, not yet seen in a deployed workspace | Azure portal → Application Insights → Transactions | — |

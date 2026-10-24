@@ -42,10 +42,14 @@ class AgentFrameworkBackend:
         if model not in self._clients:
             from agent_framework.openai import OpenAIChatClient
 
+            if self.settings.azure_openai_api_key:
+                auth: dict[str, Any] = {"api_key": self.settings.azure_openai_api_key}
+            else:  # Azure: the app's managed identity (role: Cognitive Services OpenAI User)
+                from azure.identity import DefaultAzureCredential
+
+                auth = {"credential": DefaultAzureCredential()}
             self._clients[model] = OpenAIChatClient(
-                model=model,
-                azure_endpoint=self.settings.azure_openai_endpoint,
-                api_key=self.settings.azure_openai_api_key,
+                model=model, azure_endpoint=self.settings.azure_openai_endpoint, **auth
             )
         return self._clients[model]
 
@@ -91,7 +95,8 @@ class AgentFrameworkBackend:
 
 
 def build_backend(settings: Settings, mcp_url: str) -> ChatBackend | None:
-    if not (settings.azure_openai_endpoint and settings.azure_openai_api_key):
+    keyed = settings.azure_openai_api_key or settings.use_managed_identity_for_openai
+    if not (settings.azure_openai_endpoint and keyed):
         log.info("no Azure OpenAI endpoint/key: cards will be engine templates")
         return None
     return AgentFrameworkBackend(settings, mcp_url)

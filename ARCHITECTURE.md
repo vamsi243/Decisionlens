@@ -12,23 +12,40 @@ flowchart LR
 ```
 
 ## Local vs Azure
-The service talks to infrastructure only through three ports (`service/ports.py`). `RUN_MODE` picks the adapters in one factory (`service/factory.py`):
+The service talks to infrastructure only through three ports (`service/ports.py`). `RUN_MODE` picks the adapters in one factory (`service/factory.py`); each Azure adapter falls back to the local one if it is not configured.
 
-| Port | `RUN_MODE=local` | `RUN_MODE=azure` (Phase 8) |
+| Port | `RUN_MODE=local` | `RUN_MODE=azure` |
 | --- | --- | --- |
-| `StreamSource` (frames, events, pacing) | `FileReplay`: JSONL at 1/2/4/8×, pause, seek | `EventHubsSource` |
-| `StateStore` (moments, analyses, overlays, stats) | `MemoryStore` | `CosmosStore` |
-| `Publisher` (fan-out to boards) | `WebSocketPublisher` | `SignalRPublisher` |
+| `StreamSource` | `FileReplay`: JSONL at 1/2/4/8×, pause, seek | `EventHubsSource`: shared live broadcast (+ in-process `EventHubsBroadcaster`) |
+| `StateStore` | `MemoryStore` | `CosmosStore`: write-through, hydrated on wake |
+| `Publisher` | `WebSocketPublisher` | `HybridPublisher`: SignalR for low-rate, WebSocket for frames |
 
 ```mermaid
 flowchart LR
-  SRC[StreamSource] -->|FramePacket| PIPE[Pipeline]
-  PIPE -->|WorkloadTracker / StatsTracker / IntensityTracker| ST[(StateStore)]
-  PIPE -->|MomentDetector| Q[[analysis queue]]
-  Q --> W[analysis worker<br/>options + what-if in a thread] --> ST
-  PIPE --> PUB[Publisher] --> B[boards]
-  W --> PUB
+  subgraph CA[Container App: min 0, max 1 replica]
+    B[Broadcaster<br/>match on wall-clock time] -->|1 event per second of play| EH
+    EH -->|consumer| S[EventHubsSource] --> P[Pipeline + engine]
+    P --> A[Agents + MCP tools]
+    P --> WS[WebSocket /ws]
+  end
+  EH[(Event Hubs Basic)]
+  P <-->|moments, cards, agent cache| C[(Cosmos DB free tier)]
+  A -->|Agent Framework| AOAI[Azure OpenAI in Foundry]
+  A --> TR[Azure AI Translator]
+  P -->|moments, cards, status| SR[SignalR Free]
+  SWA[Static Web Apps<br/>the board] -->|frames| WS
+  SR --> SWA
+  KV[Key Vault] -.keys.-> CA
+  CA -.OpenTelemetry.-> AI[Application Insights]
 ```
+
+**Why hybrid real-time.** SignalR Free allows 20,000 messages a day, but 10 Hz frames would use that in about half an hour for one viewer. So frames, events, stats and workload use the Container App's own WebSocket, and SignalR carries the 30–50 low-rate messages per viewer per match. That keeps it at $0.
+
+**Why a shared broadcast.** Replay controls are shared on the server, so on a public URL one judge's seek would move everyone's board. In Azure the match is live TV instead: it loops every 90 minutes on wall-clock time, so a container waking from zero joins wherever the match "is". Key moments are replayed as personal client-side clips (`GET /moments/{id}/frames`). Locally, the full replay controls remain.
+
+**Security.** One user-assigned managed identity holds all data-plane access: AcrPull, Key Vault Secrets User, Event Hubs Data Owner, the Cosmos DB Built-in Data Contributor, and SignalR REST API Owner. Event Hubs, Cosmos DB and SignalR have local (key) auth disabled. The Azure OpenAI and Translator keys live in Key Vault and reach the app as Key Vault secret references; with `AZURE_OPENAI_USE_MANAGED_IDENTITY=true` the model key isn't needed at all. Nothing secret is in the repo or the image.
+
+**Cost model.** Spend comes from the replica's vCPU and GiB-seconds while someone is watching, beyond the monthly free grant of 180,000 vCPU-seconds, plus Event Hubs Basic (about $11/month) and registry Basic (about $5/month). Every other service is on a free tier. Scale-to-zero keeps idle cost at $0.
 
 **Seeking.** At start-up the pipeline replays the whole match silently (about 3 s). It saves a copy of its state every match minute and collects every key moment, then warms the analysis cache. A seek restores the nearest checkpoint and fast-forwards at most 599 frames. A test checks the result is identical to a straight replay.
 
@@ -155,4 +172,4 @@ One clock (`t_ms` from kick-off) and one coordinate system: 105 x 68 m, origin a
 **Known generator limitations (seed 42):** wide players and full-backs cover 12–14 km with 2–3 km of high-speed running, above typical real values (10–12 km and about 1 km). Centre-backs cover about 9.5 km. Every failed pass is collected by the opponent and logged as an interception, so interceptions (~190) run higher than in real data. The generator and the engine share one fatigue model: the engine replays it from tracking, and its result is within 0.5 points of the live tracker (tested). Seed 42 has fewer shots (~19) and fouls (~14) than a typical match.
 
 ## Security and cost
-_TODO_
+See **Local vs Azure** above: managed identity everywhere, keys only in Key Vault, scale-to-zero, free tiers.

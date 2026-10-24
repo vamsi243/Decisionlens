@@ -35,6 +35,7 @@ from service.adapters.ws_publisher import encode
 from service.factory import Adapters, build_adapters
 from service.pipeline import Job, Pipeline, analyse, analysis_worker
 from service.settings import get_settings
+from service.telemetry import setup_telemetry
 
 log = logging.getLogger("decision_lens")
 
@@ -82,7 +83,8 @@ async def _precompute() -> None:
 @asynccontextmanager
 async def lifespan(_: FastAPI) -> AsyncIterator[None]:
     settings = get_settings()
-    rt.adapters = build_adapters(settings)
+    setup_telemetry(settings)
+    rt.adapters = await build_adapters(settings)
     rt.queue = asyncio.Queue()
     rt.pipeline = Pipeline(rt.adapters.source, rt.adapters.store, rt.adapters.publisher, rt.queue)
     await asyncio.to_thread(rt.pipeline.warm_up)
@@ -97,7 +99,11 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
         rt.adapters.publisher,
         build_backend(settings, settings.mcp_url),
         settings,
-        ResponseCache(Path(settings.agent_cache_path) if settings.agent_cache_path else None),
+        ResponseCache(
+            None, initial=rt.adapters.cache_initial, sink=rt.adapters.cache_sink
+        )  # Azure: mirrored to Cosmos DB
+        if rt.adapters.cache_sink
+        else ResponseCache(Path(settings.agent_cache_path) if settings.agent_cache_path else None),
     )
     rt.translator = Translator(settings)
     rt.pipeline.period_end_hook = _on_period_end
@@ -113,10 +119,11 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
             )
         ),
         asyncio.create_task(rt.orchestrator.worker()),
+        *(asyncio.create_task(job()) for job in rt.adapters.background),
     ]
     if settings.precompute_analysis:
         rt.tasks.append(asyncio.create_task(_precompute()))
-    if settings.replay_autoplay:
+    if settings.replay_autoplay and not rt.adapters.live:
         rt.adapters.source.play()
     try:
         async with mcp.session_manager.run():
@@ -127,9 +134,12 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
         for t in rt.tasks:
             with contextlib.suppress(asyncio.CancelledError, Exception):
                 await t
+        for close in reversed(rt.adapters.closers):
+            with contextlib.suppress(Exception):
+                await close()
 
 
-app = FastAPI(title="Decision Lens", version="0.6.0", lifespan=lifespan)
+app = FastAPI(title="Decision Lens", version="0.8.0", lifespan=lifespan)
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 
 
@@ -283,6 +293,27 @@ class SpeedBody(BaseModel):
     speed: Speed
 
 
+def _controls() -> None:
+    """A shared live broadcast has no transport controls (viewers replay moments as clips)."""
+    if rt.adapters.live:
+        raise HTTPException(409, "live broadcast: replay controls are disabled")
+
+
+@app.get("/config")
+async def config() -> dict[str, Any]:
+    """What the board should do: live broadcast or local replay, and whether SignalR is on."""
+    return {"live": rt.adapters.live, "signalr": rt.adapters.signalr is not None}
+
+
+@app.get("/negotiate")
+async def negotiate() -> dict[str, str]:
+    """SignalR client connection info (URL + short-lived token from the managed identity)."""
+    if rt.adapters.signalr is None:
+        raise HTTPException(404, "SignalR is not configured")
+    info: dict[str, str] = await rt.adapters.signalr.negotiate()
+    return info
+
+
 async def _status() -> ReplayStatus:
     s = rt.adapters.source.status()
     await rt.adapters.publisher.publish(StreamMessageType.STATUS, s)
@@ -291,24 +322,28 @@ async def _status() -> ReplayStatus:
 
 @app.post("/replay/play")
 async def play() -> ReplayStatus:
+    _controls()
     rt.adapters.source.play()
     return await _status()
 
 
 @app.post("/replay/pause")
 async def pause() -> ReplayStatus:
+    _controls()
     rt.adapters.source.pause()
     return await _status()
 
 
 @app.post("/replay/seek")
 async def seek(body: SeekBody) -> ReplayStatus:
+    _controls()
     rt.adapters.source.seek(body.t_ms)
     return await _status()
 
 
 @app.post("/replay/speed")
 async def speed(body: SpeedBody) -> ReplayStatus:
+    _controls()
     rt.adapters.source.set_speed(body.speed)
     return await _status()
 

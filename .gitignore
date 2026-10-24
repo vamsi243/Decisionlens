@@ -37,3 +37,6 @@ data/cache/
 Thumbs.db
 .vscode/
 .idea/
+
+# Written by the azd post-provision hook
+web/public/config.json

@@ -1,4 +1,5 @@
-import { BarChart3, Pause, Play, Settings2 } from "lucide-react";
+import { BarChart3, Pause, Play, Radio, Settings2 } from "lucide-react";
+import { stopClip } from "@/lib/clip";
 import type { Speed } from "@/types/contracts";
 import { api } from "@/lib/api";
 import { clock } from "@/lib/format";
@@ -15,6 +16,8 @@ export function TopBar({ onStats, onSettings }: { onStats: () => void; onSetting
   const stats = useMatch((s) => s.stats);
   const status = useMatch((s) => s.status);
   const clockMs = useMatch((s) => s.clockMs);
+  const live = useMatch((s) => s.server?.live ?? false);
+  const clip = useMatch((s) => s.clip);
 
   const [home, away] = meta?.teams ?? [];
   const goals = (id?: string) => stats?.teams.find((t) => t.team_id === id)?.goals ?? 0;
@@ -45,26 +48,40 @@ export function TopBar({ onStats, onSettings }: { onStats: () => void; onSetting
         </div>
 
         <div className="ml-auto flex flex-wrap items-center gap-2">
-          <Button
-            variant="primary"
-            size="icon"
-            aria-label={playing ? "Pause" : "Play"}
-            onClick={() => (playing ? api.pause() : api.play())}
-          >
-            {playing ? <Pause className="size-4" /> : <Play className="size-4" />}
-          </Button>
-          <ToggleGroup
-            type="single"
-            value={String(status?.speed ?? 1)}
-            onValueChange={(v) => v && api.speed(Number(v) as Speed)}
-            aria-label="Replay speed"
-          >
-            {SPEEDS.map((s) => (
-              <ToggleGroupItem key={s} value={String(s)} className="num">
-                {s}×
-              </ToggleGroupItem>
-            ))}
-          </ToggleGroup>
+          {live ? (
+            clip ? (
+              <Button variant="primary" size="sm" onClick={stopClip}>
+                <Radio className="size-3.5" aria-hidden /> Back to live
+              </Button>
+            ) : (
+              <span className="inline-flex items-center gap-1.5 rounded-md border border-red/30 bg-red/5 px-2.5 py-1 text-xs font-semibold tracking-wide text-red">
+                <span className="size-1.5 animate-pulse rounded-full bg-red" aria-hidden /> LIVE
+              </span>
+            )
+          ) : (
+            <>
+              <Button
+                variant="primary"
+                size="icon"
+                aria-label={playing ? "Pause" : "Play"}
+                onClick={() => (playing ? api.pause() : api.play())}
+              >
+                {playing ? <Pause className="size-4" /> : <Play className="size-4" />}
+              </Button>
+              <ToggleGroup
+                type="single"
+                value={String(status?.speed ?? 1)}
+                onValueChange={(v) => v && api.speed(Number(v) as Speed)}
+                aria-label="Replay speed"
+              >
+                {SPEEDS.map((s) => (
+                  <ToggleGroupItem key={s} value={String(s)} className="num">
+                    {s}×
+                  </ToggleGroupItem>
+                ))}
+              </ToggleGroup>
+            </>
+          )}
           <PersonaToggle />
           <LanguageSelect />
           <Tooltip label="Stats">

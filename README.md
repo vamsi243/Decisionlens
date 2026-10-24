@@ -37,7 +37,10 @@ uv run python tasks.py calibrate
 On seed 42, pass predictions land within 2.2 percentage points of what happened (ECE 0.022).
 
 ## Microsoft and Azure tech
-_TODO (Phase 8)_
+- **Azure OpenAI in Foundry** (`gpt-5.4-mini`, `gpt-5.4-nano`, `gpt-4.1-mini` fallback) through **Microsoft Agent Framework**
+- **Model Context Protocol** server (official MCP Python SDK) exposing the engine to the agents
+- **Azure AI Translator** for per-card language switching
+- **Azure Container Apps**, **Event Hubs**, **Cosmos DB**, **SignalR Service**, **Static Web Apps**, **Key Vault**, **Container Registry**, **Application Insights** (OpenTelemetry), deployed with **azd + Bicep**, all with one managed identity
 
 ## Quick start (local)
 
@@ -118,14 +121,37 @@ uv run python -m mcp_server --match data/samples/match_42
 | `WS /ws` | `hello`, then frames, events, stats, workload, intensity, moments, analyses and status |
 
 ## Azure deploy
-Phase 4 ships a hello-world deploy of the stream service to Azure Container Apps (Phase 8 adds the rest):
+Everything runs on free tiers or the free credit. You need the [Azure Developer CLI](https://aka.ms/azd) and an Azure OpenAI deployment in Foundry (created by hand: `gpt-5.4-mini`, `gpt-5.4-nano`, `gpt-4.1-mini`). The Translator key is optional.
 
 ```bash
 azd auth login
+azd env new decision-lens
+azd env set AZURE_OPENAI_ENDPOINT https://<your-resource>.openai.azure.com/
+azd env set AZURE_OPENAI_API_KEY <key>          # stored in Key Vault, never in the repo
+azd env set AZURE_TRANSLATOR_KEY <key>          # optional
+azd env set AZURE_TRANSLATOR_REGION <region>    # optional
 azd up
 ```
 
-This creates a resource group with a Basic container registry (the image is built remotely in it, so local Docker is not needed), a Container Apps environment (consumption, scales to zero), a small Log Analytics workspace, and the `api` container app, which pulls with a managed identity. Remove it all with `azd down --purge`.
+`azd up` provisions `infra/` (Bicep), builds the API image in the registry (no local Docker needed), deploys the board to Static Web Apps and points it at the API. It prints the public board URL (`SERVICE_WEB_URI`).
+
+| Resource | Tier | What it does | Expected cost to 10 Nov |
+| --- | --- | --- | --- |
+| Container Apps | consumption, min 0 / max 1 replica | stream service, engine, MCP tools, agents | free grant while idle; a few dollars while watched |
+| Event Hubs | Basic, 1 TU | the live match feed | about $0.36/day |
+| Cosmos DB for NoSQL | free tier, 400 RU/s | moments, analyses, cards, agent cache | free |
+| SignalR Service | Free | moments and cards to every board | free (20,000 messages/day) |
+| Static Web Apps | Free | the board | free |
+| Container Registry | Basic | API image | about $0.17/day |
+| Key Vault, App Insights, Log Analytics | standard / pay-as-you-go | keys, traces | cents (1 GB/day cap) |
+
+**Live broadcast.** In Azure the match is a shared live broadcast that loops every 90 minutes, on wall-clock time. Every viewer sees the same moment, so there's no seek or speed control. Clicking a key moment plays a personal clip on your own board, then rejoins live. The app scales to zero when nobody is watching, so the first visit after a quiet spell takes 10–20 s to wake. Try the live behaviour locally with `LIVE_SIMULATION=true`.
+
+When judging ends (10 Nov), remove everything:
+
+```bash
+azd down --purge
+```
 
 ## Environment variables
 See [.env.example](.env.example).
@@ -134,7 +160,7 @@ See [.env.example](.env.example).
 No real matches, players, clubs, badges or footage are used anywhere.
 
 ## Cost
-Azure free tiers first, everything else on the $200 free credit. _Details in Phase 8._
+Azure free tiers first, everything else on the $200 free credit (see the table under Azure deploy). Nothing is upgraded to pay-as-you-go, and no Marketplace or partner models are used.
 
 ## Third-party licences
 _TODO (Phase 9)_ — all dependencies are MIT / Apache-2.0 / BSD / ISC; fonts (Inter, Geist, DM Mono) are SIL OFL.

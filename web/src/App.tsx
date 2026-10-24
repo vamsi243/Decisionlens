@@ -18,7 +18,8 @@ function usePauseAtMoments(enabled: boolean) {
   useEffect(
     () =>
       useMatch.subscribe((s, prev) => {
-        if (!pause || !s.status?.playing || s.clockMs < prev.clockMs) return;
+        // A shared live broadcast can't be paused; viewers replay moments as personal clips.
+        if (!pause || s.server?.live || !s.status?.playing || s.clockMs < prev.clockMs) return;
         for (const m of Object.values(s.seen)) {
           if (m.type === "fatigue_alert" || done.current.has(m.moment_id) || !s.analyses[m.moment_id]) continue;
           if (prev.clockMs < m.t_ms + 600 && s.clockMs >= m.t_ms + 600) {

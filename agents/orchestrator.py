@@ -17,6 +17,8 @@ from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
 from typing import Any
 
+from opentelemetry import trace
+
 from agents import prompts, templates
 from agents.backend import ChatBackend
 from agents.cache import ResponseCache
@@ -30,6 +32,7 @@ from service.ports import Publisher, StateStore
 from service.settings import Settings
 
 log = logging.getLogger("decision_lens.agents")
+tracer = trace.get_tracer("decision_lens.agents")
 
 Job = Callable[[], Awaitable[None]]
 
@@ -109,6 +112,38 @@ class Orchestrator:
     # ------------------------------------------------------------------ one model step
     async def _ask(
         self,
+        trace_: Trace,
+        step: Step,
+        agent: str,
+        instructions: str,
+        facts: dict[str, Any],
+        *,
+        model: str,
+        cache_id: str,
+        use_tools: bool = False,
+    ) -> str | None:
+        """One agent step, traced: a child span of the trigger's span in App Insights."""
+        with tracer.start_as_current_span(f"agent.{agent}") as span:
+            span.set_attribute("decision_lens.step", step.value)
+            span.set_attribute("gen_ai.request.model", model)
+            text = await self._ask_inner(
+                trace_,
+                step,
+                agent,
+                instructions,
+                facts,
+                model=model,
+                cache_id=cache_id,
+                use_tools=use_tools,
+            )
+            last = trace_.steps[-1] if trace_.steps else None
+            if last is not None:
+                span.set_attribute("decision_lens.source", last.source)
+                span.set_attribute("decision_lens.retries", last.retries)
+            return text
+
+    async def _ask_inner(
+        self,
         trace: Trace,
         step: Step,
         agent: str,
@@ -165,6 +200,14 @@ class Orchestrator:
 
     # ------------------------------------------------------------------ key moments & fatigue
     async def moment(self, a: MomentAnalysis) -> Overlay:
+        with tracer.start_as_current_span("trigger.moment") as span:
+            span.set_attribute("decision_lens.moment_id", a.moment.moment_id)
+            span.set_attribute("decision_lens.moment_type", a.moment.type.value)
+            ov = await self._moment(a)
+            span.set_attribute("decision_lens.card_source", ov.source)
+            return ov
+
+    async def _moment(self, a: MomentAnalysis) -> Overlay:
         m = a.moment
         mid = m.moment_id
         trig = trigger_for(m)
@@ -275,7 +318,12 @@ class Orchestrator:
     # ------------------------------------------------------------------ recaps
     async def recap(self, trig: Trigger, t_ms: int, ctx: EngineContext | None = None) -> Overlay:
         """Half-time / full-time recap; `ctx` lets the recap page ask about the final whistle."""
-        ctx = ctx or self.ctx
+        with tracer.start_as_current_span(f"trigger.{trig.value}") as span:
+            ov = await self._recap(trig, t_ms, ctx or self.ctx)
+            span.set_attribute("decision_lens.card_source", ov.source)
+            return ov
+
+    async def _recap(self, trig: Trigger, t_ms: int, ctx: EngineContext) -> Overlay:
         trace = Trace(trig.value, f"recap_{trig.value}")
         mini = self.settings.azure_openai_deployment_mini
         nano = self.settings.azure_openai_deployment_nano
