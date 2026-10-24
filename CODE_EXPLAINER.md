@@ -8,10 +8,10 @@
 | `engine/` | Every number: metrics, fatigue, probabilities |
 | `service/` | FastAPI app, stream pipeline, adapters |
 | `mcp_server/` | Engine functions exposed as MCP tools |
-| `agents/` | Router, orchestrator and the five agents |
-| `web/` | React tactics board |
+| `agents/` | Router, orchestrator, the card and recap agents, and the match copilot |
+| `web/` | React app: home, how it works, live board, recap |
 | `tasks.py` | Cross-platform task runner used by the Makefile |
-| `service/` | `ports.py` (interfaces), `adapters/` (file replay, memory store, WebSocket, Azure stubs), `pipeline.py`, `main.py` (REST + WS) |
+| `service/` | `ports.py` (interfaces), `adapters/`, `pipeline.py` (live state, moments, per-player stats and decisions, marking advice), `main.py` (REST, WS, `/mcp`, `/copilot`) |
 | `infra/` | `main.bicep` (resource group + parameters), `resources.bicep` (every Azure resource, role assignments), `hooks/` (writes the board's `config.json` with the API URL) |
 | `service/adapters/` | `file_replay.py`, `memory_store.py`, `ws_publisher.py` (local); `event_hubs.py` (broadcaster, live source, loopback), `cosmos.py` (write-through store), `signalr.py` (REST publisher + hybrid fan-out) |
 | `service/telemetry.py` | Azure Monitor OpenTelemetry + Agent Framework instrumentation |
@@ -22,7 +22,7 @@
 | `engine/matchups.py` | Who should mark whom: header, race and tackle probabilities per candidate, weighted by the attacker's type, position fit and foot |
 | `agents/copilot.py` | The match copilot: Agent Framework agent, engine tools, per-viewer thread scope and rate limit, served over AG-UI at `/copilot` |
 | `web/src/components/Copilot.tsx` | CopilotKit provider (`selfManagedAgents` → `HttpAgent`), the chat panel, screen context and the marking chart renderer |
-| `web/src/state/` | `frames.ts` (frame buffer + interpolation), `match.ts` (Zustand store fed by the socket), `prefs.ts` (persona, favourites, language; saved locally) |
+| `web/src/state/` | `frames.ts` (frame buffer + interpolation), `match.ts` (Zustand store fed by the socket), `prefs.ts` (persona, favourites, language, board size; saved locally), `ui.ts` (which player panel is open) |
 | `web/src/pages/` | `HomePage.tsx` (promo page with a looping key-moment clip), `HowPage.tsx` (five stages + agent diagram), `RecapPage.tsx` (scroll story with pinned pitch, green/red bullets) |
 | `web/src/lib/` | `router.ts` (hash routes), `useLenis.ts` (smooth scroll + snap), `export.ts` (overlay JSON), `words.ts` (fan wording) |
 | `web/src/components/` | `board/` (pitch, players with hover cards, ball, option arrows, what-if ghost, `Table` frame with control rail and benches), `TopBar`/`Nav`, `Scrubber`, `MomentFeed`/`MomentCard` (green/red bullets), `PlayerPanel`, `StatsDrawer`, `SettingsSheet`, `ui/` (shadcn-style Radix primitives, `resizable`) |
@@ -36,14 +36,14 @@
 ## The generator (`generator/`)
 | File | What it does |
 | --- | --- |
-| `roster.py` | Two invented 16-player squads, formations as team-relative slots, archetype base profiles with seeded jitter |
+| `roster.py` | Two invented 16-player squads, formations as team-relative slots, archetype base profiles with seeded jitter, preferred foot and secondary positions |
 | `sim.py` | `MatchSim`: one `step()` per 0.1 s — director → carrier decision → targets → movement → ball → duels → pressure → fatigue → substitutions |
 | `script.py` | The five scripted key moments, substitutions and the knock |
 | `writer.py` | Streams tracking lines while simulating, then writes meta, players and events |
 
 **One tick of the simulator**
 1. *Targets.* Each player's formation slot slides with the ball (half the ball's distance from halfway), pushes up 6 m in possession and drops 5 m out of it; defenders stay goal-side. Targets are low-pass filtered (~1.5 s) so the block flows instead of twitching.
-2. *Roles on top.* Runners make forward runs in possession; the nearest defender presses the carrier and the second covers; receivers and interceptors chase the ball's landing point.
+2. *Roles on top.* Runners make forward runs in possession; the nearest defender presses the carrier and the second covers; receivers and interceptors chase the ball's landing point (a failed pass is aimed where the interceptor can actually get to), and one player per side chases a clearance.
 3. *Movement.* Desired velocity toward the target, capped (jog ≤ 4.5 m/s unless urgent), acceleration-limited, all scaled by fatigue (`1 - 0.0022 × fatigue`).
 4. *Ball.* Glued to the carrier, or on a flight `s(t) ∝ 1 - e^{-kt}` (drag) with a parabolic height `4h·u(1-u)` for lofted balls and crosses, or rolling loose with friction.
 5. *Decisions.* Every 1–3 s (sooner under heavy pressure) the carrier shoots, crosses, clears or picks a pass by softmax over `p_success × progress`.
@@ -100,11 +100,28 @@ Fatigue scales the inputs. At fatigue 100, top speed drops to ×0.78, accelerati
 
 **What-if drivers.** The engine compares the attributes that matter for the moment, all fatigue-adjusted: reach, aerial rating, reaction and fatigue for a header; top speed, acceleration, reaction and fatigue for a recovery run. They come out as plain text ("+32 cm reach", "fresher legs (fatigue 70 → 0)"). The drivers' numbers come from the engine too.
 
+**Goal odds** (`decisions.goal_odds`). The chance the move ends in a goal: xG for a shot, otherwise `p_success × xT(end point)`. A decision's cost is the best candidate's goal odds minus the chosen one's; a lost duel that the opponents turn into a shot within 15 s costs that shot's xG.
+
+**Marking score** (`matchups.score_marker`). `(w_air·P(header) + w_ground·P(tackle) + w_race·P(catch)) × (0.55 + 0.45·position fit) + 0.04 if the stronger foot suits the attacker's side`. The weights come from the attacker's archetype (target man 0.6 / 0.25 / 0.15, winger 0.1 / 0.4 / 0.5); every probability uses live fatigue modifiers.
+
 **Adding a moment type:** add it to `MomentType`, write a branch in `moments.evaluate` and `spec_for_event`, list its driver factors in `whatif.FACTORS` and its preferred archetype in `PREFERRED_ARCHETYPE`.
 
 ## Extending
 - **A new agent:** add its instructions to `agents/prompts.py` (bump `PROMPT_VERSION`), add a `Step` and the triggers that run it to `agents/router.py`, and call `_ask` for it in `agents/orchestrator.py`. Give it a template in `agents/templates.py`, so it still works without a model.
 - **A new MCP tool:** add a method to `mcp_server/context.py` (the engine does the maths) and register it in `mcp_server/server.py`. To let the What-if agent use it, list it in `agents/backend.MCP_TOOLS`.
 
+## How a copilot question is answered
+1. The chat (`web/src/components/Copilot.tsx`) sends the conversation over AG-UI to `POST /copilot`, with the viewer's screen (minute, persona, followed player) as context and a per-browser viewer id.
+2. `agents/copilot.py` checks the caps, scopes the thread to the viewer, and runs the Agent Framework agent.
+3. The agent calls engine tools, such as `best_marker("Morrow", exclude=["Varga"])`, which runs `Pipeline.marking_advice` on the live state.
+4. Text streams back to the chat; the `best_marker` result is drawn as a ranked chart by `useRenderTool`.
+
 ## Testing approach
-_TODO_
+118 tests (`uv run python tasks.py test`), all offline: no Azure, no model calls.
+- **Contracts:** every record round-trips, validation rules hold, the committed schema matches the models.
+- **Generator:** determinism (same seed, same bytes), all scripted moments happen, events agree with tracking, football-like statistics, human speeds, plausible pass and shot speeds, the tired full-back.
+- **Engine:** probability shapes and limits, calibration, what-if drivers, option maps, intensity around key moments.
+- **Detector and service:** every scripted moment is detected with few false positives; replay timing, pause, seek and speed; a restored seek equals a straight replay; REST endpoints; the WebSocket hello and frames.
+- **Agents:** the router table, grounding, retry and template fallback, the What-if tool call and cache, recaps, translation, the MCP tools, the Decisions lines (bad lines dropped one by one), marking advice and its follow-ups, the copilot tools and its rate limits. Models are replaced by a scripted fake backend.
+- **Azure adapters:** Event Hubs, Cosmos DB and SignalR against in-memory fakes.
+Lint is ruff + mypy (strict) for Python and the TypeScript compiler for the web app (`uv run python tasks.py lint`).

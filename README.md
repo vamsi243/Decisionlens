@@ -1,32 +1,44 @@
 # Decision Lens
 
-**Every moment, every option, every fan.** Live match intelligence on a fully synthetic football match: a sleek 2D tactics board, a transparent probability engine, and Azure OpenAI agents that explain what happened, what was possible and who could have done it.
+**Every moment, every option, every fan.** Live match intelligence on a fully synthetic football match: a 2D tactics board, a transparent probability engine, and Azure OpenAI agents that explain what happened, what was possible and who could have done it.
 
 > Built for the Microsoft Premier League "Inside the Game" hackathon. All data is synthetic — *Riverside FC* vs *Hillton United*, invented players.
 
 ## The problem
-_TODO (Phase 9)_
+Broadcasts show what happened, not what was possible. A fan sees a header lost at the back post; an analyst wants to know whether it was ever winnable, what the other options were, and whether a fresh substitute would have changed it. Those answers usually take a video analyst hours after the match. Decision Lens gives them live, on the board, with every number coming from a model you can check rather than from a language model's guess.
 
 ## What it does
-_TODO — see [FEATURES.md](FEATURES.md)._
+- **Watch the match live** on a tactics board: Riverside in blue, Hillton in yellow, 10 Hz tracking, benches, a timeline with key-moment markers.
+- **Key moments explain themselves.** Each one gets a card: the options the player had (drawn on the pitch with their odds), the best one, the one chosen, and a what-if swap such as "a fresh centre-back: 4% → 46%", as green and red bullets.
+- **Hover a player** for distance, fatigue, sprints, passes, shots, tackles and aerials; **click** for the 2–3 decisions that cost them most in goal odds, plus their best one.
+- **Ask the match copilot** under the board: "who should mark Dax Morrow?", "he's busy, who's next?", "how many passes has Reyes-Ward completed?". Answers come from engine tools and draw a chart in the chat.
+- **Analyst or fan.** The same moment as numbers, ranges and drivers, or one plain line.
+- **Follow a club or a player**, switch language (Azure AI Translator), read the scroll-driven full-time recap.
+
+Full list with status: [FEATURES.md](FEATURES.md).
 
 ## The sample match
-`data/samples/match_42/` holds one generated match for judges: `meta.jsonl`, `players.jsonl`, `events.jsonl` and `tracking.jsonl.gz` (10 Hz, 54,000 frames). Regenerate it in about 25 s with `make generate SEED=42`; the same seed always produces byte-identical files.
+`data/samples/match_42/` holds one generated match: `meta.jsonl`, `players.jsonl`, `events.jsonl` and `tracking.jsonl.gz` (10 Hz, 54,000 frames). Regenerate it in about a minute with `make generate SEED=42`; the same seed always produces byte-identical files.
+
+It ends **1-1**: Reyes-Ward scores for Riverside at 70', Morrow equalises for Hillton at 87' from the late aerial duel. The engine detects **14 key moments**: the five scripted ones below, both goals, two more big chances and fatigue alerts.
 
 | Minute | Scripted key moment |
 | --- | --- |
 | 23' | Line-breaking pass — Quill (RIV_06) splits Hillton's midfield to Reyes-Ward |
 | 38' | Turnover under a high press — Hillton's press forces Varga (RIV_05) into a loose pass |
-| 57' | Big chance missed — Reyes-Ward drags a shot wide from 11 m |
+| 57' | Big chance missed — Reyes-Ward drags a shot wide |
 | 71' | Tired full-back beaten on a recovery run — Kollmann (HIL_07) outruns Holt (RIV_03) |
 | 86' | Late aerial duel at the back post — Morrow (HIL_09) out-jumps Pell (RIV_02) and scores |
+
+(The board shows minutes as the match clock does, so a moment at 23:10 appears as 24'.)
 
 ## The engine
 Every number in the app comes from `engine/`, never from a language model. It holds:
 - live metrics, workload and fatigue;
-- pass, aerial-duel, xG and recovery-run probabilities;
-- an option map with expected threat;
-- what-if swaps with Monte Carlo ranges.
+- pass, aerial-duel, xG, recovery-run and ground-duel probabilities;
+- an option map with expected threat, and goal odds for every on-ball decision;
+- what-if swaps with Monte Carlo ranges;
+- marking matchups (who should mark whom).
 
 The generator samples its outcomes from these same models, so the match and the explanations always agree. Check it yourself:
 
@@ -34,11 +46,12 @@ The generator samples its outcomes from these same models, so the match and the 
 uv run python tasks.py calibrate
 ```
 
-On seed 42, pass predictions land within 2.2 percentage points of what happened (ECE 0.022).
+On seed 42, pass predictions land within 1.2 percentage points of what happened (ECE 0.012, Brier 0.134).
 
 ## Microsoft and Azure tech
-- **Azure OpenAI in Foundry** (`gpt-5.4-mini`, `gpt-5.4-nano`, `gpt-4.1-mini` fallback) through **Microsoft Agent Framework**
+- **Azure OpenAI in Foundry** through **Microsoft Agent Framework** (a mini model for analyst text, recaps and the copilot, a nano model for fan lines, a fallback deployment)
 - **Model Context Protocol** server (official MCP Python SDK) exposing the engine to the agents
+- **AG-UI** (`agent-framework-ag-ui`) serving the match copilot to a CopilotKit chat
 - **Azure AI Translator** for per-card language switching
 - **Azure Container Apps**, **Event Hubs**, **Cosmos DB**, **SignalR Service**, **Static Web Apps**, **Key Vault**, **Container Registry**, **Application Insights** (OpenTelemetry), deployed with **azd + Bicep**, all with one managed identity
 
@@ -53,47 +66,49 @@ uv sync
 uv run python tasks.py dev     # or: make dev
 ```
 
-API on http://localhost:8000, web on http://localhost:5173.
+API on http://localhost:8000, web on http://localhost:5173. Without Azure keys in `.env`, every card is an engine template and the copilot is off; everything else works.
 
 | Task | Command |
 | --- | --- |
-| Tests | `uv run python tasks.py test` (`make test`) |
-| Lint | `uv run python tasks.py lint` (`make lint`) |
+| Tests (118) | `uv run python tasks.py test` (`make test`) |
+| Lint (ruff, mypy, tsc) | `uv run python tasks.py lint` (`make lint`) |
 | Generate a match | `uv run python tasks.py generate --seed 42` (`make generate SEED=42`) |
+| Calibration | `uv run python tasks.py calibrate` |
 | Azure smoke test | `uv run python scripts/smoke_azure.py` |
+| Check a deployment | `uv run python scripts/check_deploy.py` |
 
-## The tactics board
-`uv run python tasks.py dev` opens the board on http://localhost:5173. Press play and pick 1×, 2×, 4× or 8×.
-
-- **Pitch:** Riverside's players are filled ink discs and Hillton's are white rings. The ball leaves a short amber trail. A badge appears when a player sprints (over 25 km/h) or passes another kilometre.
-- **Key moments:** they collect in the right rail. Each amber diamond on the scrubber replays one.
-- **Option map:** with *pause at key moments* on (the default), the replay stops on each moment. Green arrows show the best option, grey ones the alternatives, and the dashed green ghost the what-if.
-- **Stats drawer** (chart icon): team stats, workload and fatigue, and the intensity chart.
-- **Settings** (sliders icon): persona, favourite club and player, language, what-if profile.
-
-## Three pages
+## Four pages
 | Page | What you get |
 | --- | --- |
-| **Live** (`#/`) | The tactics board, key-moment cards, scrubber, stats drawer. Click a player to follow them (halo, name tag, their moments first in the feed, heat map in analyst mode). |
-| **Recap** (`#/recap`) | The full-time story, scroll by scroll. The pitch stays pinned and scrolling through each turning point replays it, ending on the option map and the what-if ghost. |
+| **Home** (`#/`) | What Decision Lens does, with a looping clip of the 86' aerial duel and its what-if. |
 | **How it works** (`#/how`) | The five stages and the agent architecture, with live numbers from the running match. |
+| **Live** (`#/live`) | The tactics board, key-moment cards, the player panel and the match copilot. |
+| **Recap** (`#/recap`) | The full-time story as green/red bullets, then scroll by scroll: the pitch stays pinned and each turning point replays. |
 
-**Analyst vs fan.** The analyst card shows the option map, ranges, drivers, workload, intensity and a heat map, and every card exports as time-coded overlay JSON. The fan view is one plain-words line in larger type; on the board, fans see only the best and chosen options and a what-if ghost labelled in words.
+## The live board
+- **The table.** The pitch sits in a black frame. Play/pause, speed (1×–8×), stats and settings are on the rail at the side; the timeline is under the pitch, with an amber marker per key moment; both benches run along the bottom. Drag the handle between the board and the moments column to resize the pitch.
+- **On the pitch.** Blue tokens for Riverside, yellow for Hillton, every player named. The ball is white with a short trail. A badge appears when a player sprints (over 25 km/h) or passes another kilometre.
+- **Option map.** With *pause at key moments* on (the default), the replay stops on each moment. The white arrow is the best option, faint ones the alternatives, each with its chance of success; the dashed ring is the what-if.
+- **Players.** Hover a token (or a bench player) for their numbers. Click to open the player panel: stats, the moment they're in, and their key decisions with Replay. Follow a player from there: halo, their moments first in the feed, heat map in analyst mode.
+- **Cards.** Green ▲ for what raised the chance, red ▼ for what lowered it, with a team stripe. Analysts can unfold the agent's one-line read; every card exports as time-coded overlay JSON.
+- **Match copilot.** The chat under the board. Suggestions to start; answers follow what you're looking at (minute, analyst or fan, the player you follow).
 
 ## The agents
-Five agents built with **Microsoft Agent Framework** on **Azure OpenAI in Foundry** (`gpt-5.4-mini` for analyst text and recaps, `gpt-5.4-nano` for fan lines, lowest reasoning effort, `gpt-4.1-mini` as the fallback):
+Built with **Microsoft Agent Framework** on **Azure OpenAI in Foundry**, at the lowest reasoning effort, with a fallback deployment:
 
 | Agent | Job |
 | --- | --- |
 | Interpreter | Summarises the live state for the recap |
 | Moment | Frames why a key moment matters |
 | What-if | Picks the most instructive swap and runs it through the `what_if_swap` MCP tool; it never computes numbers |
-| Narrator | Writes the analyst card and the fan line from the engine payload |
-| Recap | Half-time and full-time turning points |
+| Narrator | One short line per card for analysts (≤ 25 words) and fans (≤ 15 words, no numbers) |
+| Recap | The half-time and full-time story in two sentences |
+| Decisions | At each whistle, one line per player decision for the player panel (one call per team) |
+| Copilot | Answers viewers' questions with engine tools (player lookup, stats, decisions, best marker, match state) |
 
-A **rules router** (a plain decision table) decides what runs: frames and events never touch a model; key moments run Moment → What-if → Narrator; a language change only calls Azure AI Translator.
+A **rules router** (a plain decision table) decides what runs: frames and events never touch a model; key moments run Moment → What-if → Narrator; the whistles run Interpreter → Recap → Decisions; a language change only calls Azure AI Translator. The copilot runs only when someone asks: 40 questions an hour per caller, 600 overall.
 
-**Every number is checked.** Before a card is shown, a grounding guard rejects any number that is not in the engine payload. A rejected card is retried once (told which numbers were wrong), and if that fails too, a template card built from engine numbers takes its place. Without Azure keys, every card is that template. You can see where each card came from in `GET /agents/traces`.
+**Every number is checked.** A grounding guard rejects any card text with a number that isn't in the engine payload, and the length and fan-wording rules are enforced in code. A rejected card is retried once, then a template card built from engine numbers takes its place. Without Azure keys, every card is that template. `GET /agents/traces` shows where each text came from.
 
 **MCP server.** Six engine tools (`get_match_state`, `get_player_workload`, `get_options`, `what_if_swap`, `get_intensity`, `get_recap_facts`), built with the official MCP Python SDK (v2). They are mounted at `/mcp` in the service, and can also run standalone over stdio for any MCP client:
 
@@ -107,46 +122,57 @@ uv run python -m mcp_server --match data/samples/match_42
 | Endpoint | What it does |
 | --- | --- |
 | `GET /match`, `GET /players` | Match metadata, replay status, squads |
-| `GET /moments` (`?all=true`) | Key moments so far (or the whole replay, for the scrubber) |
+| `GET /moments` (`?all=true`) | Key moments so far (or the whole replay, for the timeline) |
 | `GET /moments/{id}/analysis` | Engine option map + what-if for a moment |
+| `GET /moments/{id}/frames` | Tracking frames around a moment (for replays and clips) |
 | `GET /stats`, `/workload`, `/intensity` | Live team stats, player workload, intensity windows |
 | `GET /players/{id}/stats` | One player so far: km, fatigue, sprints, top-speed loss, passes, shots, goals, tackles, aerials, interceptions (the hover card) |
 | `GET /players/{id}/decisions` | The 2-3 decisions that cost a player most in goal odds so far, plus their best one, with analyst and fan lines (the player panel) |
-| `POST /copilot` | The match copilot over AG-UI (Server-Sent Events) for the CopilotKit chat; 40 questions an hour per caller, 600 overall |
-| `POST /replay/play`, `/pause`, `/seek {t_ms}`, `/speed {speed: 1, 2, 4 or 8}` | Replay controls |
+| `GET /players/{id}/heatmap` (`?full=true`) | Share of time in each 5 m cell |
 | `GET /overlays` (`?all=true`) | Agent cards so far: analyst + fan text, engine payload, source |
 | `GET /overlays/{id}?lang=es` | A card translated by Azure AI Translator (no model call, cached) |
 | `GET /agents/traces` | Which router steps ran per trigger and where each text came from |
-| `GET /moments/{id}/frames` | Tracking frames around a moment (for replays) |
-| `GET /players/{id}/heatmap` (`?full=true`) | Share of time in each 5 m cell |
 | `GET /recap` | The full-time recap, whatever the live replay is doing |
+| `POST /copilot` | The match copilot over AG-UI (Server-Sent Events) for the CopilotKit chat |
+| `POST /replay/play`, `/pause`, `/seek {t_ms}`, `/speed {speed: 1, 2, 4 or 8}` | Replay controls (locked in the live broadcast) |
 | `POST /mcp/` | The MCP server (streamable HTTP) |
-| `WS /ws` | `hello`, then frames, events, stats, workload, intensity, moments, analyses and status |
+| `WS /ws` | `hello`, then frames, events, stats, workload, intensity, moments, analyses, cards and status |
+| `GET /config`, `/negotiate`, `/health` | Live/SignalR flags for the board, the SignalR client token, health |
 
 ## Azure deploy
-Everything runs on free tiers or the free credit. You need the [Azure Developer CLI](https://aka.ms/azd) and an Azure OpenAI deployment in Foundry (created by hand: `gpt-5.4-mini`, `gpt-5.4-nano`, `gpt-4.1-mini`). The Translator key is optional. azd builds the board with `pnpm` itself, so pnpm must be on your PATH (`npm install -g pnpm@9.15.9`, or `corepack enable pnpm` from an admin terminal).
+Everything runs on free tiers or the free credit. You need:
+- the [Azure Developer CLI](https://aka.ms/azd);
+- **Docker Desktop, running**: azd builds the API image locally (ACR remote builds are blocked on free-credit subscriptions);
+- **pnpm on your PATH**: azd builds the board with it (`npm install -g pnpm@9.15.9`, or `corepack enable pnpm` from an admin terminal);
+- an Azure OpenAI resource in Foundry with your deployments created by hand. The defaults are `gpt-5.4-mini`, `gpt-5.4-nano` and `gpt-4.1-mini`; set the names you actually deployed.
 
 ```bash
 azd auth login
 azd env new decision-lens
 azd env set AZURE_OPENAI_ENDPOINT https://<your-resource>.openai.azure.com/
-azd env set AZURE_OPENAI_API_KEY <key>          # stored in Key Vault, never in the repo
-azd env set AZURE_TRANSLATOR_KEY <key>          # optional
-azd env set AZURE_TRANSLATOR_REGION <region>    # optional
+azd env set AZURE_OPENAI_API_KEY <key>             # stored in Key Vault, never in the repo
+azd env set AZURE_OPENAI_DEPLOYMENT_MINI <name>    # e.g. gpt-5-mini
+azd env set AZURE_OPENAI_DEPLOYMENT_NANO <name>    # e.g. gpt-5-mini
+azd env set AZURE_TRANSLATOR_KEY <key>             # optional
+azd env set AZURE_TRANSLATOR_REGION <region>       # optional
+azd env set AZURE_COSMOS_LOCATION westus2          # optional: Cosmos DB region (default eastus2)
 azd up
 ```
 
-`azd up` provisions `infra/` (Bicep), builds the API image with your local Docker (start Docker Desktop first; ACR remote builds are blocked on free-credit subscriptions) and pushes it to the registry, deploys the board to Static Web Apps and points it at the API. It prints the public board URL (`SERVICE_WEB_URI`).
+`azd up` provisions `infra/` (Bicep), builds and pushes the API image, deploys the board to Static Web Apps and points it at the API. It prints the public board URL (`SERVICE_WEB_URI`). After a code change, `azd deploy` updates both services; then check it with `uv run python scripts/check_deploy.py`.
+
+**Common snags.** Cosmos DB allows one free-tier account per subscription, and a failed create can hold it: delete the failed account and wait until it's gone, or set `COSMOS_FREE_TIER=false` (about $23 a month). If a region is out of Cosmos DB capacity, pick another with `AZURE_COSMOS_LOCATION`.
 
 | Resource | Tier | What it does | Expected cost to 10 Nov |
 | --- | --- | --- | --- |
-| Container Apps | consumption, min 0 / max 1 replica | stream service, engine, MCP tools, agents | free grant while idle; a few dollars while watched |
+| Container Apps | consumption, min 0 / max 1 replica | stream service, engine, MCP tools, agents, copilot | free grant while idle; a few dollars while watched |
 | Event Hubs | Basic, 1 TU | the live match feed | about $0.36/day |
 | Cosmos DB for NoSQL | free tier, 400 RU/s | moments, analyses, cards, agent cache | free |
 | SignalR Service | Free | moments and cards to every board | free (20,000 messages/day) |
 | Static Web Apps | Free | the board | free |
 | Container Registry | Basic | API image | about $0.17/day |
 | Key Vault, App Insights, Log Analytics | standard / pay-as-you-go | keys, traces | cents (1 GB/day cap) |
+| Azure OpenAI | pay per token | cards, recaps, copilot | cents; the copilot is capped at 600 questions an hour |
 
 **Live broadcast.** In Azure the match is a shared live broadcast that loops every 90 minutes, on wall-clock time. Every viewer sees the same moment, so there's no seek or speed control. Clicking a key moment plays a personal clip on your own board, then rejoins live. The app scales to zero when nobody is watching, so the first visit after a quiet spell takes 10–20 s to wake. Try the live behaviour locally with `LIVE_SIMULATION=true`.
 
@@ -157,16 +183,16 @@ azd down --purge
 ```
 
 ## Environment variables
-See [.env.example](.env.example).
+See [.env.example](.env.example). `.env` is gitignored; locally the board reads `VITE_API_URL`, and a deployed board reads `/config.json` written by the azd hook (ignored in local dev).
 
 ## Synthetic-data statement
 No real matches, players, clubs, badges or footage are used anywhere.
 
 ## Cost
-Azure free tiers first, everything else on the $200 free credit (see the table under Azure deploy). Nothing is upgraded to pay-as-you-go, and no Marketplace or partner models are used.
+Azure free tiers first, everything else on the $200 free credit (see the table under Azure deploy). Nothing is upgraded to pay-as-you-go beyond model tokens, and no Marketplace or partner models are used.
 
 ## Third-party licences
-_TODO (Phase 9)_ — all dependencies are MIT / Apache-2.0 / BSD / ISC; fonts (Inter, Geist, DM Mono) are SIL OFL. The match copilot uses CopilotKit (`@copilotkit/react-core`, MIT), the AG-UI client (`@ag-ui/client`, MIT) and Microsoft's `agent-framework-ag-ui` (MIT); CopilotKit's hosted Intelligence service is not used.
+All dependencies are MIT, Apache-2.0, BSD or ISC; the fonts (Inter, Geist, DM Mono) are SIL OFL and self-hosted. Notable ones: React, Vite, Tailwind CSS, Radix UI, Framer Motion, Zustand, d3, recharts, Lenis (web); FastAPI, Pydantic, NumPy, orjson, the MCP Python SDK, Microsoft Agent Framework and `agent-framework-ag-ui` (service). The match copilot uses CopilotKit (`@copilotkit/react-core`, MIT) and the AG-UI client (`@ag-ui/client`, MIT); CopilotKit's hosted Intelligence service and its inspector are not used.
 
 ## Licence
 MIT — see [LICENSE](LICENSE).
