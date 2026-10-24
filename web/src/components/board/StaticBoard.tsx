@@ -1,9 +1,7 @@
 import type { MomentAnalysis, PlayerProfile, TrackingFrame } from "@/types/contracts";
 import { surname, svgY } from "@/lib/format";
 import { ArrowMarkers, MomentLayer } from "./MomentLayer";
-import { PITCH, PitchMarkings } from "./Pitch";
-
-const R = 1.15;
+import { DISC as R, NameTag, PITCH, PitchMarkings, PitchSurface, PlayerDisc } from "./Pitch";
 
 interface Props {
   frame: TrackingFrame | null;
@@ -29,7 +27,7 @@ export function StaticBoard({
 }: Props) {
   const hl = new Set(highlight);
   return (
-    <div className="relative overflow-hidden rounded-xl border border-line bg-panel-2 shadow-md">
+    <div className="relative overflow-hidden rounded-xl border-[6px] border-chrome bg-[var(--pitch-2)] shadow-md">
       <svg
         viewBox={`-3 -3 ${PITCH.length + 6} ${PITCH.width + 6}`}
         className="block h-auto w-full select-none"
@@ -37,6 +35,7 @@ export function StaticBoard({
         aria-label={label ?? "Replay of a key moment"}
       >
         <ArrowMarkers />
+        <PitchSurface />
         <PitchMarkings />
         {showLayer ? <MomentLayer analysis={analysis ?? null} fan={fan} /> : null}
         {frame?.players.map((t) => {
@@ -45,37 +44,9 @@ export function StaticBoard({
           const home = p.team_id === homeTeam;
           return (
             <g key={t.id} transform={`translate(${t.x.toFixed(2)} ${svgY(t.y).toFixed(2)})`}>
-              {hl.has(t.id) ? <circle r={R * 1.75} fill="none" stroke="var(--amber)" strokeWidth={0.18} /> : null}
-              <circle
-                r={R}
-                fill={home ? "var(--ink)" : "var(--surface)"}
-                stroke="var(--ink)"
-                strokeWidth={home ? 0 : 0.28}
-              />
-              <text
-                y={0.4}
-                textAnchor="middle"
-                fontSize={1.08}
-                className="num"
-                fontWeight={500}
-                fill={home ? "var(--surface)" : "var(--ink)"}
-              >
-                {p.shirt_number}
-              </text>
-              {hl.has(t.id) ? (
-                <text
-                  y={-R - 1.3}
-                  textAnchor="middle"
-                  fontSize={1.3}
-                  fontWeight={600}
-                  fill="var(--ink)"
-                  stroke="var(--panel-2)"
-                  strokeWidth={0.5}
-                  paintOrder="stroke"
-                >
-                  {surname(p.name)}
-                </text>
-              ) : null}
+              {hl.has(t.id) ? <circle r={R * 1.75} fill="none" stroke="var(--on-pitch)" strokeWidth={0.22} /> : null}
+              <PlayerDisc home={home} number={p.shirt_number} />
+              <NameTag strong={hl.has(t.id)}>{surname(p.name)}</NameTag>
             </g>
           );
         })}
@@ -84,9 +55,9 @@ export function StaticBoard({
             cx={frame.ball.x}
             cy={svgY(frame.ball.y) - frame.ball.z * 0.09}
             r={0.55 + frame.ball.z * 0.03}
-            fill="var(--amber)"
-            stroke="var(--surface)"
-            strokeWidth={0.12}
+            fill="#fff"
+            stroke="var(--chrome)"
+            strokeWidth={0.14}
           />
         ) : null}
       </svg>

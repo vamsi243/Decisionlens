@@ -11,6 +11,7 @@ interface Prefs {
   language: string;
   whatIf: WhatIfProfile;
   pauseAtMoments: boolean;
+  boardSize: number; // live page: pitch width, % of the workspace
   set: (p: Partial<Omit<Prefs, "set">>) => void;
 }
 
@@ -49,6 +50,7 @@ export const usePrefs = create<Prefs>()(
       language: "en",
       whatIf: "auto",
       pauseAtMoments: true,
+      boardSize: 64,
       set: (p) => set(p),
     }),
     { name: "decision-lens-prefs", storage: createJSONStorage(() => safeStorage) },

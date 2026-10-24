@@ -1,4 +1,7 @@
-:root {
+/* `.dl-tokens` re-applies these inside third-party widgets that define their own --muted etc.
+   (CopilotKit's chat), so our components keep their colours there. */
+:root,
+.dl-tokens {
   --bg: #f8f8f8;          /* page background */
   --surface: #ffffff;     /* cards, panels */
   --panel-2: #f0f0f0;     /* pitch surface, inset areas */
@@ -17,7 +20,38 @@
   --shadow-md: 0 2px 5px #00000007;
   --shadow-lg: 0 4px 18px #00000009;
   --ease: cubic-bezier(.22,1,.36,1);
+  /* teams: bright fills for tokens and stripes, dark shades for text on white */
+  --riv: #2f7de1;
+  --riv-rim: #0c3f86;
+  --riv-ink: #185fa5;
+  --hil: #f2c230;
+  --hil-rim: #8a6400;
+  --hil-ink: #7a5900;
+  /* the pitch and what is drawn on it (green and amber would vanish or read as Hillton) */
+  --pitch-1: #2f8f3a;
+  --pitch-2: #29823a;
+  --pitch-line: rgba(255,255,255,.72);
+  --on-pitch: #ffffff;
+  --on-pitch-dim: rgba(255,255,255,.55);
+  --on-pitch-halo: rgba(8,30,12,.85);
+  --heat: #ff4d3d;
+  --chrome: #0b0b0b;      /* nav bar, table frame, scrubber */
   --font-sans: "Inter Variable", "Inter", "Segoe UI", system-ui, sans-serif;
   --font-display: "Geist Variable", "Geist", "Inter Variable", system-ui, sans-serif;
   --font-mono: "DM Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+
+/* Black chrome (nav, table frame, rail, scrubber): the same tokens, inverted, so every
+   primitive inside (buttons, toggles, selects) turns dark without its own variant. */
+.chrome {
+  --bg: #0b0b0b;
+  --surface: #262626;
+  --panel-2: #161616;
+  --ink: #f2f2f2;
+  --muted: #a3a3a3;
+  --muted-2: #7c7c7c;
+  --line: rgba(255,255,255,.12);
+  --line-2: rgba(255,255,255,.24);
+  --shadow-sm: none;
+  color: var(--ink);
 }

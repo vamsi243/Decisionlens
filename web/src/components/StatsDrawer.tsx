@@ -35,8 +35,8 @@ function TeamTab() {
         <span>{meta.teams[0]?.name}</span>
         <span>{meta.teams[1]?.name}</span>
       </div>
-      <div className="mt-2 flex h-2.5 overflow-hidden rounded-full bg-panel-2" aria-label="Possession">
-        <div className="bg-ink" style={{ width: pct(h.possession) }} />
+      <div className="mt-2 flex h-2.5 overflow-hidden rounded-full bg-hil" aria-label="Possession">
+        <div className="bg-riv" style={{ width: pct(h.possession) }} />
       </div>
       <div className="num mt-1 flex justify-between text-xs text-muted">
         <span>{pct(h.possession)}</span>

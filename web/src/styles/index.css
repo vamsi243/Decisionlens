@@ -14,6 +14,11 @@
   --color-green: var(--green);
   --color-red: var(--red);
   --color-amber: var(--amber);
+  --color-riv: var(--riv);
+  --color-riv-ink: var(--riv-ink);
+  --color-hil: var(--hil);
+  --color-hil-ink: var(--hil-ink);
+  --color-chrome: var(--chrome);
   --radius-xl: var(--radius-xl);
   --radius-lg: var(--radius-lg);
   --radius-md: var(--radius-md);

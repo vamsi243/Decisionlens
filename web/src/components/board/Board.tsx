@@ -6,13 +6,15 @@ import { cn } from "@/lib/utils";
 import { frames } from "@/state/frames";
 import { useMatch } from "@/state/match";
 import { usePrefs } from "@/state/prefs";
+import { useUi } from "@/state/ui";
+import type { PlayerStats } from "@/types/contracts";
 import { activeMoment } from "@/lib/moments";
 import { km, kmh, surname, svgY } from "@/lib/format";
 import { ArrowMarkers, MomentLayer } from "./MomentLayer";
-import { PITCH, PitchMarkings } from "./Pitch";
+import { DISC, NameTag, PITCH, PitchMarkings, PitchSurface, PlayerDisc } from "./Pitch";
 
 const SPRINT = 7.0; // m/s: the speed badge appears above this (25 km/h)
-const R = 1.15; // player disc radius, metres
+const R = DISC;
 const TRAIL = 8;
 const DISTANCE_BADGE_MS = 4000;
 
@@ -89,13 +91,70 @@ function HeatLayer({ playerId }: { playerId: string }) {
               y={PITCH.width - (j + 1) * h}
               width={w}
               height={h}
-              fill="var(--amber)"
+              fill="var(--heat)"
               opacity={0.08 + 0.55 * (v / max)}
             />
           ) : null,
         ),
       )}
     </g>
+  );
+}
+
+/** What shows when you hover a player: live workload at once, event counts a moment later. */
+function HoverCard({ id }: { id: string }) {
+  const p = useMatch((s) => s.players[id]);
+  const w = useMatch((s) => s.workload[id]);
+  const home = useMatch((s) => s.meta?.teams[0]?.team_id);
+  const [stats, setStats] = useState<PlayerStats | null>(null);
+  useEffect(() => {
+    let alive = true;
+    void api
+      .playerStats(id)
+      .then((s) => alive && setStats(s))
+      .catch(() => undefined);
+    return () => {
+      alive = false;
+    };
+  }, [id]);
+  if (!p) return null;
+  const loss = w ? Math.round((1 - (w.modifiers?.speed ?? 1)) * 100) : 0;
+  const rows: [string, string][] = [
+    ["Distance", w ? km(w.distance_m) : "–"],
+    ["Fatigue", w ? `${Math.round(w.fatigue)} / 100` : "–"],
+    ["Sprints", w ? String(w.sprints) : "–"],
+    ["Top speed", loss ? `−${loss}%` : "full"],
+  ];
+  if (stats) {
+    rows.push(["Passes", `${stats.passes_completed ?? 0} / ${stats.passes ?? 0}`]);
+    if (stats.shots) rows.push(["Shots · goals", `${stats.shots} · ${stats.goals ?? 0}`]);
+    if (stats.tackles) rows.push(["Tackles won", `${stats.tackles_won ?? 0} / ${stats.tackles}`]);
+    if (stats.aerial_duels) rows.push(["Aerials won", `${stats.aerial_won ?? 0} / ${stats.aerial_duels}`]);
+    if (stats.interceptions) rows.push(["Interceptions", String(stats.interceptions)]);
+  }
+  return (
+    <div className="w-52 rounded-xl border border-line bg-surface/95 p-3 text-xs shadow-lg backdrop-blur">
+      <p className="flex items-center gap-2 text-sm font-semibold">
+        <span
+          className={cn(
+            "num grid size-5 place-items-center rounded-full text-[10px]",
+            p.team_id === home ? "bg-riv text-white" : "bg-hil text-hil-ink",
+          )}
+        >
+          {p.shirt_number}
+        </span>
+        {p.name}
+      </p>
+      <dl className="mt-2 grid grid-cols-[auto_1fr] gap-x-3 gap-y-1">
+        {rows.map(([k, v]) => (
+          <div key={k} className="contents">
+            <dt className="text-muted">{k}</dt>
+            <dd className={cn("num text-right", k === "Fatigue" && w && w.fatigue >= 70 && "text-amber")}>{v}</dd>
+          </div>
+        ))}
+      </dl>
+      <p className="mt-2 text-[11px] text-muted-2">Click for their key decisions</p>
+    </div>
   );
 }
 
@@ -109,8 +168,13 @@ export function Board() {
   const pinned = useMatch((s) => s.pinned);
   const focus = usePrefs((s) => s.player);
   const persona = usePrefs((s) => s.persona);
-  const setPrefs = usePrefs((s) => s.set);
   const [heat, setHeat] = useState(false);
+  const openPanel = useUi((s) => s.openPanel);
+  const [hover, setHover] = useState<string | null>(null);
+  const hoverRef = useRef<string | null>(null);
+  const box = useRef<HTMLDivElement | null>(null);
+  const card = useRef<HTMLDivElement | null>(null);
+  hoverRef.current = hover;
   const reduce = useReducedMotion();
   const distanceBadges = useDistanceBadges();
 
@@ -142,6 +206,17 @@ export function Board() {
             if (show) r.badgeText.textContent = kmh(speed);
           }
         }
+        // keep the hover card next to its (moving) player
+        const hid = hoverRef.current;
+        const g = hid ? refs.current.get(hid)?.group : null;
+        if (g && card.current && box.current) {
+          const b = box.current.getBoundingClientRect();
+          const r = g.getBoundingClientRect();
+          const right = r.right - b.left + 10;
+          const x = right + 208 > b.width ? r.left - b.left - 218 : right;
+          const y = Math.min(Math.max(4, r.top - b.top - 20), b.height - card.current.offsetHeight - 4);
+          card.current.style.transform = `translate(${x.toFixed(0)}px, ${y.toFixed(0)}px)`;
+        }
         const lift = s.ball.z * 0.09;
         ball.current?.setAttribute("cx", s.ball.x.toFixed(2));
         ball.current?.setAttribute("cy", (svgY(s.ball.y) - lift).toFixed(2));
@@ -167,7 +242,7 @@ export function Board() {
   }, []);
 
   return (
-    <div className="relative overflow-hidden rounded-xl border border-line bg-panel-2 shadow-md">
+    <div ref={box} className="relative overflow-hidden rounded-lg bg-[var(--pitch-2)]">
       <svg
         viewBox={`-3 -3 ${PITCH.length + 6} ${PITCH.width + 6}`}
         className="block h-auto w-full select-none"
@@ -175,11 +250,11 @@ export function Board() {
         aria-label="Live tactics board"
       >
         <ArrowMarkers />
+        <PitchSurface />
         {heat && focus && persona === "analyst" ? <HeatLayer playerId={focus} /> : null}
         <PitchMarkings />
-        <MomentLayer analysis={active} fan={persona === "fan"} />
         {Array.from({ length: TRAIL }, (_, i) => (
-          <circle key={i} ref={(el) => (trail.current[i] = el)} r={0.35} fill="var(--amber)" opacity={0} />
+          <circle key={i} ref={(el) => (trail.current[i] = el)} r={0.35} fill="var(--on-pitch)" opacity={0} />
         ))}
         {onPitch.map((id) => {
           const p = players[id];
@@ -194,44 +269,29 @@ export function Board() {
               tabIndex={0}
               aria-label={`${p.name}${focused ? " (followed)" : ""}`}
               className="cursor-pointer outline-none"
-              onClick={() => setPrefs({ player: focused ? null : id })}
+              onClick={() => openPanel(id)}
               onKeyDown={(e) => {
-                if (e.key === "Enter" || e.key === " ") setPrefs({ player: focused ? null : id });
+                if (e.key === "Enter" || e.key === " ") openPanel(id);
               }}
+              onPointerEnter={() => setHover(id)}
+              onPointerLeave={() => setHover((h) => (h === id ? null : h))}
+              onFocus={() => setHover(id)}
+              onBlur={() => setHover((h) => (h === id ? null : h))}
               ref={(el) => {
                 const r = refs.current.get(id) ?? { group: null, badge: null, badgeText: null };
                 r.group = el;
                 refs.current.set(id, r);
               }}
             >
-              {focused ? <circle r={R * 2.4} fill="var(--amber)" opacity={0.16} /> : null}
+              {focused ? <circle r={R * 2.4} fill="var(--on-pitch)" opacity={0.22} /> : null}
               {involved.has(id) ? (
-                <circle r={R * 1.75} fill="none" stroke="var(--amber)" strokeWidth={0.18} />
+                <circle r={R * 1.75} fill="none" stroke="var(--on-pitch)" strokeWidth={0.22} />
               ) : null}
-              <circle
-                r={R}
-                fill={isHome ? "var(--ink)" : "var(--surface)"}
-                stroke="var(--ink)"
-                strokeWidth={isHome ? 0 : 0.28}
-              />
-              <text
-                y={0.4}
-                textAnchor="middle"
-                fontSize={1.08}
-                className="num"
-                fontWeight={500}
-                fill={isHome ? "var(--surface)" : "var(--ink)"}
-              >
-                {p.shirt_number}
-              </text>
-              {tagged ? (
-                <g transform={`translate(0 ${-R - 1.3})`}>
-                  <text textAnchor="middle" fontSize={1.3} fontWeight={600} fill="var(--ink)" stroke="var(--panel-2)" strokeWidth={0.5} paintOrder="stroke">
-                    {surname(p.name)}
-                    {distanceBadges[id] ? ` · ${distanceBadges[id].label}` : ""}
-                  </text>
-                </g>
-              ) : null}
+              <PlayerDisc home={isHome} number={p.shirt_number} />
+              <NameTag strong={tagged}>
+                {surname(p.name)}
+                {distanceBadges[id] ? ` · ${distanceBadges[id].label}` : ""}
+              </NameTag>
               <g
                 ref={(el) => {
                   const r = refs.current.get(id) ?? { group: null, badge: null, badgeText: null };
@@ -241,7 +301,7 @@ export function Board() {
                 transform={`translate(${R + 0.4} ${R + 0.2})`}
                 style={{ opacity: 0, transition: "opacity 200ms var(--ease)" }}
               >
-                <rect x={0} y={-0.95} width={5.6} height={1.7} rx={0.85} fill="var(--amber)" />
+                <rect x={0} y={-0.95} width={5.6} height={1.7} rx={0.85} fill="var(--chrome)" />
                 <text
                   ref={(el) => {
                     const r = refs.current.get(id) ?? { group: null, badge: null, badgeText: null };
@@ -253,14 +313,16 @@ export function Board() {
                   textAnchor="middle"
                   fontSize={0.95}
                   className="num"
-                  fill="var(--surface)"
+                  fill="#fff"
                 />
               </g>
             </g>
           );
         })}
+        {/* above the players, so a sprint badge never hides a probability label */}
+        <MomentLayer analysis={active} fan={persona === "fan"} />
         <ellipse ref={shadow} rx={0.6} ry={0.25} fill="var(--ink)" opacity={0.2} />
-        <circle ref={ball} r={0.55} fill="var(--amber)" stroke="var(--surface)" strokeWidth={0.12} />
+        <circle ref={ball} r={0.55} fill="#fff" stroke="var(--chrome)" strokeWidth={0.14} />
       </svg>
       {focus && persona === "analyst" ? (
         <button
@@ -275,8 +337,13 @@ export function Board() {
           <Flame className="size-3.5" aria-hidden /> Heat map · {players[focus]?.name.split(" ").pop()}
         </button>
       ) : null}
+      {hover ? (
+        <div ref={card} className="pointer-events-none absolute left-0 top-0 z-10" aria-live="polite">
+          <HoverCard id={hover} />
+        </div>
+      ) : null}
       {onPitch.length === 0 ? (
-        <div className="absolute inset-0 grid place-items-center text-sm text-muted">Waiting for the stream…</div>
+        <div className="absolute inset-0 grid place-items-center text-sm text-white/80">Waiting for the stream…</div>
       ) : null}
     </div>
   );

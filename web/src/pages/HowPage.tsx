@@ -243,8 +243,8 @@ export function HowPage() {
             <div className="rounded-lg border border-line bg-surface p-4 shadow-sm">
               <p className="text-xs text-muted">Analyst</p>
               <p className="mt-2 text-sm">
-                Pell had a <span className="num">4%</span> chance (range <span className="num">4–4%</span>); a fresh aerial
-                centre-back would have had <span className="num text-green">43%</span>: +31 cm reach, +42 aerial.
+                Pell had a <span className="num">4%</span> chance; a fresh aerial centre-back would have had{" "}
+                <span className="num text-green">46%</span>: +32 cm reach, +42 aerial.
               </p>
             </div>
             <div className="rounded-lg border border-line bg-surface p-4 shadow-sm">

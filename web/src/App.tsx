@@ -1,7 +1,8 @@
-import { lazy, Suspense, useEffect, useRef, useState } from "react";
-import { Board } from "@/components/board/Board";
+import { lazy, Suspense, useEffect, useRef, useState, type ReactNode } from "react";
+import { Table } from "@/components/board/Table";
 import { MomentFeed } from "@/components/MomentFeed";
-import { Scrubber } from "@/components/Scrubber";
+import { PlayerPanel } from "@/components/PlayerPanel";
+import { ResizableSplit } from "@/components/ui/resizable";
 import { SettingsSheet } from "@/components/SettingsSheet";
 import { TopBar } from "@/components/TopBar";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -39,24 +40,35 @@ const StatsDrawer = lazy(() =>
 );
 const RecapPage = lazy(() => import("@/pages/RecapPage").then((m) => ({ default: m.RecapPage })));
 const HowPage = lazy(() => import("@/pages/HowPage").then((m) => ({ default: m.HowPage })));
+// CopilotKit is large: the chat loads only on the live page, after the board.
+const MatchCopilot = lazy(() => import("@/components/Copilot"));
+const HomePage = lazy(() => import("@/pages/HomePage").then((m) => ({ default: m.HomePage })));
+
+/** A swatch drawn on a scrap of grass, because that is where the real marks sit. */
+function Grass({ children }: { children: ReactNode }) {
+  return <span className="inline-grid h-3.5 w-6 place-items-center rounded-sm bg-[var(--pitch-1)]">{children}</span>;
+}
 
 function Legend() {
   return (
-    <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted">
+    <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 px-1 text-xs text-muted">
       <span className="inline-flex items-center gap-1.5">
-        <span className="size-2.5 rounded-full bg-ink" /> Riverside FC
+        <span className="size-2.5 rounded-full bg-riv ring-2 ring-[var(--riv-rim)]" /> Riverside FC
       </span>
       <span className="inline-flex items-center gap-1.5">
-        <span className="size-2.5 rounded-full border-2 border-ink bg-surface" /> Hillton United
+        <span className="size-2.5 rounded-full bg-hil ring-2 ring-[var(--hil-rim)]" /> Hillton United
       </span>
       <span className="inline-flex items-center gap-1.5">
-        <span className="h-0.5 w-4 rounded bg-green" /> best option
+        <Grass><span className="h-0.5 w-4 rounded bg-white" /></Grass> best option
       </span>
       <span className="inline-flex items-center gap-1.5">
-        <span className="size-2.5 rounded-full border border-dashed border-green" /> what-if
+        <Grass><span className="h-0.5 w-4 rounded border-t border-dashed border-white/70" /></Grass> other options
       </span>
       <span className="inline-flex items-center gap-1.5">
-        <span className="size-2 rounded-full bg-amber" /> ball · sprint badge
+        <Grass><span className="size-2.5 rounded-full border border-dashed border-white" /></Grass> what-if
+      </span>
+      <span className="inline-flex items-center gap-1.5">
+        <Grass><span className="size-2 rounded-full border border-chrome bg-white" /></Grass> ball
       </span>
     </div>
   );
@@ -72,7 +84,7 @@ export function App() {
         <LivePage />
       ) : (
         <Suspense fallback={<div className="min-h-dvh bg-bg" />}>
-          {route === "recap" ? <RecapPage /> : <HowPage />}
+          {route === "recap" ? <RecapPage /> : route === "how" ? <HowPage /> : <HomePage />}
         </Suspense>
       )}
     </TooltipProvider>
@@ -82,20 +94,35 @@ export function App() {
 function LivePage() {
   const [stats, setStats] = useState(false);
   const [settings, setSettings] = useState(false);
+  const boardSize = usePrefs((s) => s.boardSize);
+  const setPrefs = usePrefs((s) => s.set);
   return (
     <>
       <div className="flex min-h-dvh flex-col bg-bg">
-        <TopBar onStats={() => setStats(true)} onSettings={() => setSettings(true)} />
-        <main className="mx-auto grid w-full max-w-[1500px] flex-1 gap-5 px-4 py-5 lg:grid-cols-[minmax(0,1fr)_380px] lg:px-6">
-          <section className="self-start lg:sticky lg:top-[84px]">
-            <Board />
-            <Legend />
-          </section>
-          <aside className="flex min-h-[320px] flex-col lg:h-[calc(100dvh-170px)] lg:sticky lg:top-[84px]">
-            <MomentFeed />
-          </aside>
+        <TopBar />
+        <main className="mx-auto w-full max-w-[1600px] flex-1 px-4 py-6 lg:px-8 lg:py-8">
+          <div className="rounded-3xl border border-line bg-surface p-4 shadow-sm lg:p-6">
+            <ResizableSplit
+              size={boardSize}
+              onSize={(v) => setPrefs({ boardSize: v })}
+              left={
+                <section aria-label="Tactics table">
+                  <Table onStats={() => setStats(true)} onSettings={() => setSettings(true)} />
+                  <Legend />
+                  <Suspense fallback={<div className="mt-6 h-[520px] rounded-2xl border border-line bg-surface" />}>
+                    <MatchCopilot />
+                  </Suspense>
+                </section>
+              }
+              right={
+                // Matches the table's height on wide screens; the feed scrolls inside it.
+                <aside className="flex h-[70vh] min-h-[360px] flex-col rounded-2xl bg-bg p-4 lg:absolute lg:inset-0 lg:h-auto">
+                  <MomentFeed />
+                </aside>
+              }
+            />
+          </div>
         </main>
-        <Scrubber />
       </div>
       {stats ? (
         <Suspense fallback={null}>
@@ -103,6 +130,7 @@ function LivePage() {
         </Suspense>
       ) : null}
       <SettingsSheet open={settings} onOpenChange={setSettings} />
+      <PlayerPanel />
     </>
   );
 }

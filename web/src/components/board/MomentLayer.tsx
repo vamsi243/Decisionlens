@@ -36,7 +36,7 @@ function OptionArrow({
   const end = o.path[o.path.length - 1];
   if (!start || !end) return null;
   const { d, mid } = bend(start, end);
-  const colour = best ? "var(--green)" : "var(--muted-2)";
+  const colour = best ? "var(--on-pitch)" : "var(--on-pitch-dim)";
   return (
     <g>
       <motion.path
@@ -60,7 +60,7 @@ function OptionArrow({
         </g>
       )}
       {o.chosen ? (
-        <circle cx={end.x} cy={svgY(end.y)} r={1.9} fill="none" stroke="var(--ink)" strokeWidth={0.14} strokeDasharray="0.4 0.35" />
+        <circle cx={end.x} cy={svgY(end.y)} r={1.9} fill="none" stroke="var(--on-pitch)" strokeWidth={0.14} strokeDasharray="0.4 0.35" />
       ) : null}
     </g>
   );
@@ -75,8 +75,8 @@ function Ghost({ a, fan }: { a: MomentAnalysis; fan: boolean }) {
   const { d } = bend(start, end, 0.05);
   return (
     <g>
-      <path d={d} fill="none" stroke="var(--green)" strokeWidth={0.22} strokeDasharray="0.8 0.6" />
-      <circle cx={end.x} cy={svgY(end.y)} r={1.25} fill="var(--surface)" fillOpacity={0.6} stroke="var(--green)" strokeWidth={0.2} strokeDasharray="0.5 0.4" />
+      <path d={d} fill="none" stroke="var(--on-pitch)" strokeWidth={0.26} strokeDasharray="0.8 0.6" />
+      <circle cx={end.x} cy={svgY(end.y)} r={1.25} fill="var(--on-pitch)" fillOpacity={0.25} stroke="var(--on-pitch)" strokeWidth={0.22} strokeDasharray="0.5 0.4" />
       <g transform={`translate(${end.x + 2.2} ${svgY(end.y) - 2.2})`}>
         <rect x={0} y={-1.3} width={fan ? 17 : 13} height={2.5} rx={1.2} fill="var(--surface)" stroke="var(--green)" strokeWidth={0.12} />
         {fan ? (
@@ -120,8 +120,8 @@ export function ArrowMarkers() {
   return (
     <defs>
       {[
-        ["best", "var(--green)"],
-        ["other", "var(--muted-2)"],
+        ["best", "var(--on-pitch)"],
+        ["other", "var(--on-pitch-dim)"],
       ].map(([id, c]) => (
         <marker key={id} id={`arrow-${id}`} viewBox="0 0 10 10" refX="7" refY="5" markerWidth="3.2" markerHeight="3.2" orient="auto-start-reverse">
           <path d="M 0 0 L 10 5 L 0 10 z" fill={c} />

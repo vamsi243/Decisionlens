@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react";
 
-/** Hash routing (#/, #/recap, #/how): works on any static host without rewrite rules. */
-export type Route = "live" | "recap" | "how";
+/** Hash routing (#/, #/how, #/live, #/recap): works on any static host without rewrite rules. */
+export type Route = "home" | "how" | "live" | "recap";
 
 function parse(hash: string): Route {
   const r = hash.replace(/^#\/?/, "").split(/[?/]/)[0];
-  return r === "recap" || r === "how" ? r : "live";
+  return r === "how" || r === "live" || r === "recap" ? r : "home";
 }
 
 export function useRoute(): Route {
@@ -21,4 +21,4 @@ export function useRoute(): Route {
   return route;
 }
 
-export const href = (r: Route) => (r === "live" ? "#/" : `#/${r}`);
+export const href = (r: Route) => (r === "home" ? "#/" : `#/${r}`);

@@ -1,20 +1,14 @@
-import { BarChart3, Pause, Play, Radio, Settings2 } from "lucide-react";
+import { Radio } from "lucide-react";
 import { stopClip } from "@/lib/clip";
-import type { Speed } from "@/types/contracts";
-import { api } from "@/lib/api";
 import { clock } from "@/lib/format";
 import { useMatch } from "@/state/match";
-import { Brand, LanguageSelect, NavLinks, PersonaToggle } from "./Nav";
+import { HeaderShell } from "./Nav";
 import { Button } from "./ui/button";
-import { ToggleGroup, ToggleGroupItem } from "./ui/toggle-group";
-import { Tooltip } from "./ui/tooltip";
 
-const SPEEDS: Speed[] = [1, 2, 4, 8];
-
-export function TopBar({ onStats, onSettings }: { onStats: () => void; onSettings: () => void }) {
+/** The black bar across the top: pages, score and clock, live state, persona and language. */
+export function TopBar() {
   const meta = useMatch((s) => s.meta);
   const stats = useMatch((s) => s.stats);
-  const status = useMatch((s) => s.status);
   const clockMs = useMatch((s) => s.clockMs);
   const live = useMatch((s) => s.server?.live ?? false);
   const clip = useMatch((s) => s.clip);
@@ -22,80 +16,42 @@ export function TopBar({ onStats, onSettings }: { onStats: () => void; onSetting
   const [home, away] = meta?.teams ?? [];
   const goals = (id?: string) => stats?.teams.find((t) => t.team_id === id)?.goals ?? 0;
   const half = clockMs >= (meta?.period_length_ms ?? 2_700_000) ? "2H" : "1H";
-  const playing = status?.playing ?? false;
 
   return (
-    <header className="sticky top-0 z-30 border-b border-line bg-bg/85 backdrop-blur-md">
-      <div className="mx-auto flex max-w-[1500px] flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3 lg:px-6">
-        <Brand />
-        <NavLinks route="live" />
-
-        <div className="flex items-center gap-3 rounded-md border border-line bg-surface px-3 py-1.5 shadow-sm">
-          <span className="text-sm font-medium">
-            <span className="sm:hidden">{home?.short_name ?? "HOM"}</span>
-            <span className="hidden sm:inline">{home?.name ?? "Home"}</span>
-          </span>
-          <span className="whitespace-nowrap font-display text-lg font-semibold tabular-nums">
-            {goals(home?.team_id)} – {goals(away?.team_id)}
-          </span>
-          <span className="text-sm font-medium">
-            <span className="sm:hidden">{away?.short_name ?? "AWY"}</span>
-            <span className="hidden sm:inline">{away?.name ?? "Away"}</span>
-          </span>
-          <span className="h-4 w-px bg-line" />
-          <span className="num text-sm text-amber">{clock(clockMs)}</span>
-          <span className="num text-xs text-muted-2">{half}</span>
-        </div>
-
-        <div className="ml-auto flex flex-wrap items-center gap-2">
-          {live ? (
-            clip ? (
-              <Button variant="primary" size="sm" onClick={stopClip}>
-                <Radio className="size-3.5" aria-hidden /> Back to live
-              </Button>
-            ) : (
-              <span className="inline-flex items-center gap-1.5 rounded-md border border-red/30 bg-red/5 px-2.5 py-1 text-xs font-semibold tracking-wide text-red">
-                <span className="size-1.5 animate-pulse rounded-full bg-red" aria-hidden /> LIVE
-              </span>
-            )
+    <HeaderShell
+      route="live"
+      end={
+        live ? (
+          clip ? (
+            <Button variant="primary" size="sm" onClick={stopClip}>
+              <Radio className="size-3.5" aria-hidden /> Back to live
+            </Button>
           ) : (
-            <>
-              <Button
-                variant="primary"
-                size="icon"
-                aria-label={playing ? "Pause" : "Play"}
-                onClick={() => (playing ? api.pause() : api.play())}
-              >
-                {playing ? <Pause className="size-4" /> : <Play className="size-4" />}
-              </Button>
-              <ToggleGroup
-                type="single"
-                value={String(status?.speed ?? 1)}
-                onValueChange={(v) => v && api.speed(Number(v) as Speed)}
-                aria-label="Replay speed"
-              >
-                {SPEEDS.map((s) => (
-                  <ToggleGroupItem key={s} value={String(s)} className="num">
-                    {s}×
-                  </ToggleGroupItem>
-                ))}
-              </ToggleGroup>
-            </>
-          )}
-          <PersonaToggle />
-          <LanguageSelect />
-          <Tooltip label="Stats">
-            <Button size="icon" aria-label="Open stats" onClick={onStats}>
-              <BarChart3 className="size-4" />
-            </Button>
-          </Tooltip>
-          <Tooltip label="Settings">
-            <Button size="icon" aria-label="Open settings" onClick={onSettings}>
-              <Settings2 className="size-4" />
-            </Button>
-          </Tooltip>
-        </div>
+            <span className="inline-flex items-center gap-1.5 rounded-md bg-[#3a1212] px-2.5 py-1 text-xs font-semibold tracking-wide text-[#ff6b62]">
+              <span className="size-1.5 animate-pulse rounded-full bg-[#ff6b62]" aria-hidden /> LIVE
+            </span>
+          )
+        ) : null
+      }
+    >
+      <div className="flex items-center gap-3 rounded-lg bg-panel-2 px-4 py-2">
+        <span className="inline-flex items-center gap-2 text-sm font-medium">
+          <span className="size-2.5 rounded-full bg-riv" aria-hidden />
+          <span className="sm:hidden">{home?.short_name ?? "HOM"}</span>
+          <span className="hidden sm:inline">{home?.name ?? "Home"}</span>
+        </span>
+        <span className="whitespace-nowrap font-display text-xl font-semibold tabular-nums">
+          {goals(home?.team_id)} – {goals(away?.team_id)}
+        </span>
+        <span className="inline-flex items-center gap-2 text-sm font-medium">
+          <span className="sm:hidden">{away?.short_name ?? "AWY"}</span>
+          <span className="hidden sm:inline">{away?.name ?? "Away"}</span>
+          <span className="size-2.5 rounded-full bg-hil" aria-hidden />
+        </span>
+        <span className="h-4 w-px bg-line-2" />
+        <span className="num text-sm text-[#ffb547]">{clock(clockMs)}</span>
+        <span className="num text-xs text-muted-2">{half}</span>
       </div>
-    </header>
+    </HeaderShell>
   );
 }
