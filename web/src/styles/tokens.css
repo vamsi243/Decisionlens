@@ -1,0 +1,23 @@
+:root {
+  --bg: #f8f8f8;          /* page background */
+  --surface: #ffffff;     /* cards, panels */
+  --panel-2: #f0f0f0;     /* pitch surface, inset areas */
+  --ink: #1a1a1a;         /* text, home team, primary buttons */
+  --muted: #7c7c7c;       /* secondary text */
+  --muted-2: #989898;     /* tertiary text, axis labels */
+  --line: rgba(0,0,0,.10);   /* hairlines, pitch markings */
+  --line-2: rgba(37,37,34,.20);
+  --green: #118453;       /* probability up, success, ghost path */
+  --red: #c0362f;         /* probability down, turnovers */
+  --amber: #ba6603;       /* ball, fatigue warnings, key moments */
+  --radius-xl: 32px;      /* large panels */
+  --radius-lg: 20px;      /* cards */
+  --radius-md: 12px;      /* buttons, chips */
+  --shadow-sm: 0 2px 2px #00000008;
+  --shadow-md: 0 2px 5px #00000007;
+  --shadow-lg: 0 4px 18px #00000009;
+  --ease: cubic-bezier(.22,1,.36,1);
+  --font-sans: "Inter Variable", "Inter", "Segoe UI", system-ui, sans-serif;
+  --font-display: "Geist Variable", "Geist", "Inter Variable", system-ui, sans-serif;
+  --font-mono: "DM Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}

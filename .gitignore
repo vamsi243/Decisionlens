@@ -1,0 +1,34 @@
+# Secrets
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+.coverage
+htmlcov/
+
+# Node
+node_modules/
+web/dist/
+*.tsbuildinfo
+
+# Generated match data (only the committed judge sample is kept)
+data/samples/*
+!data/samples/.gitkeep
+!data/samples/match_42/
+
+# Azure
+.azure/
+
+# OS / editors
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
