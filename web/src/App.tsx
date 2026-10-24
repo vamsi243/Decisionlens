@@ -8,6 +8,7 @@ import { TopBar } from "@/components/TopBar";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { api } from "@/lib/api";
 import { useRoute } from "@/lib/router";
+import { watchPrefsForSound } from "@/lib/sfx";
 import { connectStream } from "@/lib/stream";
 import { useMatch } from "@/state/match";
 import { usePrefs } from "@/state/prefs";
@@ -77,6 +78,7 @@ function Legend() {
 export function App() {
   const route = useRoute();
   useEffect(() => connectStream(), []);
+  useEffect(() => watchPrefsForSound(), []);
   usePauseAtMoments(route === "live");
   return (
     <TooltipProvider>

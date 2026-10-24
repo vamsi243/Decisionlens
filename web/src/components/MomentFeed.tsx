@@ -5,6 +5,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { minute } from "@/lib/format";
 import { activeMoment, MOMENT_LABEL } from "@/lib/moments";
 import { ensureAnalyses, ensureTranslations, revealedMoments, useMatch } from "@/state/match";
+import { sfx } from "@/lib/sfx";
 import { usePrefs } from "@/state/prefs";
 import { PlayersToWatch } from "./fan/FanOverlays";
 import { MomentCard, narration, SourceBadge } from "./MomentCard";
@@ -87,6 +88,32 @@ export function MomentFeed() {
   const active = activeMoment(seen, analyses, clockMs, pinned)?.moment.moment_id;
 
   const box = useRef<HTMLDivElement>(null);
+  // A soft tick as each card scrolls into view while *you* scroll (the feed or the page), never
+  // during the feed's own auto-scroll.
+  useEffect(() => {
+    let user = 0;
+    const mark = () => {
+      user = performance.now();
+    };
+    const opts = { passive: true } as const;
+    window.addEventListener("wheel", mark, opts);
+    window.addEventListener("touchmove", mark, opts);
+    window.addEventListener("keydown", mark);
+    const io = new IntersectionObserver(
+      (entries) => {
+        if (performance.now() - user > 700) return;
+        if (entries.some((e) => e.isIntersecting)) sfx.tick();
+      },
+      { threshold: 0.25 },
+    );
+    box.current?.querySelectorAll("article").forEach((a) => io.observe(a));
+    return () => {
+      io.disconnect();
+      window.removeEventListener("wheel", mark);
+      window.removeEventListener("touchmove", mark);
+      window.removeEventListener("keydown", mark);
+    };
+  }, [items.length]);
   const [follow, setFollow] = useState(true);
   useEffect(() => {
     if (follow && box.current) box.current.scrollTo({ top: box.current.scrollHeight, behavior: "smooth" });

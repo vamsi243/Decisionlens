@@ -5,6 +5,7 @@ import { clock, minute } from "@/lib/format";
 import { playClip } from "@/lib/clip";
 import { MOMENT_LABEL } from "@/lib/moments";
 import { useMatch } from "@/state/match";
+import { sfx } from "@/lib/sfx";
 import { Tooltip } from "./ui/tooltip";
 
 /**
@@ -12,6 +13,7 @@ import { Tooltip } from "./ui/tooltip";
  * broadcast the viewer gets a personal clip instead (nobody else's board moves).
  */
 export async function replayMoment(m: KeyMoment) {
+  sfx.tap();
   if (useMatch.getState().server?.live) return playClip(m);
   useMatch.getState().pin(m.moment_id);
   await api.seek(Math.max(0, m.frame_range.start * 100));

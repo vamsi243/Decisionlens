@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type { KeyMoment, MatchStats, PlayerStats } from "@/types/contracts";
 import { api } from "@/lib/api";
 import { commentary } from "@/lib/commentary";
+import { sfx } from "@/lib/sfx";
 import { km, surname } from "@/lib/format";
 import { MOMENT_LABEL } from "@/lib/moments";
 import { cn } from "@/lib/utils";
@@ -145,6 +146,7 @@ export function MomentBanner() {
           if (prev.clockMs < m.t_ms && s.clockMs >= m.t_ms) {
             shown.current.add(m.moment_id);
             setShow(m);
+            (m.type === "goal" ? sfx.goal : sfx.moment)();
             setTimeout(() => shown.current.delete(m.moment_id), 20_000); // again on a later replay
           }
         }

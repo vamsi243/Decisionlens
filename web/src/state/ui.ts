@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { sfx } from "@/lib/sfx";
 
 /** Transient UI state shared across components (not saved): which player's panel is open. */
 interface Ui {
@@ -8,5 +9,10 @@ interface Ui {
 
 export const useUi = create<Ui>()((set) => ({
   panel: null,
-  openPanel: (panel) => set({ panel }),
+  openPanel: (panel) =>
+    set((s) => {
+      if (panel && panel !== s.panel) sfx.open();
+      if (!panel && s.panel) sfx.close();
+      return { panel };
+    }),
 }));

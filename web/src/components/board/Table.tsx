@@ -1,6 +1,7 @@
 import { BarChart3, Pause, Play, Settings2 } from "lucide-react";
 import type { Speed } from "@/types/contracts";
 import { api } from "@/lib/api";
+import { sfx } from "@/lib/sfx";
 import { surname } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { useMatch } from "@/state/match";
@@ -31,7 +32,10 @@ function ControlRail({ onStats, onSettings }: { onStats: () => void; onSettings:
             variant="primary"
             size="icon"
             aria-label={playing ? "Pause" : "Play"}
-            onClick={() => (playing ? api.pause() : api.play())}
+            onClick={() => {
+              sfx.tap();
+              void (playing ? api.pause() : api.play());
+            }}
           >
             {playing ? <Pause className="size-4" /> : <Play className="size-4" />}
           </Button>
@@ -40,7 +44,11 @@ function ControlRail({ onStats, onSettings }: { onStats: () => void; onSettings:
             type="single"
             orientation="vertical"
             value={String(status?.speed ?? 1)}
-            onValueChange={(v) => v && api.speed(Number(v) as Speed)}
+            onValueChange={(v) => {
+              if (!v) return;
+              sfx.tap();
+              void api.speed(Number(v) as Speed);
+            }}
             aria-label="Replay speed"
             className="border-0 lg:flex-col"
           >

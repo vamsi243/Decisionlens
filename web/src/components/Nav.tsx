@@ -1,4 +1,4 @@
-import { Aperture } from "lucide-react";
+import { Aperture, Volume2, VolumeX } from "lucide-react";
 import type { ReactNode } from "react";
 import { href, type Route } from "@/lib/router";
 import { cn } from "@/lib/utils";
@@ -50,6 +50,24 @@ export function Brand() {
   );
 }
 
+/** Mute or unmute the quiet UI sounds (saved per browser). */
+export function SoundToggle() {
+  const on = usePrefs((s) => s.sound);
+  const set = usePrefs((s) => s.set);
+  return (
+    <button
+      type="button"
+      onClick={() => set({ sound: !on })}
+      aria-pressed={on}
+      aria-label={on ? "Mute sounds" : "Turn sounds on"}
+      title={on ? "Mute sounds" : "Turn sounds on"}
+      className="grid size-10 place-items-center rounded-lg border border-line bg-panel-2 text-muted transition-colors hover:text-ink"
+    >
+      {on ? <Volume2 className="size-4" aria-hidden /> : <VolumeX className="size-4" aria-hidden />}
+    </button>
+  );
+}
+
 export function PersonaToggle() {
   const persona = usePrefs((s) => s.persona);
   const set = usePrefs((s) => s.set);
@@ -96,6 +114,7 @@ export function HeaderShell({ route, children, end }: { route: Route; children?:
         {children}
         <div className="ml-auto flex flex-wrap items-center gap-2.5">
           {end}
+          <SoundToggle />
           <PersonaToggle />
           <LanguageSelect />
         </div>

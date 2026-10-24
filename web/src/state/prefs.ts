@@ -13,6 +13,7 @@ interface Prefs {
   pauseAtMoments: boolean;
   boardSize: number; // live page: pitch width, % of the workspace
   followCam: boolean; // fan mode: the pitch follows the followed player
+  sound: boolean; // quiet UI sounds
   set: (p: Partial<Omit<Prefs, "set">>) => void;
 }
 
@@ -53,6 +54,7 @@ export const usePrefs = create<Prefs>()(
       pauseAtMoments: true,
       boardSize: 64,
       followCam: true,
+      sound: true,
       set: (p) => set(p),
     }),
     { name: "decision-lens-prefs", storage: createJSONStorage(() => safeStorage) },
