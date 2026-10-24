@@ -15,6 +15,11 @@ class Settings(BaseSettings):
     replay_autoplay: bool = False
     precompute_analysis: bool = True
 
+    # Agents (Phase 6)
+    mcp_url: str = "http://127.0.0.1:8000/mcp/"  # where the agents reach the engine tools
+    agent_timeout_s: float = 25.0
+    agent_cache_path: str = "data/cache/agent_responses.json"
+
     azure_openai_endpoint: str = ""
     azure_openai_api_key: str = ""
     azure_openai_api_version: str = "2025-04-01-preview"

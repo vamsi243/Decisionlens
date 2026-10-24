@@ -4,6 +4,7 @@ import type {
   MatchMeta,
   MatchStats,
   MomentAnalysis,
+  Overlay,
   PlayerProfile,
   ReplayStatus,
   Speed,
@@ -30,6 +31,9 @@ export const api = {
   players: () => req<PlayerProfile[]>("/players"),
   moments: (all = false) => req<KeyMoment[]>(`/moments${all ? "?all=true" : ""}`),
   analysis: (id: string) => req<MomentAnalysis>(`/moments/${encodeURIComponent(id)}/analysis`),
+  overlays: (all = false) => req<Overlay[]>(`/overlays${all ? "?all=true" : ""}`),
+  overlay: (id: string, lang = "en") =>
+    req<Overlay>(`/overlays/${encodeURIComponent(id)}?lang=${encodeURIComponent(lang)}`),
   stats: () => req<MatchStats>("/stats"),
   workload: () => req<WorkloadState[]>("/workload"),
   intensity: () => req<IntensityPoint[]>("/intensity"),

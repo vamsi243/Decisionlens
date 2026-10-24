@@ -1,6 +1,13 @@
-import { ArrowRight, RotateCcw } from "lucide-react";
+import { ArrowRight, BadgeCheck, RotateCcw } from "lucide-react";
 import { motion, useReducedMotion } from "framer-motion";
-import type { KeyMoment, MomentAnalysis, Persona, PlayerProfile, WorkloadState } from "@/types/contracts";
+import type {
+  KeyMoment,
+  MomentAnalysis,
+  Overlay,
+  Persona,
+  PlayerProfile,
+  WorkloadState,
+} from "@/types/contracts";
 import { minute, pct, surname } from "@/lib/format";
 import { MOMENT_LABEL } from "@/lib/moments";
 import { cn } from "@/lib/utils";
@@ -14,6 +21,32 @@ interface Props {
   workload: Record<string, WorkloadState>;
   active: boolean;
   favourite: boolean;
+  overlay?: Overlay;
+  lang: string;
+}
+
+/** The card text for this persona and language, falling back to English. */
+export function narration(o: Overlay | undefined, persona: Persona, lang: string): string | null {
+  const t = o?.text?.[persona];
+  return t?.[lang] ?? t?.en ?? null;
+}
+
+export function SourceBadge({ overlay }: { overlay?: Overlay }) {
+  if (!overlay) return null;
+  const agents = overlay.source === "agents" || overlay.source === "mixed";
+  return (
+    <span
+      className="inline-flex items-center gap-1 text-[11px] text-muted-2"
+      title={
+        agents
+          ? "Written by the agents; every number checked against the engine"
+          : "Written from engine numbers (no model call)"
+      }
+    >
+      <BadgeCheck className="size-3 text-green" aria-hidden />
+      {agents ? "agents · grounded" : "engine card"}
+    </span>
+  );
 }
 
 /** Plain-words strength of a change in probability, for fan cards (no new numbers). */
@@ -35,7 +68,17 @@ const VERB: Partial<Record<KeyMoment["type"], string>> = {
   goal: "to score",
 };
 
-export function MomentCard({ moment, analysis, persona, players, workload, active, favourite }: Props) {
+export function MomentCard({
+  moment,
+  analysis,
+  persona,
+  players,
+  workload,
+  active,
+  favourite,
+  overlay,
+  lang,
+}: Props) {
   const reduce = useReducedMotion();
   const w = analysis?.what_if;
   const opts = analysis?.options;
@@ -44,6 +87,7 @@ export function MomentCard({ moment, analysis, persona, players, workload, activ
   const actor = w ? players[w.actor_id] : players[moment.players[0] ?? ""];
   const fan = persona === "fan";
   const tired = moment.type === "fatigue_alert" ? workload[moment.players[0] ?? ""] : undefined;
+  const text = narration(overlay, persona, lang);
 
   return (
     <motion.article
@@ -73,14 +117,20 @@ export function MomentCard({ moment, analysis, persona, players, workload, activ
         {moment.title}
       </h3>
 
-      {tired ? (
+      {text && !fan && (overlay?.source !== "template" || !w) ? (
+        <p className="mt-2 text-sm leading-relaxed text-ink/85">{text}</p>
+      ) : null}
+
+      {tired && !text ? (
         <p className="mt-2 text-sm text-muted">
           Fatigue <span className="num text-amber">{Math.round(tired.fatigue)}</span> / 100 ·{" "}
           {Math.round((1 - (tired.modifiers?.speed ?? 1)) * 100)}% off top speed
         </p>
       ) : null}
 
-      {w ? (
+      {fan && text ? (
+        <p className="mt-2 text-base leading-snug">{text}</p>
+      ) : w ? (
         fan ? (
           <p className="mt-2 text-base leading-snug">
             {w.counterfactual.profile.label.replace(/ \(fresh sub\)$/, "")} would be{" "}
@@ -144,6 +194,9 @@ export function MomentCard({ moment, analysis, persona, players, workload, activ
       {!analysis && moment.type !== "fatigue_alert" ? (
         <p className="mt-2 text-sm text-muted-2">Working out the options…</p>
       ) : null}
+      <footer className="mt-3 flex justify-end">
+        <SourceBadge overlay={overlay} />
+      </footer>
     </motion.article>
   );
 }

@@ -5,6 +5,7 @@ import type {
   KeyMoment,
   MatchStats,
   MomentAnalysis,
+  Overlay,
   ReplayStatus,
   TrackingFrame,
   WorkloadState,
@@ -22,7 +23,7 @@ type Message =
   | { type: "moment"; data: KeyMoment }
   | { type: "analysis"; data: MomentAnalysis }
   | { type: "status"; data: ReplayStatus }
-  | { type: "overlay"; data: unknown };
+  | { type: "overlay"; data: Overlay };
 
 function dispatch(msg: Message) {
   const s = useMatch.getState();
@@ -45,6 +46,8 @@ function dispatch(msg: Message) {
       return s.analysis(msg.data);
     case "status":
       return s.setStatus(msg.data);
+    case "overlay":
+      return s.overlay(msg.data);
     default:
       return undefined;
   }
@@ -64,6 +67,10 @@ export function connectStream(): () => void {
       useMatch.getState().setConnected(true);
       api.moments(true).then(useMatch.getState().setAllMoments).catch(() => undefined);
       api.intensity().then(useMatch.getState().setIntensity).catch(() => undefined);
+      api
+        .overlays(true)
+        .then((os) => os.forEach(useMatch.getState().overlay))
+        .catch(() => undefined);
     };
     ws.onmessage = (ev) => {
       try {

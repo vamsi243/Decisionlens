@@ -65,7 +65,7 @@ export function SettingsSheet({ open, onOpenChange }: { open: boolean; onOpenCha
               </SelectContent>
             </Select>
           </Field>
-          <Field label="Language" hint="Cards switch language without a new model call (Phase 6).">
+          <Field label="Language" hint="Cards are translated by Azure AI Translator, with no new model call. Without a Translator key they stay in English.">
             <Select value={prefs.language} onValueChange={(v) => prefs.set({ language: v })}>
               <SelectTrigger aria-label="Language">
                 <SelectValue />

@@ -68,6 +68,27 @@ API on http://localhost:8000, web on http://localhost:5173.
 - **Stats drawer** (chart icon): team stats, workload and fatigue, and the intensity chart.
 - **Settings** (sliders icon): persona, favourite club and player, language, what-if profile.
 
+## The agents
+Five agents built with **Microsoft Agent Framework** on **Azure OpenAI in Foundry** (`gpt-5.4-mini` for analyst text and recaps, `gpt-5.4-nano` for fan lines, lowest reasoning effort, `gpt-4.1-mini` as the fallback):
+
+| Agent | Job |
+| --- | --- |
+| Interpreter | Summarises the live state for the recap |
+| Moment | Frames why a key moment matters |
+| What-if | Picks the most instructive swap and runs it through the `what_if_swap` MCP tool; it never computes numbers |
+| Narrator | Writes the analyst card and the fan line from the engine payload |
+| Recap | Half-time and full-time turning points |
+
+A **rules router** (a plain decision table) decides what runs: frames and events never touch a model; key moments run Moment → What-if → Narrator; a language change only calls Azure AI Translator.
+
+**Every number is checked.** Before a card is shown, a grounding guard rejects any number that is not in the engine payload. A rejected card is retried once (told which numbers were wrong), and if that fails too, a template card built from engine numbers takes its place. Without Azure keys, every card is that template. You can see where each card came from in `GET /agents/traces`.
+
+**MCP server.** Six engine tools (`get_match_state`, `get_player_workload`, `get_options`, `what_if_swap`, `get_intensity`, `get_recap_facts`), built with the official MCP Python SDK (v2). They are mounted at `/mcp` in the service, and can also run standalone over stdio for any MCP client:
+
+```bash
+uv run python -m mcp_server --match data/samples/match_42
+```
+
 ## The stream service
 `uv run python tasks.py dev` (or `make replay` for the API alone) serves the sample match on http://localhost:8000:
 
@@ -78,7 +99,10 @@ API on http://localhost:8000, web on http://localhost:5173.
 | `GET /moments/{id}/analysis` | Engine option map + what-if for a moment |
 | `GET /stats`, `/workload`, `/intensity` | Live team stats, player workload, intensity windows |
 | `POST /replay/play`, `/pause`, `/seek {t_ms}`, `/speed {speed: 1, 2, 4 or 8}` | Replay controls |
-| `GET /overlays/{id}` | A rendered card (from Phase 6) |
+| `GET /overlays` (`?all=true`) | Agent cards so far: analyst + fan text, engine payload, source |
+| `GET /overlays/{id}?lang=es` | A card translated by Azure AI Translator (no model call, cached) |
+| `GET /agents/traces` | Which router steps ran per trigger and where each text came from |
+| `POST /mcp/` | The MCP server (streamable HTTP) |
 | `WS /ws` | `hello`, then frames, events, stats, workload, intensity, moments, analyses and status |
 
 ## Azure deploy

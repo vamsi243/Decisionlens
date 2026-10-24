@@ -1,11 +1,36 @@
-import { ArrowDown } from "lucide-react";
-import { AnimatePresence } from "framer-motion";
+import { ArrowDown, Flag } from "lucide-react";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import type { Overlay, Persona } from "@/types/contracts";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { activeMoment } from "@/lib/moments";
-import { ensureAnalyses, revealedMoments, useMatch } from "@/state/match";
+import { ensureAnalyses, ensureTranslations, revealedMoments, useMatch } from "@/state/match";
 import { usePrefs } from "@/state/prefs";
-import { MomentCard } from "./MomentCard";
+import { MomentCard, narration, SourceBadge } from "./MomentCard";
 import { Button } from "./ui/button";
+
+function RecapCard({ overlay, persona, lang }: { overlay: Overlay; persona: Persona; lang: string }) {
+  const reduce = useReducedMotion();
+  const title = String(overlay.payload?.title ?? "Recap");
+  return (
+    <motion.article
+      initial={reduce ? false : { opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+      className="rounded-lg border border-ink/15 bg-ink p-4 text-surface shadow-md"
+    >
+      <header className="flex items-center gap-2 text-xs text-surface/60">
+        <Flag className="size-3.5" aria-hidden />
+        <span className="font-medium uppercase tracking-wide">{title}</span>
+      </header>
+      <p className={persona === "fan" ? "mt-2 text-base leading-snug" : "mt-2 text-sm leading-relaxed"}>
+        {narration(overlay, persona, lang)}
+      </p>
+      <footer className="mt-3 flex justify-end opacity-70">
+        <SourceBadge overlay={overlay} />
+      </footer>
+    </motion.article>
+  );
+}
 
 export function MomentFeed() {
   const seen = useMatch((s) => s.seen);
@@ -15,7 +40,10 @@ export function MomentFeed() {
   const players = useMatch((s) => s.players);
   const workload = useMatch((s) => s.workload);
   const pinned = useMatch((s) => s.pinned);
+  const overlays = useMatch((s) => s.overlays);
+  const noTranslation = useMatch((s) => s.noTranslation);
   const persona = usePrefs((s) => s.persona);
+  const lang = usePrefs((s) => s.language);
   const favPlayer = usePrefs((s) => s.player);
   const favClub = usePrefs((s) => s.club);
 
@@ -24,19 +52,38 @@ export function MomentFeed() {
     [seen, allMoments, clockMs],
   );
   useEffect(() => ensureAnalyses(moments), [moments]);
+  const recaps = useMemo(
+    () => Object.values(overlays).filter((o) => o.kind === "recap" && o.t_ms <= clockMs),
+    [overlays, clockMs],
+  );
+  const items = useMemo(
+    () =>
+      [
+        ...moments.map((m) => ({ t: m.t_ms, key: m.moment_id, moment: m, recap: undefined })),
+        ...recaps.map((o) => ({ t: o.t_ms, key: o.overlay_id, moment: undefined, recap: o })),
+      ].sort((a, b) => a.t - b.t),
+    [moments, recaps],
+  );
+  const cardIds = items.map((i) => (i.recap ? i.recap.overlay_id : `ov_${i.key}`)).join();
+  useEffect(() => {
+    ensureTranslations(cardIds ? cardIds.split(",") : [], lang);
+  }, [cardIds, lang, overlays]);
   const active = activeMoment(seen, analyses, clockMs, pinned)?.moment.moment_id;
 
   const box = useRef<HTMLDivElement>(null);
   const [follow, setFollow] = useState(true);
   useEffect(() => {
     if (follow && box.current) box.current.scrollTo({ top: box.current.scrollHeight, behavior: "smooth" });
-  }, [moments.length, follow]);
+  }, [items.length, follow]);
 
   return (
     <section className="relative flex min-h-0 flex-col" aria-label="Key moments">
       <div className="mb-3 flex items-center justify-between">
         <h2 className="font-display text-sm font-semibold tracking-tight">Key moments</h2>
-        <span className="num text-xs text-muted-2">{moments.length}</span>
+        <span className="flex items-center gap-2 text-xs text-muted-2">
+          {noTranslation && lang !== "en" ? <span>English only (no Translator key)</span> : null}
+          <span className="num">{moments.length}</span>
+        </span>
       </div>
       <div
         ref={box}
@@ -52,21 +99,27 @@ export function MomentFeed() {
           </p>
         ) : null}
         <AnimatePresence initial={false}>
-          {moments.map((m) => (
-            <MomentCard
-              key={m.moment_id}
-              moment={m}
-              analysis={analyses[m.moment_id]}
-              persona={persona}
-              players={players}
-              workload={workload}
-              active={m.moment_id === active}
-              favourite={
-                (favPlayer !== null && m.players.includes(favPlayer)) ||
-                (favClub !== null && m.team_id === favClub)
-              }
-            />
-          ))}
+          {items.map(({ key, moment: m, recap }) =>
+            recap ? (
+              <RecapCard key={key} overlay={recap} persona={persona} lang={lang} />
+            ) : m ? (
+              <MomentCard
+                key={key}
+                moment={m}
+                analysis={analyses[m.moment_id]}
+                overlay={overlays[`ov_${m.moment_id}`]}
+                lang={lang}
+                persona={persona}
+                players={players}
+                workload={workload}
+                active={m.moment_id === active}
+                favourite={
+                  (favPlayer !== null && m.players.includes(favPlayer)) ||
+                  (favClub !== null && m.team_id === favClub)
+                }
+              />
+            ) : null,
+          )}
         </AnimatePresence>
       </div>
       {!follow ? (

@@ -15,6 +15,10 @@ dependencies = [
     "python-dotenv>=1.0",
     "openai>=1.55",
     "orjson>=3.13.0",
+    "agent-framework-core>=1.23.0",
+    "mcp>=2.3.0",
+    "agent-framework-openai>=1.17.0",
+    "tenacity>=9.2.1",
 ]
 
 [dependency-groups]
@@ -45,7 +49,7 @@ select = ["E", "F", "W", "I", "B", "UP", "SIM", "RUF"]
 python_version = "3.12"
 strict = true
 plugins = ["pydantic.mypy"]
-files = ["contracts", "generator", "engine", "service", "tests"]
+files = ["contracts", "generator", "engine", "service", "mcp_server", "agents", "tests"]
 ignore_missing_imports = true
 
 [tool.ruff.lint.per-file-ignores]

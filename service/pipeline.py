@@ -10,11 +10,20 @@ from __future__ import annotations
 import asyncio
 import copy
 import logging
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
 
 import numpy as np
 
-from contracts import KeyMoment, MatchMeta, MatchStats, PlayerProfile, WorkloadState
+from contracts import (
+    Event,
+    EventType,
+    KeyMoment,
+    MatchMeta,
+    MatchStats,
+    PlayerProfile,
+    WorkloadState,
+)
 from contracts.stream import MomentAnalysis, StreamMessageType
 from engine.detector import Detected, MomentDetector
 from engine.metrics import IntensityTracker, StatsTracker, WorkloadTracker
@@ -39,6 +48,7 @@ class LiveState:
     detector: MomentDetector
     appeared: set[str] = field(default_factory=set)
     on_ids: list[str] = field(default_factory=list)
+    goals: list[Event] = field(default_factory=list)
     frame: int = -1
 
     @classmethod
@@ -94,7 +104,11 @@ class Pipeline:
         self.state = LiveState.fresh(self.meta, self.players)
         self.checkpoints: dict[int, LiveState] = {}
         self.all_detected: list[Detected] = []
-        self.warm_bench: dict[str, list[str]] = {}  # moment id -> bench at that moment
+        self.detected: dict[str, Detected] = {}  # moment id -> detection (snapshot + spec)
+        self.moment_bench: dict[str, list[str]] = {}  # moment id -> fresh subs at that moment
+        self.moment_workload: dict[str, dict[str, WorkloadState]] = {}  # at detection time
+        # Called with the period_end event while streaming (half-time / full-time recaps).
+        self.period_end_hook: Callable[[Event], Awaitable[None]] | None = None
 
     # ------------------------------------------------------------------ pure state update
     def _process(self, st: LiveState, pkt: FramePacket) -> list[Detected]:
@@ -123,8 +137,10 @@ class Pipeline:
             st.workload.fatigue.knocked,
         )
         for e in pkt.events:
-            if e.type.value == "knock" and e.player_id:
+            if e.type == EventType.KNOCK and e.player_id:
                 st.workload.knock(e.player_id)
+            if e.type == EventType.GOAL:
+                st.goals.append(e)
             st.stats.update_event(e)
             st.intensity.update_event(e)
             found += st.detector.on_event(e)
@@ -147,10 +163,19 @@ class Pipeline:
                 self.checkpoints[f] = copy.deepcopy(st)
             for d in self._process(st, self.source.packet(f)):
                 self.all_detected.append(d)
-                self.warm_bench[d.moment.moment_id] = self.bench(st, d.moment.team_id)
+                self._register(st, d)
+
+    def _register(self, st: LiveState, d: Detected) -> None:
+        mid = d.moment.moment_id
+        if mid not in self.detected:
+            self.detected[mid] = d
+            self.moment_bench[mid] = self.bench(st, d.moment.team_id)
+            self.moment_workload[mid] = {
+                pid: st.workload.state(pid, d.moment.t_ms) for pid in d.moment.players
+            }
 
     def precompute_jobs(self) -> list[Job]:
-        return [Job(d, self.warm_bench.get(d.moment.moment_id, [])) for d in self.all_detected]
+        return [Job(d, self.moment_bench.get(d.moment.moment_id, [])) for d in self.all_detected]
 
     def restore(self, frame: int) -> None:
         """State as it was just before `frame` was processed."""
@@ -193,7 +218,12 @@ class Pipeline:
         if fresh or pkt.frame % INTENSITY_EVERY == 0:
             await pub.publish(StreamMessageType.INTENSITY, self.state.intensity.series())
         for d in found:
+            self._register(self.state, d)
             await self._moment(d)
+        if self.period_end_hook is not None:
+            for e in pkt.events:
+                if e.type == EventType.PERIOD_END:
+                    await self.period_end_hook(e)
 
     async def _moment(self, d: Detected) -> None:
         m: KeyMoment = d.moment
@@ -202,14 +232,21 @@ class Pipeline:
         ready = self.store.analysis(m.moment_id)
         if ready is not None:
             await self.publisher.publish(StreamMessageType.ANALYSIS, ready)
-        elif self.queue is not None and (d.spec or d.options_actor):
+            card = self.store.overlay(f"ov_{m.moment_id}")
+            if card is not None:
+                await self.publisher.publish(StreamMessageType.OVERLAY, card)
+        elif self.queue is not None:
             await self.queue.put(Job(d, self.bench(self.state, m.team_id)))
 
 
 async def analysis_worker(
-    queue: asyncio.Queue[Job], store: StateStore, publisher: Publisher
+    queue: asyncio.Queue[Job],
+    store: StateStore,
+    publisher: Publisher,
+    on_ready: Callable[[MomentAnalysis], None] | None = None,
 ) -> None:
-    """Consume key moments: compute the engine analysis off the event loop, store, publish."""
+    """Consume key moments: compute the engine analysis off the event loop, store, publish,
+    then hand it on (to the agents' orchestrator)."""
     while True:
         job = await queue.get()
         try:
@@ -219,6 +256,8 @@ async def analysis_worker(
             ready = store.analysis(mid)
             if ready is not None:
                 await publisher.publish(StreamMessageType.ANALYSIS, ready)
+                if on_ready is not None:
+                    on_ready(ready)
         except Exception:
             log.exception("analysis failed")
         finally:

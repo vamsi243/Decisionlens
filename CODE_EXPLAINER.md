@@ -13,6 +13,8 @@
 | `tasks.py` | Cross-platform task runner used by the Makefile |
 | `service/` | `ports.py` (interfaces), `adapters/` (file replay, memory store, WebSocket, Azure stubs), `pipeline.py`, `main.py` (REST + WS) |
 | `infra/` | Bicep for the Phase 4 hello deploy (registry, Container Apps, managed identity) |
+| `mcp_server/` | `context.py` (what the tools can see: the pipeline + store), `server.py` (six tools on the MCP SDK's `MCPServer`), `__main__.py` (standalone stdio server) |
+| `agents/` | `router.py` (decision table), `backend.py` (Agent Framework on Azure OpenAI), `orchestrator.py`, `facts.py`, `grounding.py`, `templates.py`, `prompts.py`, `cache.py`, `translator.py` |
 | `web/src/state/` | `frames.ts` (frame buffer + interpolation), `match.ts` (Zustand store fed by the socket), `prefs.ts` (persona, favourites, language; saved locally) |
 | `web/src/components/` | `board/` (pitch, players, ball, option arrows, what-if ghost), `TopBar`, `Scrubber`, `MomentFeed`/`MomentCard`, `StatsDrawer`, `SettingsSheet`, `ui/` (shadcn-style Radix primitives) |
 
@@ -55,7 +57,10 @@ _In the service:_
 2. It builds a `KeyMoment` (id `km_<frame>_<type>`) and a `MomentSpec`: "does RIV_02 win this header, asked at the moment of the cross?". It also takes a `Snapshot` of the cross frame from its 20 s ring buffer.
 3. The pipeline stores and publishes the moment, then queues a `Job`, along with the players still on the bench.
 4. `analysis_worker` runs `engine.whatif.what_if` (fresh aerial centre-back from the bench) and, for on-ball moments, `engine.options.option_set` in a thread. The result is stored and published as `analysis`.
-5. Phase 6 adds the agents that turn this analysis into analyst and fan cards.
+5. `Orchestrator.submit_moment` queues it. The router picks the steps: for a key moment, Moment → What-if → Narrator.
+6. `agents/facts.py` turns the analysis into FACTS (percentages as whole numbers, names, drivers, workload at the time of the moment).
+7. Each agent call goes through `_ask`: response cache → model (25 s timeout) → `grounding.check` → one retry → `templates.py`.
+8. The result is an `Overlay`: `text[persona][language]`, the engine payload, a `source` (agents / mixed / template) and a step trace. It is stored and pushed to boards as an `overlay` message. A language switch calls `GET /overlays/{id}?lang=` (Azure AI Translator).
 
 
 ## The probability maths (`engine/`)
@@ -89,7 +94,8 @@ Fatigue scales the inputs. At fatigue 100, top speed drops to ×0.78, accelerati
 **Adding a moment type:** add it to `MomentType`, write a branch in `moments.evaluate` and `spec_for_event`, list its driver factors in `whatif.FACTORS` and its preferred archetype in `PREFERRED_ARCHETYPE`.
 
 ## Extending
-_TODO_
+- **A new agent:** add its instructions to `agents/prompts.py` (bump `PROMPT_VERSION`), add a `Step` and the triggers that run it to `agents/router.py`, and call `_ask` for it in `agents/orchestrator.py`. Give it a template in `agents/templates.py`, so it still works without a model.
+- **A new MCP tool:** add a method to `mcp_server/context.py` (the engine does the maths) and register it in `mcp_server/server.py`. To let the What-if agent use it, list it in `agents/backend.MCP_TOOLS`.
 
 ## Testing approach
 _TODO_

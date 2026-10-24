@@ -71,6 +71,45 @@ def smoke_translator() -> bool:
     return True
 
 
+def smoke_agent() -> bool:
+    """One Narrator call through Microsoft Agent Framework, checked by the grounding guard."""
+    import asyncio
+    import json
+
+    from agents import prompts
+    from agents.backend import build_backend
+    from agents.grounding import check
+
+    s = get_settings()
+    backend = build_backend(s, s.mcp_url)
+    if backend is None:
+        print("[agent] skipped: no Azure OpenAI endpoint/key")
+        return False
+    facts = {
+        "headline": "Morrow beats Pell in the air",
+        "minute": 87,
+        "what_if": {
+            "player": "Jonah Pell",
+            "actual_pct": 4,
+            "swap": "Felix Dunmore",
+            "swap_pct": 43,
+            "drivers": ["+31 cm reach", "+42 aerial"],
+        },
+    }
+    prompt = "FACTS:\n" + json.dumps(facts)
+    try:
+        text = asyncio.run(
+            backend.run(
+                "narrator_fan", prompts.NARRATOR_FAN, prompt, model=s.azure_openai_deployment_nano
+            )
+        )
+    except Exception as exc:
+        print(f"[agent] failed: {exc}")
+        return False
+    print(f"[agent] narrator_fan: {text!r} grounded={check(text, facts).ok}")
+    return True
+
+
 if __name__ == "__main__":
-    ok = [smoke_model(), smoke_translator()]
+    ok = [smoke_model(), smoke_translator(), smoke_agent()]
     raise SystemExit(0 if all(ok) else 1)

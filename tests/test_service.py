@@ -190,3 +190,44 @@ def test_seek_republishes_the_full_picture(short_match: Path) -> None:
     kinds = {k for k, _ in cap.sent}
     expected = {StreamMessageType.STATS, StreamMessageType.WORKLOAD, StreamMessageType.INTENSITY}
     assert expected <= kinds
+
+
+def test_overlays_traces_and_mcp_mount(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("MATCH_DIR", "data/samples/match_42")
+    monkeypatch.setenv("PRECOMPUTE_ANALYSIS", "true")
+    monkeypatch.setenv("AZURE_OPENAI_ENDPOINT", "")
+    monkeypatch.setenv("AZURE_TRANSLATOR_KEY", "")
+    monkeypatch.setenv("AGENT_CACHE_PATH", "")
+    get_settings.cache_clear()
+    from service.main import app
+
+    with TestClient(app) as c:
+        n = len(c.get("/moments", params={"all": "true"}).json())
+        deadline = time.monotonic() + 60
+        cards: list[dict[str, Any]] = []
+        while time.monotonic() < deadline and len(cards) < n:
+            cards = c.get("/overlays", params={"all": "true"}).json()
+            time.sleep(0.2)
+        assert n > 0 and len(cards) == n
+        assert all(o["grounded"] and o["text"]["analyst"]["en"] for o in cards)
+        assert (
+            c.get(f"/overlays/{cards[0]['overlay_id']}", params={"lang": "es"}).status_code == 503
+        )
+        traces = c.get("/agents/traces").json()
+        assert len(traces) == n and all(t["steps"] for t in traces)
+        init = c.post(
+            "/mcp/",
+            json={
+                "jsonrpc": "2.0",
+                "id": 1,
+                "method": "initialize",
+                "params": {
+                    "protocolVersion": "2025-06-18",
+                    "capabilities": {},
+                    "clientInfo": {"name": "test", "version": "0"},
+                },
+            },
+            headers={"Accept": "application/json, text/event-stream", "Host": "127.0.0.1:8000"},
+        )
+        assert init.status_code == 200 and "decision-lens" in init.text
+    get_settings.cache_clear()

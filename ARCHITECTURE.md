@@ -61,7 +61,44 @@ flowchart LR
 - **Lazy charts.** The stats drawer (recharts) is a separate chunk loaded on first open: 457 KB initial JS (153 KB gzipped).
 
 ## Agents and router
-_TODO (Phase 6)_
+| Trigger | Runs (agents/router.py) |
+| --- | --- |
+| Every frame or event | Engine only, no model |
+| Key moment | Moment → What-if → Narrator |
+| Fatigue over 80 | What-if (fresh sub, engine) → Narrator |
+| Language change | Translator only |
+| Half-time, full-time | Interpreter → Recap |
+
+```mermaid
+sequenceDiagram
+  participant P as Pipeline
+  participant W as Analysis worker
+  participant O as Orchestrator
+  participant M as Moment agent
+  participant WI as What-if agent
+  participant T as MCP tools (/mcp)
+  participant N as Narrator (mini + nano)
+  participant G as Grounding guard
+  P->>W: key moment (snapshot + engine question)
+  W->>W: option map + default what-if (engine)
+  W->>O: MomentAnalysis
+  O->>M: FACTS
+  M-->>O: framing sentence
+  O->>WI: FACTS + fresh subs
+  WI->>T: what_if_swap(moment, mode, ...)
+  T-->>WI: engine before/after, ranges, drivers
+  WI-->>O: why this swap (no numbers)
+  O->>N: FACTS (with the chosen swap's engine numbers)
+  N-->>G: analyst card, fan line
+  G-->>O: ok, or retry once, or engine template
+  O->>P: Overlay (store + WebSocket)
+```
+
+- **Shared state, not message passing.** Agents never hand numbers to each other. The What-if agent's swap goes through the MCP tool into the `StateStore`, and the Narrator reads the engine's result.
+- **Timeouts and retry.** Each call has 25 s. After an error, the one retry uses the fallback deployment; after an ungrounded answer, it uses the same model, told which numbers were wrong. Then the card falls back to the template.
+- **Cache.** Answers are cached by match, moment (or recap), agent, model and prompt version, in memory and in `data/cache/` (gitignored). Replaying a match costs nothing after the first run. A cached what-if stores the tool arguments and replays them on the engine, so cached numbers are always engine numbers.
+- **Cost guard.** Model calls happen only at key moments and the two whistles, about 17 moments and 2 recaps per match, at up to 4 calls each.
+- **MCP security.** The MCP SDK's DNS-rebinding protection stays on; the agents reach the tools on 127.0.0.1.
 
 ## Synthetic match generator
 ```mermaid

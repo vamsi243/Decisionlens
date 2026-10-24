@@ -7,12 +7,18 @@ import contextlib
 import logging
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from pathlib import Path
 from typing import Any
 
 from fastapi import FastAPI, HTTPException, WebSocket
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
+from agents.backend import build_backend
+from agents.cache import ResponseCache
+from agents.orchestrator import Orchestrator
+from agents.router import Trigger, route
+from agents.translator import Translator
 from contracts import (
     IntensityPoint,
     KeyMoment,
@@ -23,6 +29,8 @@ from contracts import (
     WorkloadState,
 )
 from contracts.stream import Hello, MomentAnalysis, ReplayStatus, Speed, StreamMessageType
+from mcp_server.context import EngineContext
+from mcp_server.server import build_server
 from service.adapters.ws_publisher import encode
 from service.factory import Adapters, build_adapters
 from service.pipeline import Job, Pipeline, analysis_worker
@@ -38,7 +46,10 @@ class Runtime:
     pipeline: Pipeline
     queue: asyncio.Queue[Job]
     tasks: list[asyncio.Task[Any]]
-    ready: asyncio.Event
+    ctx: EngineContext
+    orchestrator: Orchestrator
+    translator: Translator
+    mcp_app: Any = None
 
 
 rt = Runtime()
@@ -58,6 +69,10 @@ async def _run_replay() -> None:
             log.exception("frame %s failed", pkt.frame)
 
 
+async def _on_period_end(e: Any) -> None:
+    rt.orchestrator.submit_period_end(e)
+
+
 async def _precompute() -> None:
     """Warm the analysis cache so key-moment cards appear instantly on replay."""
     for job in rt.pipeline.precompute_jobs():
@@ -71,16 +86,41 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
     rt.queue = asyncio.Queue()
     rt.pipeline = Pipeline(rt.adapters.source, rt.adapters.store, rt.adapters.publisher, rt.queue)
     await asyncio.to_thread(rt.pipeline.warm_up)
+
+    # Agents: engine tools over MCP (mounted at /mcp), the router-driven orchestrator, Translator.
+    rt.ctx = EngineContext(rt.pipeline, rt.adapters.store)
+    mcp = build_server(rt.ctx)
+    rt.mcp_app = mcp.streamable_http_app(streamable_http_path="/", stateless_http=True)
+    rt.orchestrator = Orchestrator(
+        rt.ctx,
+        rt.adapters.store,
+        rt.adapters.publisher,
+        build_backend(settings, settings.mcp_url),
+        settings,
+        ResponseCache(Path(settings.agent_cache_path) if settings.agent_cache_path else None),
+    )
+    rt.translator = Translator(settings)
+    rt.pipeline.period_end_hook = _on_period_end
+
     rt.tasks = [
         asyncio.create_task(_run_replay()),
-        asyncio.create_task(analysis_worker(rt.queue, rt.adapters.store, rt.adapters.publisher)),
+        asyncio.create_task(
+            analysis_worker(
+                rt.queue,
+                rt.adapters.store,
+                rt.adapters.publisher,
+                rt.orchestrator.submit_moment,
+            )
+        ),
+        asyncio.create_task(rt.orchestrator.worker()),
     ]
     if settings.precompute_analysis:
         rt.tasks.append(asyncio.create_task(_precompute()))
     if settings.replay_autoplay:
         rt.adapters.source.play()
     try:
-        yield
+        async with mcp.session_manager.run():
+            yield
     finally:
         for t in rt.tasks:
             t.cancel()
@@ -89,8 +129,18 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
                 await t
 
 
-app = FastAPI(title="Decision Lens", version="0.4.0", lifespan=lifespan)
+app = FastAPI(title="Decision Lens", version="0.6.0", lifespan=lifespan)
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
+
+
+async def _mcp(scope: Any, receive: Any, send: Any) -> None:
+    """The MCP server is built in the lifespan; this forwards /mcp requests to it."""
+    if rt.mcp_app is None:
+        raise HTTPException(503, "MCP server not ready")
+    await rt.mcp_app(scope, receive, send)
+
+
+app.mount("/mcp", _mcp)
 
 
 @app.get("/health")
@@ -149,12 +199,35 @@ async def intensity() -> list[IntensityPoint]:
     return rt.pipeline.state.intensity.series()
 
 
+@app.get("/overlays")
+async def overlays(all: bool = False) -> list[Overlay]:
+    """Cards so far (`all=true`: every card generated for the replay)."""
+    until = None if all else rt.adapters.source.status().t_ms
+    return rt.adapters.store.overlays(until_ms=until)
+
+
 @app.get("/overlays/{overlay_id}")
-async def overlay(overlay_id: str) -> Overlay:
+async def overlay(overlay_id: str, lang: str = "en") -> Overlay:
+    """A card; `lang` adds a translation via Azure AI Translator (no model call, cached)."""
     o = rt.adapters.store.overlay(overlay_id)
     if o is None:
         raise HTTPException(404, "no such overlay")
-    return o
+    if lang == "en":
+        return o
+    assert route(Trigger.LANGUAGE_CHANGE)  # router: a language change runs the Translator only
+    translated = await rt.translator.overlay(o, lang)
+    if translated is None:
+        raise HTTPException(503, "translation unavailable (no Translator key configured)")
+    return translated
+
+
+@app.get("/agents/traces")
+async def agent_traces() -> list[dict[str, Any]]:
+    """Which router steps ran for each trigger and where each text came from."""
+    return [
+        {"trigger": t.trigger, "target": t.target, "steps": [s.__dict__ for s in t.steps]}
+        for t in rt.orchestrator.traces
+    ]
 
 
 # --- replay controls --------------------------------------------------------------------------

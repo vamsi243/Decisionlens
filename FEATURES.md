@@ -16,11 +16,11 @@ Status: **done** / **partial** / **todo** / **cut**. Priority: M must, S should,
 | F10 | Key-moment detector | M | done — rules over events and tracking (never the scripted tags); flags all 5 scripted moments plus goals, real big chances and fatigue alerts (17 on seed 42) | `GET /moments?all=true` | Explain |
 | F11 | Option map | M | done — up to 4 options with p_success, P10–P90 range, xT gain and path; curved arrows sized by probability, best in green, chosen ringed | replay a moment from the scrubber | Explain |
 | F12 | What-if swap | M | done — archetype, custom or fresh-sub swap; before → after with ranges and drivers; dashed ghost on the board, card in the rail | moment cards | Explain |
-| F13 | Grounded agent explanations | M | todo | | Explain |
-| F14 | Analyst vs fan mode | M | partial — the same moment renders as a numbers card (analyst) or one plain line (fan); agent-written text in Phase 6 | top bar toggle | Personalize |
+| F13 | Grounded agent explanations | M | done — five Agent Framework agents behind a rules router; a grounding guard rejects any number not in the engine payload (retry, then template). Verified with a scripted backend; a live model run needs your Azure keys (`scripts/smoke_azure.py`) | moment cards, `GET /agents/traces` | Explain |
+| F14 | Analyst vs fan mode | M | done — Narrator writes an analyst card (gpt-5.4-mini) and a fan line (gpt-5.4-nano) for every moment; the toggle switches between them | top bar toggle | Personalize |
 | F15 | Favourite player and club | M | partial — halo and name tag on the board; their cards ringed in the feed; feed ordering in Phase 7 | settings sheet | Personalize |
-| F16 | Language switch | M | todo | | Personalize |
-| F17 | Automated recap | M | todo | | Explain |
+| F16 | Language switch | M | done — `GET /overlays/{id}?lang=` translates through Azure AI Translator (cached, no model call); without a key cards stay in English and the feed says so | language select | Personalize |
+| F17 | Automated recap | M | done — the period-end event runs Interpreter → Recap; recap cards appear in the feed at half-time and full-time | play past 45:00 | Explain |
 | F18 | Timeline scrubber | M | done — drag or arrow keys to seek; amber markers jump to a few seconds before a moment and replay it | bottom bar | Render |
 | F19 | Scroll-driven recap page | S | todo | | Render |
 | F20 | Calibration chart | S | partial — `make calibrate` prints reliability bins, Brier score and ECE; chart in Phase 9 | `engine/calibration.py` | Explain |

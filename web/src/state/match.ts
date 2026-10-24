@@ -7,6 +7,7 @@ import type {
   MatchMeta,
   MatchStats,
   MomentAnalysis,
+  Overlay,
   PlayerProfile,
   ReplayStatus,
   TrackingFrame,
@@ -31,6 +32,8 @@ interface MatchState {
   allMoments: KeyMoment[];
   seen: Record<string, KeyMoment>;
   analyses: Record<string, MomentAnalysis>;
+  overlays: Record<string, Overlay>;
+  noTranslation: boolean; // the server has no Translator key: cards stay in English
   events: Event[];
   pinned: string | null; // moment the user asked to replay / inspect
 
@@ -41,6 +44,8 @@ interface MatchState {
   setAllMoments: (m: KeyMoment[]) => void;
   moment: (m: KeyMoment) => void;
   analysis: (a: MomentAnalysis) => void;
+  overlay: (o: Overlay) => void;
+  setNoTranslation: (v: boolean) => void;
   event: (e: Event) => void;
   setStats: (s: MatchStats) => void;
   setWorkload: (w: WorkloadState[]) => void;
@@ -63,6 +68,8 @@ export const useMatch = create<MatchState>((set, get) => ({
   allMoments: [],
   seen: {},
   analyses: {},
+  overlays: {},
+  noTranslation: false,
   events: [],
   pinned: null,
 
@@ -105,6 +112,17 @@ export const useMatch = create<MatchState>((set, get) => ({
   setAllMoments: (allMoments) => set({ allMoments }),
   moment: (m) => set((s) => ({ seen: { ...s.seen, [m.moment_id]: m } })),
   analysis: (a) => set((s) => ({ analyses: { ...s.analyses, [a.moment.moment_id]: a } })),
+  overlay: (o) =>
+    set((s) => {
+      const prev = s.overlays[o.overlay_id];
+      // keep translations we already fetched when the English card is republished
+      const text = { ...(o.text ?? {}) } as Record<string, Record<string, string>>;
+      for (const [persona, langs] of Object.entries(prev?.text ?? {})) {
+        text[persona] = { ...(langs as Record<string, string>), ...(text[persona] ?? {}) };
+      }
+      return { overlays: { ...s.overlays, [o.overlay_id]: { ...o, text } } };
+    }),
+  setNoTranslation: (noTranslation) => set({ noTranslation }),
   event: (e) => set((s) => ({ events: [...s.events.slice(-(RECENT_EVENTS - 1)), e] })),
   setStats: (stats) => set({ stats }),
   setWorkload: (w) =>
@@ -126,6 +144,26 @@ export function revealedMoments(
 }
 
 const requested = new Set<string>();
+const translating = new Set<string>();
+
+/** Fetch translations of the given cards (Azure AI Translator on the server, cached there). */
+export function ensureTranslations(overlayIds: string[], lang: string) {
+  const { overlays, overlay, noTranslation, setNoTranslation } = useMatch.getState();
+  if (lang === "en" || noTranslation) return;
+  for (const id of overlayIds) {
+    const o = overlays[id];
+    const key = `${id}:${lang}`;
+    if (!o || translating.has(key) || o.text?.fan?.[lang]) continue;
+    translating.add(key);
+    api
+      .overlay(id, lang)
+      .then(overlay)
+      .catch((e: Error) => {
+        if (e.message.endsWith("503")) setNoTranslation(true);
+        translating.delete(key);
+      });
+  }
+}
 
 /** Fetch analyses we have not received over the socket (e.g. moments before a seek). */
 export function ensureAnalyses(moments: KeyMoment[]) {
