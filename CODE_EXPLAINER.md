@@ -21,6 +21,8 @@
 | `contracts/player.py` | `PlayerStats` (hover card), `PlayerDecision(s)` (player panel), `MarkingAdvice` (copilot) |
 | `engine/matchups.py` | Who should mark whom: header, race and tackle probabilities per candidate, weighted by the attacker's type, position fit and foot |
 | `agents/copilot.py` | The match copilot: Agent Framework agent, engine tools, per-viewer thread scope and rate limit, served over AG-UI at `/copilot` |
+| `web/src/components/fan/FanOverlays.tsx` | Fan mode: follow-cam toggle, player card, momentum bar, big-moment banner, commentary ticker, players to watch |
+| `web/src/lib/commentary.ts` | Event → one-line commentary templates for fans |
 | `web/src/components/Copilot.tsx` | CopilotKit provider (`selfManagedAgents` → `HttpAgent`), the chat panel, screen context and the marking chart renderer |
 | `web/src/state/` | `frames.ts` (frame buffer + interpolation), `match.ts` (Zustand store fed by the socket), `prefs.ts` (persona, favourites, language, board size; saved locally), `ui.ts` (which player panel is open) |
 | `web/src/pages/` | `HomePage.tsx` (promo page with a looping key-moment clip), `HowPage.tsx` (five stages + agent diagram), `RecapPage.tsx` (scroll story with pinned pitch, green/red bullets) |

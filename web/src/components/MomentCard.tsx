@@ -1,4 +1,4 @@
-import { ArrowRight, BadgeCheck, Download, RotateCcw } from "lucide-react";
+import { ArrowRight, BadgeCheck, Download, RotateCcw, Star } from "lucide-react";
 import { downloadJson } from "@/lib/export";
 import { motion, useReducedMotion } from "framer-motion";
 import type {
@@ -15,6 +15,7 @@ import { minute, pct, surname } from "@/lib/format";
 import { MOMENT_LABEL } from "@/lib/moments";
 import { cn } from "@/lib/utils";
 import { useMatch } from "@/state/match";
+import { usePrefs } from "@/state/prefs";
 import { replayMoment } from "./Scrubber";
 
 interface Props {
@@ -190,6 +191,77 @@ export function MomentCard({
   const teamId = (w ? players[w.actor_id]?.team_id : undefined) ?? moment.team_id;
   const team = teams?.find((t) => t.team_id === teamId);
   const home = team !== undefined && team.team_id === teams?.[0]?.team_id;
+  const setPrefs = usePrefs((s) => s.set);
+  const followed = usePrefs((s) => s.player);
+
+  if (fan) {
+    const swingLine = w
+      ? `${w.counterfactual.profile.label.replace(/ \(fresh sub\)$/, "")} would have been ${swing(w.actual.p_success, w.counterfactual.p_success)} ${VERB[moment.type] ?? "to come out on top"}.`
+      : null;
+    const star = actor && actor.player_id !== followed ? actor : null;
+    return (
+      <motion.article
+        layout={!reduce}
+        initial={reduce ? false : { opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+        className={cn(
+          "overflow-hidden rounded-2xl border bg-surface shadow-sm",
+          active ? "border-amber/60 shadow-md" : "border-line",
+          favourite && "ring-2 ring-amber/30",
+        )}
+      >
+        <header
+          className={cn(
+            "flex items-center gap-2 px-4 py-2 text-xs font-medium",
+            !team ? "bg-panel-2 text-muted" : home ? "bg-riv/10 text-riv-ink" : "bg-hil/20 text-hil-ink",
+          )}
+        >
+          <span className="num">{minute(moment.t_ms)}</span>
+          <span>{MOMENT_LABEL[moment.type]}</span>
+          {team ? <span className="ml-auto">{team.name}</span> : null}
+        </header>
+        <div className="p-4">
+          <h3 className="font-display text-xl font-semibold leading-snug tracking-tight">{moment.title}</h3>
+          {text ? <p className="mt-2 text-base leading-snug text-ink/85">{text}</p> : null}
+          {swingLine && !(text && text.includes(swing(w!.actual.p_success, w!.counterfactual.p_success))) ? (
+            <p className="mt-3 rounded-lg bg-green/10 px-3 py-2 text-sm text-green">{swingLine}</p>
+          ) : null}
+          {points.length ? (
+            <ul className="mt-3 flex flex-wrap gap-1.5" aria-label="What helped and what hurt">
+              {points.map((b) => (
+                <li
+                  key={b.key}
+                  className={cn("rounded-full px-2.5 py-1 text-xs", b.up ? "bg-green/10 text-green" : "bg-red/10 text-red")}
+                >
+                  <span aria-hidden>{b.up ? "▲ " : "▼ "}</span>
+                  {b.text}
+                </li>
+              ))}
+            </ul>
+          ) : null}
+          <div className="mt-4 flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => void replayMoment(moment)}
+              className="inline-flex items-center gap-1.5 rounded-full bg-chrome px-3 py-1.5 text-xs font-medium text-white hover:bg-chrome/85"
+            >
+              <RotateCcw className="size-3.5" aria-hidden /> Watch again
+            </button>
+            {star ? (
+              <button
+                type="button"
+                onClick={() => setPrefs({ player: star.player_id, followCam: true })}
+                className="inline-flex items-center gap-1.5 rounded-full border border-line-2 px-3 py-1.5 text-xs font-medium hover:bg-panel-2"
+              >
+                <Star className="size-3.5" aria-hidden /> Follow {surname(star.name)}
+              </button>
+            ) : null}
+          </div>
+        </div>
+      </motion.article>
+    );
+  }
 
   return (
     <motion.article

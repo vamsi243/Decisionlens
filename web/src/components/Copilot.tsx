@@ -162,15 +162,23 @@ function MatchCopilotInner() {
 
   useConfigureSuggestions(
     {
-      suggestions: [
-        { title: "Who should mark Morrow?", message: "Who should mark Dax Morrow right now?" },
-        { title: "Who's tiring?", message: "Who is most tired, and who on the bench could replace them?" },
-        { title: "Reyes-Ward's passing", message: "How many passes has Callum Reyes-Ward completed?" },
-        { title: "Kollmann's big calls", message: "What were Ezra Kollmann's key decisions?" },
-      ],
+      suggestions:
+        persona === "fan"
+          ? [
+              { title: "Who's been the best?", message: "Who has been the best player so far, and why?" },
+              { title: "Why did Pell lose that?", message: "Why did Jonah Pell lose the header to Dax Morrow?" },
+              { title: "Who's out of puff?", message: "Who is the most tired player right now?" },
+              { title: "Who should mark Morrow?", message: "Who should mark Dax Morrow right now?" },
+            ]
+          : [
+              { title: "Who should mark Morrow?", message: "Who should mark Dax Morrow right now?" },
+              { title: "Who's tiring?", message: "Who is most tired, and who on the bench could replace them?" },
+              { title: "Reyes-Ward's passing", message: "How many passes has Callum Reyes-Ward completed?" },
+              { title: "Kollmann's big calls", message: "What were Ezra Kollmann's key decisions?" },
+            ],
       available: "always",
     },
-    [],
+    [persona],
   );
 
   useRenderTool(

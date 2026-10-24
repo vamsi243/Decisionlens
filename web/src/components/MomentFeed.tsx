@@ -6,6 +6,7 @@ import { minute } from "@/lib/format";
 import { activeMoment, MOMENT_LABEL } from "@/lib/moments";
 import { ensureAnalyses, ensureTranslations, revealedMoments, useMatch } from "@/state/match";
 import { usePrefs } from "@/state/prefs";
+import { PlayersToWatch } from "./fan/FanOverlays";
 import { MomentCard, narration, SourceBadge } from "./MomentCard";
 import { replayMoment } from "./Scrubber";
 import { Button } from "./ui/button";
@@ -95,7 +96,7 @@ export function MomentFeed() {
     <section className="relative flex min-h-0 flex-col" aria-label="Key moments">
       <div className="mb-3 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <h2 className="font-display text-sm font-semibold tracking-tight">Key moments</h2>
+          <h2 className="font-display text-sm font-semibold tracking-tight">{persona === "fan" ? "Big moments" : "Key moments"}</h2>
           {clubName ? (
             <ToggleGroup
               type="single"
@@ -121,7 +122,8 @@ export function MomentFeed() {
         }}
         className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto pb-2 pr-1"
       >
-        {favPlayer && players[favPlayer] ? (
+        {persona === "fan" ? <PlayersToWatch /> : null}
+        {favPlayer && players[favPlayer] && persona !== "fan" ? (
           <div className="rounded-lg border border-amber/40 bg-amber/5 p-3">
             <p className="text-xs font-medium text-amber">
               Following {players[favPlayer]!.name} · {mine.length} moment{mine.length === 1 ? "" : "s"}

@@ -9,6 +9,7 @@ import { useUi } from "@/state/ui";
 import { Button } from "../ui/button";
 import { ToggleGroup, ToggleGroupItem } from "../ui/toggle-group";
 import { Tooltip } from "../ui/tooltip";
+import { CommentaryTicker, MomentumBar } from "../fan/FanOverlays";
 import { Scrubber } from "../Scrubber";
 import { Board } from "./Board";
 
@@ -19,6 +20,8 @@ function ControlRail({ onStats, onSettings }: { onStats: () => void; onSettings:
   const status = useMatch((s) => s.status);
   const live = useMatch((s) => s.server?.live ?? false);
   const playing = status?.playing ?? false;
+  // Fans get play/pause and settings; speeds and the stats drawer are analyst tools.
+  const fan = usePrefs((s) => s.persona) === "fan";
   return (
     <div className="chrome flex items-center gap-2 rounded-lg bg-panel-2 p-1.5 lg:flex-col">
       {/* A shared live broadcast can't be paused or sped up. */}
@@ -32,6 +35,7 @@ function ControlRail({ onStats, onSettings }: { onStats: () => void; onSettings:
           >
             {playing ? <Pause className="size-4" /> : <Play className="size-4" />}
           </Button>
+          {fan ? null : (
           <ToggleGroup
             type="single"
             orientation="vertical"
@@ -46,14 +50,17 @@ function ControlRail({ onStats, onSettings }: { onStats: () => void; onSettings:
               </ToggleGroupItem>
             ))}
           </ToggleGroup>
+          )}
         </>
       )}
       <div className="ml-auto flex items-center gap-2 lg:ml-0 lg:mt-auto lg:flex-col">
-        <Tooltip label="Stats">
-          <Button size="icon" variant="ghost" aria-label="Open stats" onClick={onStats}>
-            <BarChart3 className="size-4" />
-          </Button>
-        </Tooltip>
+        {fan ? null : (
+          <Tooltip label="Stats">
+            <Button size="icon" variant="ghost" aria-label="Open stats" onClick={onStats}>
+              <BarChart3 className="size-4" />
+            </Button>
+          </Tooltip>
+        )}
         <Tooltip label="Settings">
           <Button size="icon" variant="ghost" aria-label="Open settings" onClick={onSettings}>
             <Settings2 className="size-4" />
@@ -113,16 +120,19 @@ function BenchStrip() {
 }
 
 /** The tactics table: the pitch in a black frame, controls down the side, then the timeline and
- * the benches underneath. */
+ * the benches underneath. Fans also get a momentum bar above and live commentary below. */
 export function Table({ onStats, onSettings }: { onStats: () => void; onSettings: () => void }) {
+  const fan = usePrefs((s) => s.persona) === "fan";
   return (
     <div className="flex flex-col gap-2.5 rounded-2xl bg-chrome p-2.5 shadow-lg">
+      {fan ? <MomentumBar /> : null}
       <div className="flex flex-col gap-2.5 lg:flex-row">
         <div className="min-w-0 flex-1">
           <Board />
         </div>
         <ControlRail onStats={onStats} onSettings={onSettings} />
       </div>
+      {fan ? <CommentaryTicker /> : null}
       <Scrubber />
       <BenchStrip />
     </div>

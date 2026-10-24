@@ -12,6 +12,7 @@ interface Prefs {
   whatIf: WhatIfProfile;
   pauseAtMoments: boolean;
   boardSize: number; // live page: pitch width, % of the workspace
+  followCam: boolean; // fan mode: the pitch follows the followed player
   set: (p: Partial<Omit<Prefs, "set">>) => void;
 }
 
@@ -51,6 +52,7 @@ export const usePrefs = create<Prefs>()(
       whatIf: "auto",
       pauseAtMoments: true,
       boardSize: 64,
+      followCam: true,
       set: (p) => set(p),
     }),
     { name: "decision-lens-prefs", storage: createJSONStorage(() => safeStorage) },

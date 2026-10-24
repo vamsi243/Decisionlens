@@ -10,9 +10,14 @@ import { useUi } from "@/state/ui";
 import type { PlayerStats } from "@/types/contracts";
 import { activeMoment } from "@/lib/moments";
 import { km, kmh, surname, svgY } from "@/lib/format";
+import { CamToggle, MomentBanner, PlayerCard } from "../fan/FanOverlays";
 import { ArrowMarkers, MomentLayer } from "./MomentLayer";
 import { DISC, NameTag, PITCH, PitchMarkings, PitchSurface, PlayerDisc } from "./Pitch";
 
+// The whole pitch with a 3 m run-off, and the follow-cam's zoomed width (metres).
+const FULL_VIEW = [-3, -3, PITCH.length + 6, PITCH.width + 6];
+const CAM_WIDTH = 48;
+const CAM_EASE = 0.08; // share of the gap closed per animation frame
 const SPRINT = 7.0; // m/s: the speed badge appears above this (25 km/h)
 const R = DISC;
 const TRAIL = 8;
@@ -170,6 +175,7 @@ export function Board() {
   const persona = usePrefs((s) => s.persona);
   const [heat, setHeat] = useState(false);
   const openPanel = useUi((s) => s.openPanel);
+  const setPrefs = usePrefs((s) => s.set);
   const [hover, setHover] = useState<string | null>(null);
   const hoverRef = useRef<string | null>(null);
   const box = useRef<HTMLDivElement | null>(null);
@@ -185,6 +191,13 @@ export function Board() {
   const ball = useRef<SVGCircleElement | null>(null);
   const shadow = useRef<SVGEllipseElement | null>(null);
   const trail = useRef<(SVGCircleElement | null)[]>([]);
+  // Follow-cam (fan mode): the viewBox glides to keep the followed player in frame.
+  const svg = useRef<SVGSVGElement | null>(null);
+  const followCam = usePrefs((s) => s.followCam);
+  const fan = persona === "fan";
+  const cam = useRef({ on: false, id: null as string | null, reduce: false });
+  cam.current = { on: fan && followCam && !!focus, id: focus, reduce: !!reduce };
+  const view = useRef<number[]>([...FULL_VIEW]);
 
   useEffect(() => {
     frames.smooth = !reduce;
@@ -194,6 +207,21 @@ export function Board() {
     let raf = 0;
     const tick = (now: number) => {
       const s = frames.sample(now);
+      if (s && svg.current) {
+        let target = FULL_VIEW;
+        const c = cam.current;
+        const p = c.on && c.id ? s.players.get(c.id) : undefined;
+        if (p) {
+          const w = CAM_WIDTH;
+          const h = (w * FULL_VIEW[3]) / FULL_VIEW[2];
+          const x = Math.min(Math.max(p.x - w / 2, FULL_VIEW[0]), FULL_VIEW[0] + FULL_VIEW[2] - w);
+          const y = Math.min(Math.max(svgY(p.y) - h / 2, FULL_VIEW[1]), FULL_VIEW[1] + FULL_VIEW[3] - h);
+          target = [x, y, w, h];
+        }
+        const k = c.reduce ? 1 : CAM_EASE;
+        view.current = view.current.map((v, i) => v + (target[i]! - v) * k);
+        svg.current.setAttribute("viewBox", view.current.map((v) => v.toFixed(2)).join(" "));
+      }
       if (s) {
         for (const [id, p] of s.players) {
           const r = refs.current.get(id);
@@ -244,7 +272,8 @@ export function Board() {
   return (
     <div ref={box} className="relative overflow-hidden rounded-lg bg-[var(--pitch-2)]">
       <svg
-        viewBox={`-3 -3 ${PITCH.length + 6} ${PITCH.width + 6}`}
+        ref={svg}
+        viewBox={FULL_VIEW.join(" ")}
         className="block h-auto w-full select-none"
         role="img"
         aria-label="Live tactics board"
@@ -269,9 +298,11 @@ export function Board() {
               tabIndex={0}
               aria-label={`${p.name}${focused ? " (followed)" : ""}`}
               className="cursor-pointer outline-none"
-              onClick={() => openPanel(id)}
+              onClick={() => (fan ? setPrefs({ player: focused ? null : id, followCam: true }) : openPanel(id))}
               onKeyDown={(e) => {
-                if (e.key === "Enter" || e.key === " ") openPanel(id);
+                if (e.key !== "Enter" && e.key !== " ") return;
+                if (fan) setPrefs({ player: focused ? null : id, followCam: true });
+                else openPanel(id);
               }}
               onPointerEnter={() => setHover(id)}
               onPointerLeave={() => setHover((h) => (h === id ? null : h))}
@@ -336,6 +367,13 @@ export function Board() {
         >
           <Flame className="size-3.5" aria-hidden /> Heat map · {players[focus]?.name.split(" ").pop()}
         </button>
+      ) : null}
+      {fan ? (
+        <>
+          <CamToggle />
+          <PlayerCard />
+          <MomentBanner />
+        </>
       ) : null}
       {hover ? (
         <div ref={card} className="pointer-events-none absolute left-0 top-0 z-10" aria-live="polite">
