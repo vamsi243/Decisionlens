@@ -11,13 +11,14 @@ interface SheetContentProps extends ComponentPropsWithoutRef<typeof Dialog.Conte
   title: string;
   description?: string;
   side?: "right" | "bottom";
+  overlay?: boolean; // false: the page behind stays visible and usable (non-modal panels)
   children: ReactNode;
 }
 
 export const SheetContent = forwardRef<ElementRef<typeof Dialog.Content>, SheetContentProps>(
-  ({ className, title, description, side = "right", children, ...props }, ref) => (
+  ({ className, title, description, side = "right", overlay = true, children, ...props }, ref) => (
     <Dialog.Portal>
-      <Dialog.Overlay className="sheet-overlay fixed inset-0 z-40 bg-ink/10 backdrop-blur-[2px]" />
+      {overlay ? <Dialog.Overlay className="sheet-overlay fixed inset-0 z-40 bg-ink/10 backdrop-blur-[2px]" /> : null}
       <Dialog.Content
         ref={ref}
         className={cn(

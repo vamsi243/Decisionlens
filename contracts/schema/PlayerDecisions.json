@@ -1,0 +1,215 @@
+{
+  "$defs": {
+    "ActionKind": {
+      "enum": [
+        "pass",
+        "cross",
+        "shot",
+        "dribble",
+        "carry",
+        "clear",
+        "header",
+        "recovery_run"
+      ],
+      "title": "ActionKind",
+      "type": "string"
+    },
+    "Consequence": {
+      "enum": [
+        "goal_for",
+        "shot_for",
+        "goal_against",
+        "shot_against",
+        "lost_ball",
+        "none"
+      ],
+      "title": "Consequence",
+      "type": "string"
+    },
+    "DecisionKind": {
+      "enum": [
+        "on_ball",
+        "defending"
+      ],
+      "title": "DecisionKind",
+      "type": "string"
+    },
+    "DecisionOption": {
+      "additionalProperties": false,
+      "properties": {
+        "action": {
+          "$ref": "#/$defs/ActionKind"
+        },
+        "goal_odds": {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Goal Odds",
+          "type": "number"
+        },
+        "p_success": {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "P Success",
+          "type": "number"
+        },
+        "target_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Target Id"
+        }
+      },
+      "required": [
+        "action",
+        "p_success",
+        "goal_odds"
+      ],
+      "title": "DecisionOption",
+      "type": "object"
+    },
+    "Persona": {
+      "enum": [
+        "analyst",
+        "fan"
+      ],
+      "title": "Persona",
+      "type": "string"
+    },
+    "PlayerDecision": {
+      "additionalProperties": false,
+      "properties": {
+        "best": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/DecisionOption"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "chosen": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/DecisionOption"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "consequence": {
+          "$ref": "#/$defs/Consequence",
+          "default": "none"
+        },
+        "consequence_xg": {
+          "anyOf": [
+            {
+              "maximum": 1.0,
+              "minimum": 0.0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Consequence Xg"
+        },
+        "decision_id": {
+          "title": "Decision Id",
+          "type": "string"
+        },
+        "frame": {
+          "minimum": 0,
+          "title": "Frame",
+          "type": "integer"
+        },
+        "goal_odds_gain": {
+          "default": 0.0,
+          "title": "Goal Odds Gain",
+          "type": "number"
+        },
+        "kind": {
+          "$ref": "#/$defs/DecisionKind"
+        },
+        "player_id": {
+          "title": "Player Id",
+          "type": "string"
+        },
+        "positive": {
+          "default": false,
+          "title": "Positive",
+          "type": "boolean"
+        },
+        "source": {
+          "default": "engine",
+          "title": "Source",
+          "type": "string"
+        },
+        "t_ms": {
+          "minimum": 0,
+          "title": "T Ms",
+          "type": "integer"
+        },
+        "text": {
+          "additionalProperties": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object"
+          },
+          "default": {},
+          "propertyNames": {
+            "$ref": "#/$defs/Persona"
+          },
+          "title": "Text",
+          "type": "object"
+        }
+      },
+      "required": [
+        "decision_id",
+        "player_id",
+        "t_ms",
+        "frame",
+        "kind"
+      ],
+      "title": "PlayerDecision",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "items": {
+      "items": {
+        "$ref": "#/$defs/PlayerDecision"
+      },
+      "title": "Items",
+      "type": "array"
+    },
+    "player_id": {
+      "title": "Player Id",
+      "type": "string"
+    },
+    "t_ms": {
+      "minimum": 0,
+      "title": "T Ms",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "player_id",
+    "t_ms",
+    "items"
+  ],
+  "title": "PlayerDecisions",
+  "type": "object"
+}

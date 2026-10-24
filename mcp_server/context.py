@@ -9,7 +9,8 @@ from __future__ import annotations
 
 from typing import Any, Literal
 
-from contracts import Archetype, OptionSet, WhatIf, WorkloadState
+from contracts import Archetype, EventType, OptionSet, PlayerDecision, WhatIf, WorkloadState
+from contracts.player import DecisionKind, DecisionOption
 from contracts.stream import MomentAnalysis
 from engine.whatif import (
     PREFERRED_ARCHETYPE,
@@ -31,6 +32,26 @@ def _minute(t_ms: int) -> int:
     return t_ms // 60_000 + 1
 
 
+ACTION_WORD = {
+    "pass": "pass",
+    "cross": "cross",
+    "shot": "shot",
+    "carry": "carry forward",
+    "dribble": "dribble",
+}
+LOST_WHAT = {
+    EventType.TACKLE: "a tackle",
+    EventType.AERIAL_DUEL: "an aerial duel",
+    EventType.DRIBBLE: "a one-on-one",
+}
+
+
+def odds_pct(p: float) -> float:
+    """Goal odds as a percentage: one decimal under 10%, whole numbers above."""
+    v = p * 100
+    return round(v, 1) if v < 10 else round(v)
+
+
 def _swing(m: dict[str, Any]) -> tuple[float, float]:
     w = m.get("what_if")
     swing = abs(w["with_swap"] - w["actual"]) if w else 0.0
@@ -49,6 +70,42 @@ class EngineContext:
     # ------------------------------------------------------------------ helpers
     def name(self, player_id: str | None) -> str:
         return self.players[player_id].name if player_id in self.players else "unknown"
+
+    def _option(self, o: DecisionOption) -> dict[str, Any]:
+        return {
+            "action": ACTION_WORD.get(o.action.value, o.action.value),
+            "to": self.name(o.target_id) if o.target_id else None,
+            "goal_odds_pct": odds_pct(o.goal_odds),
+        }
+
+    def decision_facts(self, d: PlayerDecision) -> dict[str, Any]:
+        """One ranked decision in words and engine numbers (template text and agent input)."""
+        team_id = self.players[d.player_id].team_id
+        opp_id = next(t for t in self.teams if t != team_id)
+        f: dict[str, Any] = {
+            "id": d.decision_id,
+            "player": self.name(d.player_id),
+            "team": self.teams[team_id],
+            "opponents": self.teams[opp_id],
+            "minute": _minute(d.t_ms),
+            "kind": d.kind.value,
+            "positive": d.positive,
+            "followed": d.consequence.value,
+            "window_s": 15,
+        }
+        if d.chosen is not None:
+            f["chosen"] = self._option(d.chosen)
+        if d.best is not None and d.goal_odds_gain > 0:
+            f["better"] = self._option(d.best)
+        if d.consequence_xg is not None:
+            f["shot_xg_pct"] = odds_pct(d.consequence_xg)
+        if d.kind == DecisionKind.DEFENDING:
+            i = self.pipeline.event_index.get(d.decision_id.removeprefix("dec_"))
+            e = self.pipeline.all_events[i] if i is not None else None
+            if e is not None:
+                beat = e.player_id if e.type == EventType.DRIBBLE else e.target_id
+                f["lost"] = {"what": LOST_WHAT.get(e.type, "a duel"), "to": self.name(beat)}
+        return f
 
     def _score(self) -> dict[str, int]:
         return {t.team_id: t.goals for t in self.pipeline.stats().teams}
@@ -184,6 +241,9 @@ class EngineContext:
                     "actual": a.what_if.actual.p_success,
                     "swap": a.what_if.counterfactual.profile.label,
                     "with_swap": a.what_if.counterfactual.p_success,
+                    # as writers quote them
+                    "actual_pct": round(a.what_if.actual.p_success * 100),
+                    "with_swap_pct": round(a.what_if.counterfactual.p_success * 100),
                 }
             moments.append(item)
         work = [st.workload.state(pid, t_ms) for pid in st.appeared]

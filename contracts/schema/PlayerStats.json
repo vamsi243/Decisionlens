@@ -1,0 +1,146 @@
+{
+  "$defs": {
+    "PhysicalStatus": {
+      "enum": [
+        "fit",
+        "tiring",
+        "fatigued",
+        "knock"
+      ],
+      "title": "PhysicalStatus",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "description": "Everything known about one player up to `t_ms`: workload plus counts from the events.",
+  "properties": {
+    "aerial_duels": {
+      "default": 0,
+      "minimum": 0,
+      "title": "Aerial Duels",
+      "type": "integer"
+    },
+    "aerial_won": {
+      "default": 0,
+      "minimum": 0,
+      "title": "Aerial Won",
+      "type": "integer"
+    },
+    "distance_km": {
+      "minimum": 0,
+      "title": "Distance Km",
+      "type": "number"
+    },
+    "dribbles": {
+      "default": 0,
+      "minimum": 0,
+      "title": "Dribbles",
+      "type": "integer"
+    },
+    "dribbles_won": {
+      "default": 0,
+      "minimum": 0,
+      "title": "Dribbles Won",
+      "type": "integer"
+    },
+    "fatigue": {
+      "maximum": 100,
+      "minimum": 0,
+      "title": "Fatigue",
+      "type": "number"
+    },
+    "fouls": {
+      "default": 0,
+      "minimum": 0,
+      "title": "Fouls",
+      "type": "integer"
+    },
+    "goals": {
+      "default": 0,
+      "minimum": 0,
+      "title": "Goals",
+      "type": "integer"
+    },
+    "hsr_m": {
+      "minimum": 0,
+      "title": "Hsr M",
+      "type": "number"
+    },
+    "interceptions": {
+      "default": 0,
+      "minimum": 0,
+      "title": "Interceptions",
+      "type": "integer"
+    },
+    "on_pitch": {
+      "title": "On Pitch",
+      "type": "boolean"
+    },
+    "passes": {
+      "default": 0,
+      "minimum": 0,
+      "title": "Passes",
+      "type": "integer"
+    },
+    "passes_completed": {
+      "default": 0,
+      "minimum": 0,
+      "title": "Passes Completed",
+      "type": "integer"
+    },
+    "player_id": {
+      "title": "Player Id",
+      "type": "string"
+    },
+    "shots": {
+      "default": 0,
+      "minimum": 0,
+      "title": "Shots",
+      "type": "integer"
+    },
+    "sprints": {
+      "minimum": 0,
+      "title": "Sprints",
+      "type": "integer"
+    },
+    "status": {
+      "$ref": "#/$defs/PhysicalStatus"
+    },
+    "t_ms": {
+      "minimum": 0,
+      "title": "T Ms",
+      "type": "integer"
+    },
+    "tackles": {
+      "default": 0,
+      "minimum": 0,
+      "title": "Tackles",
+      "type": "integer"
+    },
+    "tackles_won": {
+      "default": 0,
+      "minimum": 0,
+      "title": "Tackles Won",
+      "type": "integer"
+    },
+    "top_speed_loss_pct": {
+      "maximum": 100,
+      "minimum": 0,
+      "title": "Top Speed Loss Pct",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "player_id",
+    "t_ms",
+    "on_pitch",
+    "distance_km",
+    "hsr_m",
+    "sprints",
+    "fatigue",
+    "top_speed_loss_pct",
+    "status"
+  ],
+  "title": "PlayerStats",
+  "type": "object"
+}

@@ -3,7 +3,7 @@ import { ArrowDown, ArrowRight } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { KeyMoment, Overlay, TrackingFrame } from "@/types/contracts";
 import { StaticBoard } from "@/components/board/StaticBoard";
-import { narration, SourceBadge } from "@/components/MomentCard";
+import { bullets, narration, PointList, SourceBadge, type Point } from "@/components/MomentCard";
 import { PageHeader } from "@/components/Nav";
 import { api } from "@/lib/api";
 import { clock, pct } from "@/lib/format";
@@ -11,7 +11,6 @@ import { MOMENT_LABEL } from "@/lib/moments";
 import { href } from "@/lib/router";
 import { useLenis } from "@/lib/useLenis";
 import { swingWords } from "@/lib/words";
-import { cn } from "@/lib/utils";
 import { ensureAnalyses, ensureTranslations, useMatch } from "@/state/match";
 import { usePrefs } from "@/state/prefs";
 
@@ -50,6 +49,42 @@ function Chapter({
       </motion.div>
     </section>
   );
+}
+
+type Facts = Record<string, unknown>;
+const list = <T,>(v: unknown) => (Array.isArray(v) ? (v as T[]) : []);
+
+/** The full-time story as green / red points, straight from the engine's recap facts. */
+function recapPoints(f: Facts, fan: boolean): Point[] {
+  const out: Point[] = [];
+  for (const g of list<{ minute: number; team: string; scorer: string }>(f.goals)) {
+    out.push({ key: `g${g.minute}${g.scorer}`, up: true, text: `${g.minute}' ${g.scorer} scores for ${g.team}` });
+  }
+  const turning = list<{ minute: number; title: string; what_if?: { actual: number; swap: string; with_swap: number } }>(
+    f.turning_points,
+  ).filter((t) => t.what_if);
+  for (const t of turning.slice(0, 2)) {
+    const w = t.what_if!;
+    const swap = w.swap.replace(" (fresh sub)", "");
+    out.push({
+      key: `t${t.minute}${t.title}`,
+      up: false,
+      text: fan
+        ? `${t.minute}' ${t.title}: ${swap} could have changed it`
+        : `${t.minute}' ${t.title}: ${pct(w.actual)} → ${pct(w.with_swap)} with ${swap}`,
+    });
+  }
+  const teams = list<{ team: string; xg: number }>(f.teams);
+  if (!fan && teams.length === 2) {
+    const [a, b] = [...teams].sort((x, y) => y.xg - x.xg);
+    out.push({ key: "xg", up: true, text: `${a!.team} made the better chances: ${a!.xg.toFixed(2)} xG to ${b!.xg.toFixed(2)}` });
+  }
+  const run = list<{ player: string; km: number }>(f.furthest_running)[0];
+  if (run) out.push({ key: "run", up: true, text: fan ? `${run.player} ran furthest` : `${run.player} ran furthest: ${run.km} km` });
+  const tire = list<{ player: string; fatigue: number }>(f.most_fatigued)[0];
+  if (tire)
+    out.push({ key: "tired", up: false, text: fan ? `${tire.player} ran out of legs` : `${tire.player} finished on fatigue ${Math.round(tire.fatigue)}` });
+  return out;
 }
 
 export function RecapPage() {
@@ -112,6 +147,7 @@ export function RecapPage() {
   const recapText = narration(recap ? overlays[recap.overlay_id] ?? recap : undefined, persona, lang);
   const runners = (recap?.payload?.furthest_running ?? []) as { player: string; km: number }[];
   const tired = (recap?.payload?.most_fatigued ?? []) as { player: string; fatigue: number }[];
+  const story = recapPoints(recap?.payload ?? {}, fan);
 
   return (
     <div className="min-h-dvh bg-bg">
@@ -151,9 +187,18 @@ export function RecapPage() {
             {error ? (
               <p className="mt-6 text-muted">The recap needs the stream service; is it running?</p>
             ) : (
-              <p className={cn("mt-6 max-w-xl leading-relaxed", fan ? "text-xl" : "text-lg text-ink/85")}>
-                {recapText ?? "Writing the recap…"}
-              </p>
+              <div className="mt-8 max-w-xl">
+                {fan && recapText ? <p className="mb-4 text-xl leading-snug">{recapText}</p> : null}
+                {story.length ? <PointList points={story} fan={fan} /> : <p className="text-muted">Writing the recap…</p>}
+                {!fan && recapText ? (
+                  <details className="mt-4">
+                    <summary className="cursor-pointer select-none text-sm font-medium text-muted hover:text-ink">
+                      Read the recap
+                    </summary>
+                    <p className="mt-2 leading-relaxed text-ink/85">{recapText}</p>
+                  </details>
+                ) : null}
+              </div>
             )}
             <div className="mt-4">
               <SourceBadge overlay={recap ?? undefined} />
@@ -174,9 +219,7 @@ export function RecapPage() {
                     <span className="num text-amber">{Math.floor(m.t_ms / 60000) + 1}'</span> · {MOMENT_LABEL[m.type]}
                   </p>
                   <h2 className="mt-2 font-display text-2xl font-semibold tracking-tight">{m.title}</h2>
-                  {text ? (
-                    <p className={cn("mt-3 leading-relaxed", fan ? "text-lg" : "text-base text-ink/85")}>{text}</p>
-                  ) : null}
+                  {text && fan ? <p className="mt-3 text-lg leading-snug">{text}</p> : null}
                   {w ? (
                     fan ? (
                       <p className="mt-4 text-lg">
@@ -192,14 +235,14 @@ export function RecapPage() {
                       </div>
                     )
                   ) : null}
-                  {!fan && w?.drivers.length ? (
-                    <ul className="mt-3 flex flex-wrap gap-1.5">
-                      {w.drivers.map((d) => (
-                        <li key={d.factor} className="num rounded-full border border-line px-2 py-0.5 text-xs">
-                          {d.text}
-                        </li>
-                      ))}
-                    </ul>
+                  <PointList points={bullets(m, a, players, undefined, fan)} fan={fan} className="mt-4" />
+                  {text && !fan ? (
+                    <details className="mt-4">
+                      <summary className="cursor-pointer select-none text-xs font-medium text-muted hover:text-ink">
+                        Read the analysis
+                      </summary>
+                      <p className="mt-1.5 text-sm leading-relaxed text-ink/85">{text}</p>
+                    </details>
                   ) : null}
                   <p className="mt-5 text-xs text-muted-2">Keep scrolling: the pitch replays the moment.</p>
                 </article>

@@ -5,7 +5,9 @@ import type {
   MatchStats,
   MomentAnalysis,
   Overlay,
+  PlayerDecisions,
   PlayerProfile,
+  PlayerStats,
   ReplayStatus,
   Speed,
   TrackingFrame,
@@ -21,6 +23,8 @@ export let API_URL = (import.meta.env.VITE_API_URL ?? "http://localhost:8000").r
 export const wsUrl = () => `${API_URL.replace(/^http/, "ws")}/ws`;
 
 export async function loadRuntimeConfig(): Promise<void> {
+  // The deploy hook writes public/config.json with the Azure URL; local dev keeps VITE_API_URL.
+  if (import.meta.env.DEV) return;
   try {
     const res = await fetch("/config.json", { cache: "no-store" });
     if (!res.ok) return;
@@ -62,6 +66,8 @@ export const api = {
     req<{ nx: number; ny: number; cells: number[][] }>(
       `/players/${encodeURIComponent(id)}/heatmap${full ? "?full=true" : ""}`,
     ),
+  playerStats: (id: string) => req<PlayerStats>(`/players/${encodeURIComponent(id)}/stats`),
+  playerDecisions: (id: string) => req<PlayerDecisions>(`/players/${encodeURIComponent(id)}/decisions`),
   frames: (momentId: string, step = 1) =>
     req<TrackingFrame[]>(`/moments/${encodeURIComponent(momentId)}/frames?step=${step}`),
   recap: () => req<Overlay>("/recap"),

@@ -16,11 +16,14 @@ from contracts import (
     Event,
     IntensityPoint,
     KeyMoment,
+    MarkingAdvice,
     MatchMeta,
     MatchStats,
     OptionSet,
     Overlay,
+    PlayerDecisions,
     PlayerProfile,
+    PlayerStats,
     TrackingFrame,
     WhatIf,
     WorkloadState,
@@ -45,6 +48,9 @@ RECORDS: dict[str, type[BaseModel]] = {
     "ReplayStatus": ReplayStatus,
     "MomentAnalysis": MomentAnalysis,
     "Hello": Hello,
+    "PlayerStats": PlayerStats,
+    "PlayerDecisions": PlayerDecisions,
+    "MarkingAdvice": MarkingAdvice,
 }
 
 
@@ -66,6 +72,9 @@ class Contracts(BaseModel):
     replay_status: ReplayStatus
     moment_analysis: MomentAnalysis
     hello: Hello
+    player_stats: PlayerStats
+    player_decisions: PlayerDecisions
+    marking_advice: MarkingAdvice
 
 
 def _dump(path: Path, schema: dict[str, object]) -> None:

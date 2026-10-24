@@ -21,14 +21,20 @@ from contracts import (
     KeyMoment,
     MatchMeta,
     MatchStats,
+    Outcome,
+    PlayerDecision,
     PlayerProfile,
+    PlayerStats,
     WorkloadState,
 )
+from contracts.player import MarkingAdvice
 from contracts.stream import MomentAnalysis, StreamMessageType
+from engine import decisions, matchups
 from engine.detector import Detected, MomentDetector
 from engine.metrics import IntensityTracker, StatsTracker, WorkloadTracker
 from engine.moments import evaluate
 from engine.options import option_set
+from engine.snapshot import Snapshot
 from engine.whatif import default_swap, what_if
 from service.ports import FramePacket, Publisher, StateStore, StreamSource
 
@@ -108,6 +114,12 @@ class Pipeline:
         self.detected: dict[str, Detected] = {}  # moment id -> detection (snapshot + spec)
         self.moment_bench: dict[str, list[str]] = {}  # moment id -> fresh subs at that moment
         self.moment_workload: dict[str, dict[str, WorkloadState]] = {}  # at detection time
+        # Player panel: every event, and a snapshot at each on-ball decision (filled by warm_up).
+        self.all_events: list[Event] = []
+        self.event_index: dict[str, int] = {}
+        self.decision_snaps: dict[str, Snapshot] = {}
+        self._scored: dict[str, PlayerDecision | None] = {}
+        self.finishing = {p.player_id: p.skill.finishing for p in self.players}
         # Called with the period_end event while streaming (half-time / full-time recaps).
         self.period_end_hook: Callable[[Event], Awaitable[None]] | None = None
 
@@ -162,9 +174,17 @@ class Pipeline:
         for f in range(self.source.n_frames):
             if f % CHECKPOINT_EVERY == 0:
                 self.checkpoints[f] = copy.deepcopy(st)
-            for d in self._process(st, self.source.packet(f)):
+            pkt = self.source.packet(f)
+            for d in self._process(st, pkt):
                 self.all_detected.append(d)
                 self._register(st, d)
+            for e in pkt.events:
+                self.event_index[e.event_id] = len(self.all_events)
+                self.all_events.append(e)
+                if e.type in decisions.ON_BALL and e.player_id:
+                    snap = st.detector.snapshot(f)
+                    if snap is not None:
+                        self.decision_snaps[e.event_id] = snap
         self.final_state = st
 
     def at_full_time(self) -> Pipeline:
@@ -207,6 +227,122 @@ class Pipeline:
     def workload(self) -> list[WorkloadState]:
         t = max(0, self.state.frame) * 100
         return [self.state.workload.state(pid, t) for pid in self.state.on_ids]
+
+    # ------------------------------------------------------------------ player panel
+    def now_ms(self) -> int:
+        return max(0, self.state.frame) * 100
+
+    def player_stats(self, pid: str) -> PlayerStats:
+        """Workload now plus event counts so far, for the hover card."""
+        t = self.now_ms()
+        w = self.state.workload.state(pid, t)
+        c = dict.fromkeys(
+            [
+                "passes",
+                "passes_completed",
+                "shots",
+                "goals",
+                "tackles",
+                "tackles_won",
+                "interceptions",
+                "aerial_duels",
+                "aerial_won",
+                "dribbles",
+                "dribbles_won",
+                "fouls",
+            ],
+            0,
+        )
+        ok = Outcome.SUCCESS
+        for e in self.all_events:
+            if e.t_ms > t:
+                break
+            mine, against = e.player_id == pid, e.target_id == pid
+            if e.type == EventType.PASS and mine:
+                c["passes"] += 1
+                c["passes_completed"] += e.outcome == ok
+            elif e.type == EventType.SHOT and mine:
+                c["shots"] += 1
+            elif e.type == EventType.GOAL and mine:
+                c["goals"] += 1
+            elif e.type == EventType.TACKLE and mine:
+                c["tackles"] += 1
+                c["tackles_won"] += e.outcome == ok
+            elif e.type == EventType.INTERCEPTION and mine:
+                c["interceptions"] += 1
+            elif e.type == EventType.AERIAL_DUEL and (mine or against):
+                c["aerial_duels"] += 1  # success = the defending-side player (player_id) won
+                c["aerial_won"] += (e.outcome == ok) == mine
+            elif e.type == EventType.DRIBBLE and mine:
+                c["dribbles"] += 1
+                c["dribbles_won"] += e.outcome == ok
+            elif e.type == EventType.FOUL and mine:
+                c["fouls"] += 1
+        return PlayerStats(
+            player_id=pid,
+            t_ms=t,
+            on_pitch=pid in self.state.on_ids,
+            distance_km=round(w.distance_m / 1000, 2),
+            hsr_m=round(w.hsr_m),
+            sprints=w.sprints,
+            fatigue=round(w.fatigue, 1),
+            top_speed_loss_pct=round((1 - w.modifiers.speed) * 100),
+            status=w.status,
+            **c,
+        )
+
+    def player_decisions(self, pid: str, t_ms: int | None = None) -> list[PlayerDecision]:
+        """The 2-3 decisions that cost `pid` most so far, plus the best one they got right.
+        Nothing after `t_ms` is used, so the panel never gives away what happens next."""
+        t = self.now_ms() if t_ms is None else t_ms
+        upto = [e for e in self.all_events if e.t_ms <= t]
+        scored: list[PlayerDecision] = []
+        for i, e in enumerate(upto):
+            if e.player_id != pid or e.event_id not in self.decision_snaps:
+                continue
+            settled = e.t_ms + decisions.WINDOW_MS <= t  # its 15 s have played out: cacheable
+            if settled and e.event_id in self._scored:
+                d = self._scored[e.event_id]
+            else:
+                d = decisions.score_on_ball(
+                    self.decision_snaps[e.event_id],
+                    e,
+                    decisions.window(upto, i),
+                    self.finishing,
+                )
+                if settled:
+                    self._scored[e.event_id] = d
+            if d is not None:
+                scored.append(d)
+        scored += decisions.defending(
+            upto, pid, self.team_of, self.meta.teams[0].team_id, self.finishing
+        )
+        return decisions.top_decisions(scored)
+
+    def marking_advice(self, attacker_id: str, exclude: list[str] | None = None) -> MarkingAdvice:
+        """Who should mark `attacker_id` right now: every opponent on the pitch and every fresh
+        substitute, scored with live fatigue (see engine/matchups.py)."""
+        st = self.state
+        snap = st.detector.snapshot(max(0, st.frame))
+        if snap is None or attacker_id not in snap.ids:
+            raise ValueError(f"{attacker_id} is not on the pitch")
+        att_team = self.team_of[attacker_id]
+        team = next(t.team_id for t in self.meta.teams if t.team_id != att_team)
+        w = st.workload
+        fatigue = {pid: float(w.fatigue.fatigue[w.index[pid]]) for pid in w.ids}
+        on = [pid for pid in snap.ids if self.team_of[pid] == team]
+        bench = self.bench(st, team)
+        y = float(snap.rel(team, snap.pos[snap.idx(attacker_id)])[1])
+        return matchups.best_markers(
+            attacker_id,
+            snap.profiles,
+            snap.modifiers,
+            fatigue,
+            [(pid, True) for pid in on] + [(pid, False) for pid in bench],
+            matchups.channel_of(y),
+            self.now_ms(),
+            exclude or [],
+        )
 
     async def handle(self, pkt: FramePacket) -> None:
         fresh = pkt.after_seek  # boards need the whole picture again after a jump
