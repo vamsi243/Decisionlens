@@ -4,7 +4,7 @@ import { useT } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
 const MIN = 40;
-const MAX = 78;
+const MAX = 72;
 const clamp = (v: number) => Math.min(MAX, Math.max(MIN, v));
 
 /** True on screens wide enough for side-by-side panels (Tailwind's lg). */

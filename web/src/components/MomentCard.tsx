@@ -1,4 +1,5 @@
-import { ArrowRight, BadgeCheck, Download, RotateCcw, Star } from "lucide-react";
+import { Download, RotateCcw, Star } from "lucide-react";
+import { useState } from "react";
 import { downloadJson } from "@/lib/export";
 import { motion, useReducedMotion } from "framer-motion";
 import type {
@@ -11,7 +12,7 @@ import type {
   PlayerProfile,
   WorkloadState,
 } from "@/types/contracts";
-import { minute, pct, surname } from "@/lib/format";
+import { midSentence, minute, pct, surname } from "@/lib/format";
 import { useT } from "@/lib/i18n";
 import { MOMENT_LABEL } from "@/lib/moments";
 import { useTr } from "@/lib/tr";
@@ -44,14 +45,13 @@ export function SourceBadge({ overlay }: { overlay?: Overlay }) {
   const agents = overlay.source === "agents" || overlay.source === "mixed";
   return (
     <span
-      className="inline-flex items-center gap-1 text-[11px] text-muted-2"
+      className="text-[11px] text-muted-2"
       title={
         agents
           ? t("Written by the agents; every number checked against the engine")
           : t("Written from engine numbers (no model call)")
       }
     >
-      <BadgeCheck className="size-3 text-green" aria-hidden />
       {agents ? t("agents · grounded") : t("engine card")}
     </span>
   );
@@ -131,6 +131,20 @@ export function bullets(
     out.push({ key: "best", up: true, text: fan ? `A ${name(best)} was on` : `Best: ${name(best)} · ${pct(best.p_success)}` });
     if (chosen) {
       out.push({ key: "chosen", up: false, text: fan ? `Went for a ${name(chosen)} instead` : `Chosen: ${name(chosen)} · ${pct(chosen.p_success)}` });
+      // A riskier choice can still be the more dangerous one: say so, so "chosen" isn't read as
+      // simply wrong. Both threat gains come from the engine's xT model.
+      const ratio = best.xt_gain > 0 ? chosen.xt_gain / best.xt_gain : 0;
+      if (chosen.xt_gain > 0 && (best.xt_gain <= 0 || ratio >= 1.5)) {
+        out.push({
+          key: "threat",
+          up: true,
+          text: fan
+            ? "It was the most dangerous option"
+            : best.xt_gain > 0
+              ? `But it carried ${Math.round(ratio)}× the threat of the best option`
+              : "But it was the only option that added threat",
+        });
+      }
     }
   }
   if (moment.type === "fatigue_alert" && tired) {
@@ -144,8 +158,35 @@ export function bullets(
   return out;
 }
 
-/** Green ▲ / red ▼ rows: what raised the chance and what lowered it. */
-export function PointList({ points, fan, className }: { points: Point[]; fan: boolean; className?: string }) {
+/** The agent's explanation under a hairline: three lines, then "More" to read the rest. */
+function AgentLine({ text }: { text: string }) {
+  const t = useT();
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="mt-3 border-t border-line pt-3">
+      <p className={cn("text-sm leading-relaxed text-muted", !open && "line-clamp-3")}>{text}</p>
+      {text.length > 180 ? (
+        <button type="button" onClick={() => setOpen((o) => !o)} className="mt-1 text-xs font-medium text-ink hover:underline">
+          {open ? t("Less") : t("More")}
+        </button>
+      ) : null}
+    </div>
+  );
+}
+
+/** Green ▲ / red ▼ rows: what raised the chance and what lowered it. `plain` drops the tint
+ * behind each row (the moment card's list style). */
+export function PointList({
+  points,
+  fan,
+  plain = false,
+  className,
+}: {
+  points: Point[];
+  fan: boolean;
+  plain?: boolean;
+  className?: string;
+}) {
   const t = useT();
   const tr = useTr();
   if (!points.length) return null;
@@ -155,8 +196,9 @@ export function PointList({ points, fan, className }: { points: Point[]; fan: bo
         <li
           key={b.key}
           className={cn(
-            "flex items-start gap-2 rounded-md px-2 py-1 text-sm",
-            b.up ? "bg-green/10 text-green" : "bg-red/10 text-red",
+            "flex items-start gap-2 text-sm",
+            plain ? "py-0.5" : "rounded-md px-2 py-1",
+            b.up ? (plain ? "text-green" : "bg-green/10 text-green") : plain ? "text-red" : "bg-red/10 text-red",
             fan && "text-base",
           )}
         >
@@ -191,13 +233,15 @@ export function MomentCard({
   const tired = moment.type === "fatigue_alert" ? workload[moment.players[0] ?? ""] : undefined;
   const text = narration(overlay, persona, lang);
   const points = bullets(moment, analysis, players, tired, fan);
+  // The swap moves the chance by less than a rounded point: show it as no change, not a gain.
+  const same = w ? pct(w.actual.p_success) === pct(w.counterfactual.p_success) : false;
   // The stripe shows whose decision the card is about: the what-if player's team, else the moment's.
   const teams = useMatch((s) => s.meta?.teams);
   const teamId = (w ? players[w.actor_id]?.team_id : undefined) ?? moment.team_id;
   const team = teams?.find((t) => t.team_id === teamId);
   const home = team !== undefined && team.team_id === teams?.[0]?.team_id;
   const setPrefs = usePrefs((s) => s.set);
-  const followed = usePrefs((s) => s.player);
+  const followed = usePrefs((s) => s.follow);
   const t = useT();
   const tr = useTr();
 
@@ -213,40 +257,29 @@ export function MomentCard({
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
         className={cn(
-          "overflow-hidden rounded-2xl border bg-surface shadow-sm",
-          active ? "border-amber/60 shadow-md" : "border-line",
-          favourite && "ring-2 ring-amber/30",
+          "rounded-2xl border bg-surface p-5 shadow-sm",
+          active ? "border-key/60 shadow-md" : "border-line",
+          favourite && "ring-2 ring-key/30",
         )}
       >
-        <header
-          className={cn(
-            "flex items-center gap-2 px-4 py-2 text-xs font-medium",
-            !team ? "bg-panel-2 text-muted" : home ? "bg-riv/10 text-riv-ink" : "bg-hil/20 text-hil-ink",
-          )}
-        >
-          <span className="num">{minute(moment.t_ms)}</span>
-          <span>{t(MOMENT_LABEL[moment.type])}</span>
-          {team ? <span className="ml-auto">{team.name}</span> : null}
+        <header className="flex items-center gap-2 text-xs text-muted">
+          <span className="rounded-full bg-key-bright px-2.5 py-1 font-semibold text-chrome">
+            {t(MOMENT_LABEL[moment.type])} · <span className="num">{minute(moment.t_ms)}</span>
+          </span>
+          {team ? (
+            <span className="inline-flex items-center gap-1.5">
+              <span className={cn("size-2 rounded-[2px]", home ? "bg-riv" : "bg-hil")} aria-hidden />
+              {team.name}
+            </span>
+          ) : null}
         </header>
-        <div className="p-4">
-          <h3 className="font-display text-xl font-semibold leading-snug tracking-tight">{tr(moment.title)}</h3>
+        <div className="mt-3">
+          <h3 className="font-display text-2xl font-extrabold leading-tight tracking-tight text-chrome">{tr(moment.title)}</h3>
           {text ? <p className="mt-2 text-base leading-snug text-ink/85">{text}</p> : null}
           {swingLine && !(text && text.includes(swing(w!.actual.p_success, w!.counterfactual.p_success))) ? (
             <p className="mt-3 rounded-lg bg-green/10 px-3 py-2 text-sm text-green">{tr(swingLine)}</p>
           ) : null}
-          {points.length ? (
-            <ul className="mt-3 flex flex-wrap gap-1.5" aria-label={t("What helped and what hurt")}>
-              {points.map((b) => (
-                <li
-                  key={b.key}
-                  className={cn("rounded-full px-2.5 py-1 text-xs", b.up ? "bg-green/10 text-green" : "bg-red/10 text-red")}
-                >
-                  <span aria-hidden>{b.up ? "▲ " : "▼ "}</span>
-                  {tr(b.text)}
-                </li>
-              ))}
-            </ul>
-          ) : null}
+          <PointList points={points} fan plain className="mt-3" />
           <div className="mt-4 flex flex-wrap gap-2">
             <button
               type="button"
@@ -258,7 +291,7 @@ export function MomentCard({
             {star ? (
               <button
                 type="button"
-                onClick={() => setPrefs({ player: star.player_id, followCam: true })}
+                onClick={() => setPrefs({ follow: star.player_id, followCam: true })}
                 className="inline-flex items-center gap-1.5 rounded-full border border-line-2 px-3 py-1.5 text-xs font-medium hover:bg-panel-2"
               >
                 <Star className="size-3.5" aria-hidden /> {t("Follow {name}", { name: surname(star.name) })}
@@ -277,17 +310,20 @@ export function MomentCard({
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
       className={cn(
-        "rounded-lg border border-l-4 bg-surface p-4 shadow-sm transition-colors",
-        active ? "border-amber/60 shadow-md" : "border-line",
-        favourite && "ring-2 ring-amber/30",
-        team ? (home ? "border-l-riv" : "border-l-hil") : "border-l-line-2",
+        "rounded-2xl border bg-surface p-5 shadow-sm transition-colors",
+        active ? "border-key/60 shadow-md" : "border-line",
+        favourite && "ring-2 ring-key/30",
       )}
     >
       <header className="flex items-center gap-2 text-xs text-muted">
-        <span className="num text-amber">{minute(moment.t_ms)}</span>
-        <span className="rounded-full bg-panel-2 px-2 py-0.5 font-medium text-ink">{t(MOMENT_LABEL[moment.type])}</span>
+        <span className="rounded-full bg-key-bright px-2.5 py-1 font-semibold text-chrome">
+          {t(MOMENT_LABEL[moment.type])} · <span className="num">{minute(moment.t_ms)}</span>
+        </span>
         {team ? (
-          <span className={cn("font-medium", home ? "text-riv-ink" : "text-hil-ink")}>{team.short_name}</span>
+          <span className="inline-flex items-center gap-1.5">
+            <span className={cn("size-2 rounded-[2px]", home ? "bg-riv" : "bg-hil")} aria-hidden />
+            {team.short_name}
+          </span>
         ) : null}
         <button
           type="button"
@@ -298,29 +334,32 @@ export function MomentCard({
           <RotateCcw className="size-3.5" /> {t("Replay")}
         </button>
       </header>
-      <h3 className={cn("mt-2 font-display font-semibold tracking-tight", fan ? "text-lg" : "text-base")}>
+      <h3 className="mt-3 font-display text-2xl font-extrabold leading-tight tracking-tight text-chrome">
         {tr(moment.title)}
       </h3>
 
-      {w && !fan ? (
+      {w ? (
         <div className="mt-3">
-          <div className="flex flex-wrap items-baseline gap-x-2">
-            <span className="num text-2xl font-medium">{pct(w.actual.p_success)}</span>
-            <ArrowRight className="size-4 self-center text-muted" aria-hidden />
+          <div className="flex flex-wrap items-baseline gap-x-3">
+            <span className="font-display text-4xl font-black leading-none tabular-nums">{pct(w.actual.p_success)}</span>
+            <span className="text-xl text-muted" aria-hidden>→</span>
             <span
               className={cn(
-                "num text-2xl font-medium",
-                w.counterfactual.p_success >= w.actual.p_success ? "text-green" : "text-red",
+                "font-display text-4xl font-black leading-none tabular-nums",
+                same ? "text-ink" : w.counterfactual.p_success > w.actual.p_success ? "text-green" : "text-red",
               )}
             >
               {pct(w.counterfactual.p_success)}
             </span>
-            <span className="text-xs text-muted">
-              {actor ? surname(actor.name) : t("Actual")} → {tr(w.counterfactual.profile.label)}
+            <span className="text-sm text-muted">
+              {t("with {swap}", { swap: tr(midSentence(w.counterfactual.profile.label)) })}
             </span>
+            {same ? (
+              <span className="rounded-full bg-panel-2 px-2 py-0.5 text-xs font-medium text-muted">{t("no real change")}</span>
+            ) : null}
           </div>
           {spread(w.actual.range) || spread(w.counterfactual.range) ? (
-            <p className="num mt-0.5 text-xs text-muted-2">
+            <p className="num mt-1.5 text-xs text-muted-2">
               {t("range {from} → {to}", {
                 from: `${pct(w.actual.range.low)}–${pct(w.actual.range.high)}`,
                 to: `${pct(w.counterfactual.range.low)}–${pct(w.counterfactual.range.high)}`,
@@ -330,30 +369,9 @@ export function MomentCard({
         </div>
       ) : null}
 
-      {fan ? (
-        text ? (
-          <p className="mt-2 text-base leading-snug">{text}</p>
-        ) : w ? (
-          <p className="mt-2 text-base leading-snug">
-            {w.counterfactual.profile.label.replace(/ \(fresh sub\)$/, "")} would be{" "}
-            <strong className={w.counterfactual.p_success >= w.actual.p_success ? "text-green" : "text-red"}>
-              {swing(w.actual.p_success, w.counterfactual.p_success)}
-            </strong>{" "}
-            {VERB[moment.type] ?? "to come out on top"}.
-          </p>
-        ) : null
-      ) : null}
+      <PointList points={points} fan={false} plain className="mt-3" />
 
-      <PointList points={points} fan={fan} className="mt-3" />
-
-      {text && !fan ? (
-        <details className="mt-3" open={lang !== "en"}>
-          <summary className="cursor-pointer select-none text-xs font-medium text-muted hover:text-ink">
-            {t("Read the analysis")}
-          </summary>
-          <p className="mt-1.5 text-sm leading-relaxed text-ink/85">{text}</p>
-        </details>
-      ) : null}
+      {text ? <AgentLine text={text} /> : null}
 
       {!analysis && moment.type !== "fatigue_alert" ? (
         <p className="mt-2 text-sm text-muted-2">{t("Working out the options…")}</p>

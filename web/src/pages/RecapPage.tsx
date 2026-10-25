@@ -6,7 +6,7 @@ import { StaticBoard } from "@/components/board/StaticBoard";
 import { bullets, narration, PointList, SourceBadge, type Point } from "@/components/MomentCard";
 import { PageHeader } from "@/components/Nav";
 import { api } from "@/lib/api";
-import { clock, pct } from "@/lib/format";
+import { clock, midSentence, pct } from "@/lib/format";
 import { MOMENT_LABEL } from "@/lib/moments";
 import { href } from "@/lib/router";
 import { useLenis } from "@/lib/useLenis";
@@ -174,14 +174,14 @@ export function RecapPage() {
             <span className="num">{frame ? clock(frame.t_ms) : ""}</span>
           </div>
           <div className="mt-1.5 h-1 overflow-hidden rounded-full bg-line" aria-hidden>
-            <div className="h-full bg-amber transition-[width] duration-100" style={{ width: `${active.p * 100}%` }} />
+            <div className="h-full bg-key transition-[width] duration-100" style={{ width: `${active.p * 100}%` }} />
           </div>
         </div>
 
         <main className="pb-24">
           <section data-snap className="flex min-h-[80vh] flex-col justify-center py-16">
-            <p className="text-sm font-medium uppercase tracking-wide text-amber">{t("Full time")}</p>
-            <h1 className="mt-3 font-display text-4xl font-semibold tracking-tight lg:text-5xl">
+            <p className="text-sm font-medium uppercase tracking-wide text-key">{t("Full time")}</p>
+            <h1 className="mt-3 font-display text-4xl font-extrabold tracking-tight lg:text-5xl">
               {home?.name ?? "Riverside FC"}{" "}
               <span className="tabular-nums">
                 {score[home?.name ?? ""] ?? "–"}–{score[away?.name ?? ""] ?? "–"}
@@ -220,9 +220,9 @@ export function RecapPage() {
               <Chapter key={m.moment_id} index={i} onProgress={(idx, p) => setActive({ i: idx, p })}>
                 <article className="rounded-xl border border-line bg-surface p-6 shadow-lg">
                   <p className="text-xs text-muted">
-                    <span className="num text-amber">{Math.floor(m.t_ms / 60000) + 1}'</span> · {t(MOMENT_LABEL[m.type])}
+                    <span className="num text-key">{Math.floor(m.t_ms / 60000) + 1}'</span> · {t(MOMENT_LABEL[m.type])}
                   </p>
-                  <h2 className="mt-2 font-display text-2xl font-semibold tracking-tight">{tr(m.title)}</h2>
+                  <h2 className="mt-2 font-display text-2xl font-extrabold tracking-tight">{tr(m.title)}</h2>
                   {text && fan ? <p className="mt-3 text-lg leading-snug">{text}</p> : null}
                   {w ? (
                     fan ? (
@@ -235,7 +235,7 @@ export function RecapPage() {
                         <span className="num text-3xl">{pct(w.actual.p_success)}</span>
                         <ArrowRight className="size-5 text-muted" aria-hidden />
                         <span className="num text-3xl text-green">{pct(w.counterfactual.p_success)}</span>
-                        <span className="ml-2 text-sm text-muted">{t("with {swap}", { swap: tr(w.counterfactual.profile.label) })}</span>
+                        <span className="ml-2 text-sm text-muted">{t("with {swap}", { swap: tr(midSentence(w.counterfactual.profile.label)) })}</span>
                       </div>
                     )
                   ) : null}
@@ -255,7 +255,7 @@ export function RecapPage() {
           })}
 
           <section data-snap className="flex min-h-[70vh] flex-col justify-center py-16">
-            <h2 className="font-display text-3xl font-semibold tracking-tight">{t("The physical story")}</h2>
+            <h2 className="font-display text-3xl font-extrabold tracking-tight">{t("The physical story")}</h2>
             <div className="mt-6 grid gap-4 sm:grid-cols-2">
               <div className="rounded-lg border border-line bg-surface p-5 shadow-sm">
                 <p className="text-sm text-muted">{t("Ran furthest")}</p>

@@ -10,7 +10,7 @@ import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { StaticBoard } from "@/components/board/StaticBoard";
 import { PageHeader } from "@/components/Nav";
 import { api } from "@/lib/api";
-import { minute, pct } from "@/lib/format";
+import { midSentence, minute, pct } from "@/lib/format";
 import { msg, useT } from "@/lib/i18n";
 import { href } from "@/lib/router";
 import { useTr } from "@/lib/tr";
@@ -101,7 +101,7 @@ function HeroClip() {
         <div className="flex items-center justify-between px-2 pt-3 text-xs text-white/70">
           <span className="inline-flex items-center gap-2">
             <span
-              className="size-1.5 animate-pulse rounded-full bg-[#ff6b62]"
+              className="size-1.5 animate-pulse rounded-full bg-live"
               aria-hidden
             />
             {t("Replay")} · {moment ? minute(moment.t_ms) : "–"}{" "}
@@ -133,7 +133,7 @@ function HeroClip() {
             </span>
           </p>
           <p className="mt-1 text-xs text-muted">
-            {t("with {swap}", { swap: tr(w.counterfactual.profile.label) })}
+            {t("with {swap}", { swap: tr(midSentence(w.counterfactual.profile.label)) })}
           </p>
         </motion.div>
       ) : null}
@@ -156,7 +156,7 @@ function Feature({
       <span className="grid size-11 place-items-center rounded-xl bg-chrome text-white">
         {icon}
       </span>
-      <h3 className="mt-5 font-display text-lg font-semibold tracking-tight">
+      <h3 className="mt-5 font-display text-lg font-extrabold tracking-tight">
         {t(title)}
       </h3>
       <p className="mt-2 text-sm leading-relaxed text-ink/75">{t(children)}</p>
@@ -178,10 +178,10 @@ export function HomePage() {
         {/* hero */}
         <section className="mx-auto grid max-w-[1280px] items-center gap-14 px-4 pb-24 pt-16 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] lg:gap-16 lg:px-8 lg:pt-24">
           <Reveal>
-            <p className="text-sm font-medium uppercase tracking-wide text-amber">
+            <p className="text-sm font-medium uppercase tracking-wide text-key">
               {t("Live football, explained")}
             </p>
-            <h1 className="mt-4 font-display text-4xl font-semibold leading-[1.05] tracking-tight sm:text-5xl lg:text-6xl">
+            <h1 className="mt-4 font-display text-4xl font-extrabold leading-[1.05] tracking-tight sm:text-5xl lg:text-6xl">
               {t("See every decision, not just the result.")}
             </h1>
             <p className="mt-6 max-w-xl text-lg leading-relaxed text-ink/75">
@@ -232,10 +232,10 @@ export function HomePage() {
         <section className="border-y border-line bg-surface/60 py-24">
           <div className="mx-auto max-w-[1280px] px-4 lg:px-8">
             <Reveal>
-              <p className="text-sm font-medium uppercase tracking-wide text-amber">
+              <p className="text-sm font-medium uppercase tracking-wide text-key">
                 {t("What you get")}
               </p>
-              <h2 className="mt-3 max-w-2xl font-display text-3xl font-semibold tracking-tight lg:text-4xl">
+              <h2 className="mt-3 max-w-2xl font-display text-3xl font-extrabold tracking-tight lg:text-4xl">
                 {t("A tactics board that explains itself.")}
               </h2>
             </Reveal>
@@ -278,10 +278,10 @@ export function HomePage() {
         <section className="mx-auto max-w-[1280px] px-4 py-24 lg:px-8">
           <div className="grid items-center gap-12 lg:grid-cols-2 lg:gap-16">
             <Reveal>
-              <p className="text-sm font-medium uppercase tracking-wide text-amber">
+              <p className="text-sm font-medium uppercase tracking-wide text-key">
                 {t("Two ways to watch")}
               </p>
-              <h2 className="mt-3 font-display text-3xl font-semibold tracking-tight lg:text-4xl">
+              <h2 className="mt-3 font-display text-3xl font-extrabold tracking-tight lg:text-4xl">
                 {t("Numbers for analysts, plain words for fans.")}
               </h2>
               <p className="mt-5 max-w-lg text-lg leading-relaxed text-ink/75">
@@ -355,8 +355,8 @@ export function HomePage() {
                     href={href(r as "live" | "recap")}
                     className="group flex h-full flex-col rounded-2xl border border-line bg-surface p-6 shadow-sm transition-colors hover:border-line-2"
                   >
-                    <span className="num text-sm text-amber">0{n + 1}</span>
-                    <span className="mt-2 flex items-center gap-2 font-display text-lg font-semibold tracking-tight">
+                    <span className="num text-sm text-key">0{n + 1}</span>
+                    <span className="mt-2 flex items-center gap-2 font-display text-lg font-extrabold tracking-tight">
                       {t(title!)}
                       <ArrowRight
                         className="size-4 transition-transform group-hover:translate-x-0.5"
@@ -381,7 +381,7 @@ export function HomePage() {
                 <RouteIcon className="size-4" aria-hidden />{" "}
                 {t("A fully synthetic match")}
               </p>
-              <p className="mt-2 font-display text-2xl font-semibold tracking-tight lg:text-3xl">
+              <p className="mt-2 font-display text-2xl font-extrabold tracking-tight lg:text-3xl">
                 {t("{home} v {away} is on now.", {
                   home: home?.name ?? "Riverside FC",
                   away: away?.name ?? "Hillton United",

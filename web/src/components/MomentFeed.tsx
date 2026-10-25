@@ -13,7 +13,7 @@ import {
 import { useT } from "@/lib/i18n";
 import { sfx } from "@/lib/sfx";
 import { useTr } from "@/lib/tr";
-import { usePrefs } from "@/state/prefs";
+import { useFocus, usePrefs } from "@/state/prefs";
 import { PlayersToWatch } from "./fan/FanOverlays";
 import { MomentCard, narration, SourceBadge } from "./MomentCard";
 import { replayMoment } from "./Scrubber";
@@ -71,7 +71,7 @@ export function MomentFeed() {
   const noTranslation = useMatch((s) => s.noTranslation);
   const persona = usePrefs((s) => s.persona);
   const lang = usePrefs((s) => s.language);
-  const favPlayer = usePrefs((s) => s.player);
+  const favPlayer = useFocus();
   const favClub = usePrefs((s) => s.club);
   const meta = useMatch((s) => s.meta);
   const [scope, setScope] = useState<"all" | "club">("all");
@@ -173,7 +173,7 @@ export function MomentFeed() {
     >
       <div className="mb-3 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <h2 className="font-display text-sm font-semibold tracking-tight">
+          <h2 className="font-display text-sm font-extrabold tracking-tight">
             {persona === "fan" ? t("Big moments") : t("Key moments")}
           </h2>
           {clubName ? (
@@ -205,8 +205,8 @@ export function MomentFeed() {
       >
         {persona === "fan" ? <PlayersToWatch /> : null}
         {favPlayer && players[favPlayer] && persona !== "fan" ? (
-          <div className="rounded-lg border border-amber/40 bg-amber/5 p-3">
-            <p className="text-xs font-medium text-amber">
+          <div className="rounded-lg border border-key/40 bg-key/5 p-3">
+            <p className="text-xs font-medium text-key">
               {mine.length === 1
                 ? t("Following {name} · 1 moment", {
                     name: players[favPlayer]!.name,
@@ -225,7 +225,7 @@ export function MomentFeed() {
                       onClick={() => void replayMoment(m)}
                       className="rounded-full border border-line bg-surface px-2.5 py-1 text-xs hover:bg-panel-2"
                     >
-                      <span className="num text-amber">{minute(m.t_ms)}</span>{" "}
+                      <span className="num text-key">{minute(m.t_ms)}</span>{" "}
                       {t(MOMENT_LABEL[m.type])}
                     </button>
                   </li>

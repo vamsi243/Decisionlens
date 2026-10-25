@@ -5,7 +5,7 @@ import { api } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { frames } from "@/state/frames";
 import { useMatch } from "@/state/match";
-import { usePrefs } from "@/state/prefs";
+import { useFocus, usePrefs } from "@/state/prefs";
 import { useT } from "@/lib/i18n";
 import { useUi } from "@/state/ui";
 import type { PlayerStats } from "@/types/contracts";
@@ -173,7 +173,7 @@ export function Board() {
   const analyses = useMatch((s) => s.analyses);
   const clockMs = useMatch((s) => s.clockMs);
   const pinned = useMatch((s) => s.pinned);
-  const focus = usePrefs((s) => s.player);
+  const focus = useFocus();
   const persona = usePrefs((s) => s.persona);
   const [heat, setHeat] = useState(false);
   const openPanel = useUi((s) => s.openPanel);
@@ -301,10 +301,10 @@ export function Board() {
               tabIndex={0}
               aria-label={`${p.name}${focused ? " (followed)" : ""}`}
               className="cursor-pointer outline-none"
-              onClick={() => (fan ? setPrefs({ player: focused ? null : id, followCam: true }) : openPanel(id))}
+              onClick={() => (fan ? setPrefs({ follow: focused ? null : id, followCam: true }) : openPanel(id))}
               onKeyDown={(e) => {
                 if (e.key !== "Enter" && e.key !== " ") return;
-                if (fan) setPrefs({ player: focused ? null : id, followCam: true });
+                if (fan) setPrefs({ follow: focused ? null : id, followCam: true });
                 else openPanel(id);
               }}
               onPointerEnter={() => setHover(id)}
@@ -365,7 +365,7 @@ export function Board() {
           aria-pressed={heat}
           className={cn(
             "absolute left-4 top-4 inline-flex items-center gap-1.5 rounded-md border border-line bg-surface/90 px-2.5 py-1 text-xs shadow-sm backdrop-blur",
-            heat ? "text-amber" : "text-muted hover:text-ink",
+            heat ? "text-key" : "text-muted hover:text-ink",
           )}
         >
           <Flame className="size-3.5" aria-hidden /> {t("Heat map")} · {players[focus]?.name.split(" ").pop()}

@@ -8,6 +8,7 @@ import { useMatch } from "@/state/match";
 import { useT } from "@/lib/i18n";
 import { useTr } from "@/lib/tr";
 import { sfx } from "@/lib/sfx";
+import { cn } from "@/lib/utils";
 import { Tooltip } from "./ui/tooltip";
 
 /**
@@ -22,8 +23,8 @@ export async function replayMoment(m: KeyMoment) {
   await api.play();
 }
 
-/** The match timeline with key-moment markers; it sits in the table frame under the pitch. */
-export function Scrubber() {
+/** The match timeline with key-moment markers; it sits in the control bar under the pitch. */
+export function Scrubber({ className }: { className?: string }) {
   const status = useMatch((s) => s.status);
   const meta = useMatch((s) => s.meta);
   const clockMs = useMatch((s) => s.clockMs);
@@ -59,7 +60,7 @@ export function Scrubber() {
   const visible = moments.filter((m) => m.type !== "fatigue_alert");
 
   return (
-    <div className="chrome flex items-center gap-3 rounded-lg bg-panel-2 px-3 py-1.5">
+    <div className={cn("flex items-center gap-3 px-2 py-1", className)}>
         <span className="num w-12 text-xs text-muted">{clock(shown)}</span>
         <div className="relative h-8 flex-1">
           <div
@@ -96,7 +97,7 @@ export function Scrubber() {
                 type="button"
                 aria-label={t("Replay {moment} at {minute}", { moment: t(MOMENT_LABEL[m.type]), minute: minute(m.t_ms) })}
                 onClick={() => void replayMoment(m)}
-                className="absolute top-0 size-3 -translate-x-1/2 rotate-45 rounded-[3px] bg-amber shadow-sm ring-2 ring-panel-2 transition-transform duration-200 hover:scale-125 focus-visible:outline-none focus-visible:ring-ink/40"
+                className="absolute top-0 size-3 -translate-x-1/2 rotate-45 rounded-[3px] bg-key-bright shadow-sm ring-1 ring-chrome transition-transform duration-200 hover:scale-125 focus-visible:outline-none focus-visible:ring-ink/40"
                 style={{ left: `${(m.t_ms / duration) * 100}%` }}
               />
             </Tooltip>

@@ -4,7 +4,7 @@ import { MomentFeed } from "@/components/MomentFeed";
 import { PlayerPanel } from "@/components/PlayerPanel";
 import { ResizableSplit } from "@/components/ui/resizable";
 import { SettingsSheet } from "@/components/SettingsSheet";
-import { TopBar } from "@/components/TopBar";
+import { ScoreStrip, TopBar } from "@/components/TopBar";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { api } from "@/lib/api";
 import { useT } from "@/lib/i18n";
@@ -112,18 +112,25 @@ function LivePage() {
               onSize={(v) => setPrefs({ boardSize: v })}
               left={
                 <section aria-label={t("Tactics table")}>
+                  <ScoreStrip />
                   <Table onStats={() => setStats(true)} onSettings={() => setSettings(true)} />
                   <Legend />
-                  <Suspense fallback={<div className="mt-6 h-[520px] rounded-2xl border border-line bg-surface" />}>
-                    <MatchCopilot />
-                  </Suspense>
                 </section>
               }
               right={
-                // Matches the table's height on wide screens; the feed scrolls inside it.
-                <aside className="flex h-[70vh] min-h-[360px] flex-col rounded-2xl bg-bg p-4 lg:absolute lg:inset-0 lg:h-auto">
-                  <MomentFeed />
-                </aside>
+                // On wide screens the column is at least 820px tall and otherwise as tall as the
+                // table; moments and copilot share it and scroll inside, so a smaller pitch gives
+                // them more room and a bigger one squeezes them.
+                <div className="lg:min-h-[820px]">
+                  <aside className="flex flex-col gap-4 lg:absolute lg:inset-0">
+                    <div className="flex h-[60vh] min-h-[300px] flex-col rounded-2xl bg-bg p-4 lg:h-auto lg:min-h-0 lg:flex-1">
+                      <MomentFeed />
+                    </div>
+                    <Suspense fallback={<div className="h-[560px] rounded-2xl border border-line bg-surface lg:h-auto lg:flex-[1.2]" />}>
+                      <MatchCopilot className="h-[560px] lg:h-auto lg:min-h-[340px] lg:flex-[1.2]" />
+                    </Suspense>
+                  </aside>
+                </div>
               }
             />
           </div>

@@ -1,5 +1,6 @@
+import { motion, useReducedMotion } from "framer-motion";
 import { Aperture, Volume2, VolumeX } from "lucide-react";
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { msg, useT } from "@/lib/i18n";
 import { href, type Route } from "@/lib/router";
 import { cn } from "@/lib/utils";
@@ -15,21 +16,36 @@ const LINKS: { route: Route; label: string }[] = [
   { route: "recap", label: msg("Recap") },
 ];
 
+/** Page links with one white underline that glides to the hovered link and back to the current page. */
 export function NavLinks({ route }: { route: Route }) {
   const t = useT();
+  const reduce = useReducedMotion();
+  const [hover, setHover] = useState<Route | null>(null);
+  const mark = hover ?? route;
   return (
-    <nav aria-label={t("Pages")} className="flex items-center gap-1 rounded-lg border border-line bg-panel-2 p-1">
+    <nav aria-label={t("Pages")} className="flex items-center gap-1" onMouseLeave={() => setHover(null)}>
       {LINKS.map((l) => (
         <a
           key={l.route}
           href={href(l.route)}
           aria-current={route === l.route ? "page" : undefined}
+          onMouseEnter={() => setHover(l.route)}
+          onFocus={() => setHover(l.route)}
+          onBlur={() => setHover(null)}
           className={cn(
-            "rounded-md px-3 py-1.5 text-sm font-medium text-muted transition-colors hover:text-ink",
-            route === l.route && "bg-surface text-ink shadow-sm",
+            "relative px-3 py-2 text-sm font-medium outline-none transition-colors",
+            l.route === mark || l.route === route ? "text-ink" : "text-muted hover:text-ink",
           )}
         >
           {t(l.label)}
+          {l.route === mark ? (
+            <motion.span
+              layoutId="nav-underline"
+              aria-hidden
+              className="absolute inset-x-3 -bottom-0.5 h-0.5 rounded-full bg-white"
+              transition={reduce ? { duration: 0 } : { type: "spring", stiffness: 520, damping: 40 }}
+            />
+          ) : null}
         </a>
       ))}
     </nav>
@@ -48,7 +64,7 @@ export function Brand() {
           aria-label={connected ? t("Connected") : t("Disconnected")}
         />
       </span>
-      <span className="font-display text-xl font-semibold tracking-tight">Decision Lens</span>
+      <span className="font-display text-xl font-extrabold tracking-tight">Decision Lens</span>
     </a>
   );
 }
@@ -109,7 +125,7 @@ export function LanguageSelect() {
   );
 }
 
-/** The black bar on every page: brand and tabs on the left, page extras in the middle,
+/** The purple bar on every page: brand and tabs on the left, page extras in the middle,
  * persona and language on the right. */
 export function HeaderShell({ route, children, end }: { route: Route; children?: ReactNode; end?: ReactNode }) {
   return (

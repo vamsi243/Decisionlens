@@ -20,7 +20,7 @@ import { replayMoment } from "../Scrubber";
 
 /** Follow-cam on/off, top-left of the pitch. */
 export function CamToggle() {
-  const followed = usePrefs((s) => s.player);
+  const followed = usePrefs((s) => s.follow);
   const cam = usePrefs((s) => s.followCam);
   const set = usePrefs((s) => s.set);
   const t = useT();
@@ -46,7 +46,7 @@ export function CamToggle() {
 
 /** The followed player on a small card: their counts and an energy bar (100 − fatigue). */
 export function PlayerCard() {
-  const id = usePrefs((s) => s.player);
+  const id = usePrefs((s) => s.follow);
   const set = usePrefs((s) => s.set);
   const p = useMatch((s) => (id ? s.players[id] : undefined));
   const w = useMatch((s) => (id ? s.workload[id] : undefined));
@@ -99,7 +99,7 @@ export function PlayerCard() {
         <span className="min-w-0 flex-1 truncate text-sm font-semibold">{p.name}</span>
         <button
           type="button"
-          onClick={() => set({ player: null })}
+          onClick={() => set({ follow: null })}
           className="rounded-md p-1 text-muted hover:bg-panel-2 hover:text-ink"
           aria-label={t("Stop following")}
         >
@@ -190,7 +190,7 @@ export function MomentBanner() {
           <span className="text-[11px] font-semibold uppercase tracking-wide opacity-80">
             {show.type === "goal" ? t("Goal!") : t(MOMENT_LABEL[show.type])}
           </span>
-          <span className="min-w-0 flex-1 truncate font-display text-base font-semibold">{headline}</span>
+          <span className="min-w-0 flex-1 truncate font-display text-base font-extrabold">{headline}</span>
           <button
             type="button"
             onClick={() => void replayMoment(show)}
@@ -241,8 +241,8 @@ export function CommentaryTicker() {
   );
 
   return (
-    <div className="chrome flex items-center gap-3 overflow-hidden rounded-lg bg-panel-2 px-3 py-2 text-sm" aria-live="polite" aria-label={t("Live commentary")}>
-      <span className="shrink-0 text-[11px] font-semibold tracking-wide text-[#ffb547]">{t("LIVE")}</span>
+    <div className="flex items-center gap-3 overflow-hidden rounded-xl bg-panel-2 px-3 py-2 text-sm" aria-live="polite" aria-label={t("Live commentary")}>
+      <span className="shrink-0 text-[11px] font-semibold tracking-wide text-live">{t("LIVE")}</span>
       {lines.length === 0 ? (
         <span className="text-muted">{t("Commentary starts with the action…")}</span>
       ) : (
@@ -252,7 +252,7 @@ export function CommentaryTicker() {
               key={l.id}
               initial={{ opacity: 0, x: -12 }}
               animate={{ opacity: i === 0 ? 1 : 0.55, x: 0 }}
-              className={cn(l.big && "font-semibold text-[#ffb547]")}
+              className={cn(l.big && "font-semibold text-key")}
             >
               <span className="num mr-1 text-xs text-muted">{l.minute}'</span>
               {tr(l.text)}
@@ -311,13 +311,13 @@ export function MomentumBar() {
         ? t("{team} pressing", { team: away?.name ?? "" })
         : t("Even contest");
   return (
-    <div className="chrome flex items-center gap-3 px-1 text-xs" aria-label={`${t("Momentum")}: ${label}`}>
+    <div className="flex items-center gap-3 px-1 text-xs" aria-label={`${t("Momentum")}: ${label}`}>
       <span className="text-muted">{t("Momentum")}</span>
       <div className="flex h-2 flex-1 overflow-hidden rounded-full" aria-hidden>
         <motion.span className="bg-riv" animate={{ width: `${share * 100}%` }} transition={{ duration: 0.8 }} />
         <span className="flex-1 bg-hil" />
       </div>
-      <span className={cn("w-36 text-right font-medium", share > 0.6 ? "text-white" : share < 0.4 ? "text-hil" : "text-muted")}>
+      <span className={cn("w-36 text-right font-medium", share > 0.6 ? "text-riv-ink" : share < 0.4 ? "text-hil-ink" : "text-muted")}>
         {label}
       </span>
     </div>
@@ -331,7 +331,7 @@ export function PlayersToWatch() {
   const players = useMatch((s) => s.players);
   const onPitch = useMatch((s) => s.onPitch);
   const home = useMatch((s) => s.meta?.teams[0]?.team_id);
-  const followed = usePrefs((s) => s.player);
+  const followed = usePrefs((s) => s.follow);
   const set = usePrefs((s) => s.set);
   const t = useT();
 
@@ -362,12 +362,12 @@ export function PlayersToWatch() {
             <li key={id}>
               <button
                 type="button"
-                onClick={() => set({ player: followed === id ? null : id, followCam: true })}
+                onClick={() => set({ follow: followed === id ? null : id, followCam: true })}
                 aria-pressed={followed === id}
                 className={cn(
                   "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs",
                   p.team_id === home ? "bg-riv/10 text-riv-ink" : "bg-hil/20 text-hil-ink",
-                  followed === id && "ring-2 ring-amber/50",
+                  followed === id && "ring-2 ring-key/50",
                 )}
               >
                 <span className="font-medium">{p.name.split(" ").pop()}</span>

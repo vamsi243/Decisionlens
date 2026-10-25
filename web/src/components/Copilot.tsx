@@ -7,7 +7,6 @@ import {
   useRenderTool,
 } from "@copilotkit/react-core/v2";
 import "@copilotkit/react-core/v2/styles.css";
-import { Sparkles } from "lucide-react";
 import { useMemo, type ReactNode } from "react";
 import { z } from "zod";
 import { API_URL } from "@/lib/api";
@@ -16,7 +15,7 @@ import { useTr } from "@/lib/tr";
 import { activeMoment } from "@/lib/moments";
 import { cn } from "@/lib/utils";
 import { useMatch } from "@/state/match";
-import { LANGUAGES, usePrefs } from "@/state/prefs";
+import { LANGUAGES, useFocus, usePrefs } from "@/state/prefs";
 import { useUi } from "@/state/ui";
 
 /** The live page's CopilotKit provider, talking AG-UI straight to the stream service's /copilot. */
@@ -158,7 +157,7 @@ function parse<T>(result: unknown): T | null {
 }
 
 /** Chat docked under the board: quick questions about the live match, answered from the engine. */
-function MatchCopilotInner() {
+function MatchCopilotInner({ className }: { className?: string }) {
   // Minute-level selectors: the board ticks at 10 Hz, the chat context shouldn't.
   const minute = useMatch((s) => Math.floor(s.clockMs / 60_000) + 1);
   const momentTitle = useMatch(
@@ -170,7 +169,7 @@ function MatchCopilotInner() {
   const stats = useMatch((s) => s.stats);
   const players = useMatch((s) => s.players);
   const persona = usePrefs((s) => s.persona);
-  const followed = usePrefs((s) => s.player);
+  const followed = useFocus();
   const panel = useUi((s) => s.panel);
   const lang = usePrefs((s) => s.language);
   const t = useT();
@@ -285,14 +284,11 @@ function MatchCopilotInner() {
   return (
     <section
       aria-label={t("Match copilot")}
-      className="mt-6 overflow-hidden rounded-2xl border border-line bg-surface shadow-sm"
+      className={cn("chrome dark flex flex-col overflow-hidden rounded-2xl bg-chrome shadow-md", className)}
     >
       <header className="flex items-center gap-2 border-b border-line px-4 py-3">
-        <span className="grid size-7 place-items-center rounded-lg bg-chrome text-white">
-          <Sparkles className="size-3.5" aria-hidden />
-        </span>
         <div>
-          <h2 className="font-display text-sm font-semibold tracking-tight">
+          <h2 className="font-display text-sm font-extrabold tracking-tight">
             {t("Match copilot")}
           </h2>
           <p className="text-xs text-muted">
@@ -302,7 +298,7 @@ function MatchCopilotInner() {
           </p>
         </div>
       </header>
-      <div className="copilot-chat h-[460px]">
+      <div className="copilot-chat min-h-0 flex-1">
         <CopilotChat
           agentId="default"
           labels={{
@@ -325,10 +321,10 @@ function MatchCopilotInner() {
 }
 
 /** The copilot with its own CopilotKit provider: lazy-loaded so other pages don't ship it. */
-export default function MatchCopilot() {
+export default function MatchCopilot({ className }: { className?: string }) {
   return (
     <CopilotProvider>
-      <MatchCopilotInner />
+      <MatchCopilotInner className={className} />
     </CopilotProvider>
   );
 }

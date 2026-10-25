@@ -2,13 +2,13 @@ import { ArrowRight, Footprints, RotateCcw, Star } from "lucide-react";
 import { useEffect, useState } from "react";
 import type { PlayerDecision, PlayerDecisions, PlayerStats } from "@/types/contracts";
 import { api } from "@/lib/api";
-import { pct } from "@/lib/format";
+import { midSentence, pct } from "@/lib/format";
 import { msg, useT } from "@/lib/i18n";
 import { useTr } from "@/lib/tr";
 import { activeMoment } from "@/lib/moments";
 import { cn } from "@/lib/utils";
 import { useMatch } from "@/state/match";
-import { usePrefs } from "@/state/prefs";
+import { focusPatch, useFocus, usePrefs } from "@/state/prefs";
 import { useUi } from "@/state/ui";
 import { Button } from "./ui/button";
 import { Sheet, SheetContent } from "./ui/sheet";
@@ -87,7 +87,7 @@ function DecisionRow({ d, fan, live }: { d: PlayerDecision; fan: boolean; live: 
   return (
     <li className="rounded-xl border border-line bg-surface p-3.5">
       <div className="flex items-center gap-2 text-xs text-muted">
-        <span className="num text-amber">{minute}'</span>
+        <span className="num text-key">{minute}'</span>
         <span className="rounded-full bg-panel-2 px-2 py-0.5 font-medium text-ink">{kind}</span>
         {!live ? (
           <button
@@ -132,7 +132,7 @@ export function PlayerPanel() {
   const clockMs = useMatch((s) => s.clockMs);
   const pinned = useMatch((s) => s.pinned);
   const persona = usePrefs((s) => s.persona);
-  const followed = usePrefs((s) => s.player);
+  const followed = useFocus();
   const setPrefs = usePrefs((s) => s.set);
   const stats = useLive<PlayerStats>(id, loadStats);
   const decisions = useLive<PlayerDecisions>(id, loadDecisions);
@@ -161,7 +161,7 @@ export function PlayerPanel() {
               size="sm"
               variant={followed === id ? "primary" : "outline"}
               className="self-start"
-              onClick={() => setPrefs({ player: followed === id ? null : id })}
+              onClick={() => setPrefs(focusPatch(persona, followed === id ? null : id))}
               aria-pressed={followed === id}
             >
               <Star className="size-3.5" aria-hidden /> {followed === id ? t("Following") : t("Follow")}
@@ -173,15 +173,15 @@ export function PlayerPanel() {
             </section>
 
             {inMoment ? (
-              <section aria-label={t("This moment")} className="rounded-xl border border-amber/40 bg-amber/5 p-3.5">
-                <p className="text-xs font-medium text-amber">{t("In this moment")}</p>
-                <p className="mt-1 font-display font-semibold tracking-tight">{tr(inMoment.moment.title)}</p>
+              <section aria-label={t("This moment")} className="rounded-xl border border-key/40 bg-key/5 p-3.5">
+                <p className="text-xs font-medium text-key">{t("In this moment")}</p>
+                <p className="mt-1 font-display font-extrabold tracking-tight">{tr(inMoment.moment.title)}</p>
                 {w ? (
                   <p className="mt-1 text-sm">
                     <span className="num">{pct(w.actual.p_success)}</span>
                     <ArrowRight className="mx-1 inline size-3.5 text-muted" aria-hidden />
                     <span className="num text-green">{pct(w.counterfactual.p_success)}</span>{" "}
-                    <span className="text-muted">{t("with {swap}", { swap: tr(w.counterfactual.profile.label) })}</span>
+                    <span className="text-muted">{t("with {swap}", { swap: tr(midSentence(w.counterfactual.profile.label)) })}</span>
                   </p>
                 ) : null}
               </section>
