@@ -5,6 +5,8 @@ export function clock(tMs: number): string {
 }
 
 export const pct = (p: number) => `${Math.round(p * 100)}%`;
+/** A profile label inside a sentence: "A deep playmaker" → "a deep playmaker" (names untouched). */
+export const midSentence = (label: string) => label.replace(/^(A|An) /, (m) => m.toLowerCase());
 export const kmh = (ms: number) => `${Math.round(ms * 3.6)} km/h`;
 export const km = (m: number) => `${(m / 1000).toFixed(1)} km`;
 export const minute = (tMs: number) => `${Math.floor(tMs / 60000) + 1}'`;

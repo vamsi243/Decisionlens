@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { msg, useT } from "@/lib/i18n";
 import { useMatch } from "@/state/match";
-import { LANGUAGES, usePrefs, type WhatIfProfile } from "@/state/prefs";
+import { focusPatch, LANGUAGES, usePrefs, type WhatIfProfile } from "@/state/prefs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import { Sheet, SheetContent } from "./ui/sheet";
 import { ToggleGroup, ToggleGroupItem } from "./ui/toggle-group";
@@ -39,7 +39,7 @@ export function SettingsSheet({ open, onOpenChange }: { open: boolean; onOpenCha
             </ToggleGroup>
           </Field>
           <Field label={msg("Favourite club")}>
-            <Select value={prefs.club ?? ANY} onValueChange={(v) => prefs.set({ club: v === ANY ? null : v, player: null })}>
+            <Select value={prefs.club ?? ANY} onValueChange={(v) => prefs.set({ club: v === ANY ? null : v, player: null, follow: null })}>
               <SelectTrigger aria-label={t("Favourite club")}>
                 <SelectValue />
               </SelectTrigger>
@@ -54,7 +54,10 @@ export function SettingsSheet({ open, onOpenChange }: { open: boolean; onOpenCha
             </Select>
           </Field>
           <Field label={msg("Favourite player")} hint={msg("Highlighted on the board with a halo and name tag.")}>
-            <Select value={prefs.player ?? ANY} onValueChange={(v) => prefs.set({ player: v === ANY ? null : v })}>
+            <Select
+              value={(prefs.persona === "fan" ? prefs.follow : prefs.player) ?? ANY}
+              onValueChange={(v) => prefs.set(focusPatch(prefs.persona, v === ANY ? null : v))}
+            >
               <SelectTrigger aria-label={t("Favourite player")}>
                 <SelectValue />
               </SelectTrigger>

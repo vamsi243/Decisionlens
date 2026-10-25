@@ -4,10 +4,11 @@ import type { Persona } from "@/types/contracts";
 
 export type WhatIfProfile = "auto" | "fresh_sub" | "archetype";
 
-interface Prefs {
+export interface Prefs {
   persona: Persona;
   club: string | null; // favourite club id
-  player: string | null; // favourite player id
+  player: string | null; // analyst mode: favourite player id
+  follow: string | null; // fan mode: the player you follow (kept apart, so it never leaks into analyst mode)
   language: string;
   whatIf: WhatIfProfile;
   pauseAtMoments: boolean;
@@ -49,6 +50,7 @@ export const usePrefs = create<Prefs>()(
       persona: "analyst",
       club: null,
       player: null,
+      follow: null,
       language: "en",
       whatIf: "auto",
       pauseAtMoments: true,
@@ -57,9 +59,29 @@ export const usePrefs = create<Prefs>()(
       sound: true,
       set: (p) => set(p),
     }),
-    { name: "decision-lens-prefs", storage: createJSONStorage(() => safeStorage) },
+    {
+      name: "decision-lens-prefs",
+      storage: createJSONStorage(() => safeStorage),
+      // v1 split the fan follow from the analyst favourite. Before that the one `player` was
+      // mostly set by tapping players in fan mode, so it becomes the fan follow.
+      version: 1,
+      migrate: (old, from) => {
+        const s = (old ?? {}) as Partial<Prefs>;
+        return from < 1 ? { ...s, follow: s.player ?? null, player: null } : s;
+      },
+    },
   ),
 );
+
+/** The highlighted player for the current persona: fans follow one, analysts keep a favourite. */
+export function useFocus(): string | null {
+  return usePrefs((s) => (s.persona === "fan" ? s.follow : s.player));
+}
+
+/** The prefs change that sets (or clears) the highlighted player for a persona. */
+export function focusPatch(persona: Persona, id: string | null): Partial<Omit<Prefs, "set">> {
+  return persona === "fan" ? { follow: id } : { player: id };
+}
 
 export const LANGUAGES: { code: string; label: string }[] = [
   { code: "en", label: "English" },

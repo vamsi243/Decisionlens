@@ -117,6 +117,7 @@ export const sfx = {
 export function watchPrefsForSound(): () => void {
   return usePrefs.subscribe((s, prev) => {
     if (s.player !== prev.player) (s.player ? sfx.select : sfx.deselect)();
+    else if (s.follow !== prev.follow) (s.follow ? sfx.select : sfx.deselect)();
     else if (s.persona !== prev.persona || s.followCam !== prev.followCam) sfx.toggle();
     else if (s.sound && !prev.sound) sfx.toggle();
   });
