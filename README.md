@@ -11,12 +11,12 @@ Broadcasts show what happened, not what was possible. A fan sees a header lost a
 - **Watch the match live** on a tactics board: Riverside in blue, Hillton in yellow, 10 Hz tracking, benches, a timeline with key-moment markers.
 - **Key moments explain themselves.** Each one gets a card: the options the player had (drawn on the pitch with their odds), the best one, the one chosen, and a what-if swap such as "a fresh centre-back: 4% → 46%", as green and red bullets.
 - **Hover a player** for distance, fatigue, sprints, passes, shots, tackles and aerials; **click** for the 2–3 decisions that cost them most in goal odds, plus their best one.
-- **Ask the match copilot** under the board: "who should mark Dax Morrow?", "he's busy, who's next?", "how many passes has Reyes-Ward completed?". Answers come from engine tools and draw a chart in the chat.
+- **Ask the match copilot** beside the board, under the key moments: "who should mark Dax Morrow?", "he's busy, who's next?", "how many passes has Reyes-Ward completed?". Answers come from engine tools and draw a chart in the chat.
 - **Analyst or fan.** The same moment as numbers, ranges and drivers, or one plain line.
 - **Follow a club or a player**, read the scroll-driven full-time recap.
 - **Switch language** (English, Español, Français, Português, Deutsch, हिन्दी): the whole board changes, from the menus to the cards, the commentary and the copilot's answers.
 
-Full list with status: [FEATURES.md](FEATURES.md).
+Full list with status: [FEATURES.md](FEATURES.md). Colours, type and layout rules: [DESIGN.md](DESIGN.md).
 
 ## The sample match
 `data/samples/match_42/` holds one generated match: `meta.jsonl`, `players.jsonl`, `events.jsonl` and `tracking.jsonl.gz` (10 Hz, 54,000 frames). Regenerate it in about a minute with `make generate SEED=42`; the same seed always produces byte-identical files.
@@ -88,14 +88,14 @@ API on http://localhost:8000, web on http://localhost:5173. Without Azure keys i
 | **Recap** (`#/recap`) | The full-time story as green/red bullets, then scroll by scroll: the pitch stays pinned and each turning point replays. |
 
 ## The live board
-- **The table.** The pitch sits in a black frame. Play/pause, speed (1×–8×), stats and settings are on the rail at the side; the timeline is under the pitch, with an amber marker per key moment; both benches run along the bottom. Drag the handle between the board and the moments column to resize the pitch.
+- **The table.** The pitch sits on a white card under the score strip. Under the pitch, one control bar holds play/pause, speed (1×–8×), the timeline (a cyan marker per key moment), stats and settings; each team's bench sits in its own box below it. Drag the handle between the board and the moments column to resize the pitch.
 - **On the pitch.** Blue tokens for Riverside, yellow for Hillton, every player named. The ball is white with a short trail. A badge appears when a player sprints (over 25 km/h) or passes another kilometre.
 - **Option map.** With *pause at key moments* on (the default), the replay stops on each moment. The white arrow is the best option, faint ones the alternatives, each with its chance of success; the dashed ring is the what-if.
 - **Players.** Hover a token (or a bench player) for their numbers. Click to open the player panel: stats, the moment they're in, and their key decisions with Replay. Follow a player from there: halo, their moments first in the feed, heat map in analyst mode.
 - **Cards.** Green ▲ for what raised the chance, red ▼ for what lowered it, with a team stripe. Analysts can unfold the agent's one-line read; every card exports as time-coded overlay JSON.
 - **Fan mode** (toggle in the nav). Tap a player and the **follow-cam** zooms the pitch onto them and glides with them, with a card showing their goals, shots, headers and an energy bar. A **momentum bar** shows who's on top over the last five minutes; goals and big chances drop a **banner** with *Watch again*; **live commentary** runs under the pitch. Cards become big one-line stories with *Watch again* and *Follow*, the feed starts with *players to watch*, and the analyst controls (speeds, stats drawer, percentages) are hidden. Commentary, banners and the momentum bar are engine templates and engine stats: no model calls.
 - **Sounds.** Quiet tactile sounds when you follow or let go of a player, open or close a panel, replay a moment, switch modes, or scroll past moment cards, and a short chime on goals. They're synthesised in the browser (no audio files) and the speaker button in the nav mutes them.
-- **Match copilot.** The chat under the board. Suggestions to start; answers follow what you're looking at (minute, analyst or fan, the player you follow).
+- **Match copilot.** The chat in the right-hand column, under the key moments. Suggestions to start; answers follow what you're looking at (minute, analyst or fan, the player you follow).
 
 ## The agents
 Built with **Microsoft Agent Framework** on **Azure OpenAI in Foundry**, at the lowest reasoning effort, with a fallback deployment:
@@ -197,7 +197,7 @@ No real matches, players, clubs, badges or footage are used anywhere.
 Azure free tiers first, everything else on the $200 free credit (see the table under Azure deploy). Nothing is upgraded to pay-as-you-go beyond model tokens, and no Marketplace or partner models are used.
 
 ## Third-party licences
-All dependencies are MIT, Apache-2.0, BSD or ISC; the fonts (Inter, Geist, DM Mono) are SIL OFL and self-hosted. Notable ones: React, Vite, Tailwind CSS, Radix UI, Framer Motion, Zustand, d3, recharts, Lenis (web); FastAPI, Pydantic, NumPy, orjson, the MCP Python SDK, Microsoft Agent Framework and `agent-framework-ag-ui` (service). The match copilot uses CopilotKit (`@copilotkit/react-core`, MIT) and the AG-UI client (`@ag-ui/client`, MIT); CopilotKit's hosted Intelligence service and its inspector are not used.
+All dependencies are MIT, Apache-2.0, BSD or ISC; the fonts (Inter, Urbanist, DM Mono) are SIL OFL and self-hosted. Notable ones: React, Vite, Tailwind CSS, Radix UI, Framer Motion, Zustand, d3, recharts, Lenis (web); FastAPI, Pydantic, NumPy, orjson, the MCP Python SDK, Microsoft Agent Framework and `agent-framework-ag-ui` (service). The match copilot uses CopilotKit (`@copilotkit/react-core`, MIT) and the AG-UI client (`@ag-ui/client`, MIT); CopilotKit's hosted Intelligence service and its inspector are not used.
 
 ## Licence
 MIT — see [LICENSE](LICENSE).
