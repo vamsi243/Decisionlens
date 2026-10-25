@@ -14,6 +14,9 @@
   --color-green: var(--green);
   --color-red: var(--red);
   --color-amber: var(--amber);
+  --color-key: var(--key);
+  --color-key-bright: var(--key-bright);
+  --color-live: var(--live);
   --color-riv: var(--riv);
   --color-riv-ink: var(--riv-ink);
   --color-hil: var(--hil);
@@ -71,4 +74,38 @@ body {
 }
 @keyframes dl-slide-in-up {
   from { opacity: 0; transform: translateY(24px); }
+}
+
+/* The match copilot sits on the league purple: CopilotKit runs in its dark mode (the panel has
+   `.dark`) and its theme variables are pointed at our palette. The input box stays white and
+   the viewer's questions are cyan, as in DESIGN.md. */
+.dark .copilot-chat [data-copilotkit] {
+  --background: #37003c;
+  --foreground: #ffffff;
+  --card: #4a0f50;
+  --card-foreground: #ffffff;
+  --popover: #4a0f50;
+  --popover-foreground: #ffffff;
+  --primary: #04f5ff;
+  --primary-foreground: #37003c;
+  --secondary: #4a0f50;
+  --secondary-foreground: #ffffff;
+  --muted: #4a0f50;
+  --muted-foreground: #cdbbd6;
+  --accent: #5a1a61;
+  --accent-foreground: #ffffff;
+  --border: rgba(255, 255, 255, 0.14);
+  --input: rgba(255, 255, 255, 0.18);
+  --ring: #04f5ff;
+}
+.dark .copilot-chat .copilotKitInput {
+  background-color: #ffffff;
+  color: #2b0030;
+}
+.dark .copilot-chat .copilotKitInput textarea::placeholder {
+  color: #6e5a73;
+}
+.dark .copilot-chat .copilotKitUserMessage > div:first-child {
+  background-color: #04f5ff;
+  color: #37003c;
 }

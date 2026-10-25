@@ -34,7 +34,7 @@ export const SheetContent = forwardRef<ElementRef<typeof Dialog.Content>, SheetC
       >
         <div className="flex items-start justify-between gap-4">
           <div>
-            <Dialog.Title className="font-display text-lg font-semibold tracking-tight">{title}</Dialog.Title>
+            <Dialog.Title className="font-display text-lg font-extrabold tracking-tight">{title}</Dialog.Title>
             {description ? (
               <Dialog.Description className="mt-0.5 text-sm text-muted">{description}</Dialog.Description>
             ) : (

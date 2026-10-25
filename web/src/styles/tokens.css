@@ -2,17 +2,20 @@
    (CopilotKit's chat), so our components keep their colours there. */
 :root,
 .dl-tokens {
-  --bg: #f8f8f8;          /* page background */
+  --bg: #f6f3f8;          /* page background (lilac white) */
   --surface: #ffffff;     /* cards, panels */
-  --panel-2: #f0f0f0;     /* pitch surface, inset areas */
-  --ink: #1a1a1a;         /* text, home team, primary buttons */
-  --muted: #7c7c7c;       /* secondary text */
-  --muted-2: #989898;     /* tertiary text, axis labels */
-  --line: rgba(0,0,0,.10);   /* hairlines, pitch markings */
-  --line-2: rgba(37,37,34,.20);
+  --panel-2: #ede6f0;     /* inset areas */
+  --ink: #2b0030;         /* text, primary buttons (purple black) */
+  --muted: #6e5a73;       /* secondary text */
+  --muted-2: #8a7a8f;     /* tertiary text, axis labels */
+  --line: rgba(55,0,60,.10);   /* hairlines */
+  --line-2: rgba(55,0,60,.20);
   --green: #118453;       /* probability up, success, ghost path */
   --red: #c0362f;         /* probability down, turnovers */
-  --amber: #ba6603;       /* ball, fatigue warnings, key moments */
+  --amber: #ba6603;       /* fatigue warnings */
+  --key: #087380;         /* key moments: minutes, markers, highlights, eyebrows */
+  --key-bright: #04f5ff;  /* key-moment fills (tags, timeline markers); text on it is --chrome */
+  --live: #e90052;        /* the LIVE badge only */
   --radius-xl: 32px;      /* large panels */
   --radius-lg: 20px;      /* cards */
   --radius-md: 12px;      /* buttons, chips */
@@ -35,22 +38,23 @@
   --on-pitch-dim: rgba(255,255,255,.55);
   --on-pitch-halo: rgba(8,30,12,.85);
   --heat: #ff4d3d;
-  --chrome: #0b0b0b;      /* nav bar, table frame, scrubber */
+  --chrome: #37003c;      /* nav bar, table frame, scrubber (league purple) */
   --font-sans: "Inter Variable", "Inter", "Segoe UI", system-ui, sans-serif;
-  --font-display: "Geist Variable", "Geist", "Inter Variable", system-ui, sans-serif;
+  --font-display: "Urbanist Variable", "Urbanist", "Inter Variable", system-ui, sans-serif;
   --font-mono: "DM Mono", ui-monospace, "SF Mono", Menlo, monospace;
 }
 
-/* Black chrome (nav, table frame, rail, scrubber): the same tokens, inverted, so every
+/* Purple chrome (nav, table frame, rail, scrubber): the same tokens, inverted, so every
    primitive inside (buttons, toggles, selects) turns dark without its own variant. */
 .chrome {
-  --bg: #0b0b0b;
-  --surface: #262626;
-  --panel-2: #161616;
-  --ink: #f2f2f2;
-  --muted: #a3a3a3;
-  --muted-2: #7c7c7c;
-  --line: rgba(255,255,255,.12);
+  --bg: #37003c;
+  --surface: #4a0f50;
+  --panel-2: #2a002e;
+  --ink: #ffffff;
+  --muted: #cdbbd6;
+  --muted-2: #a08aaa;
+  --line: rgba(255,255,255,.14);
+  --key: #04f5ff;         /* bright cyan reads on the purple, not on white */
   --line-2: rgba(255,255,255,.24);
   --shadow-sm: none;
   color: var(--ink);

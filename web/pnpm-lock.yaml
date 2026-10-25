@@ -14,11 +14,11 @@ importers:
       '@copilotkit/react-core':
         specifier: 1.79.0
         version: 1.79.0(@types/mdast@4.0.4)(@types/react-dom@18.3.7(@types/react@18.3.31))(@types/react@18.3.31)(graphql@16.14.2)(micromark-util-types@2.0.3)(micromark@4.0.3)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(zod@3.25.76)
-      '@fontsource-variable/geist':
-        specifier: ^5.1.0
-        version: 5.3.0
       '@fontsource-variable/inter':
         specifier: ^5.1.0
+        version: 5.3.0
+      '@fontsource-variable/urbanist':
+        specifier: ^5.3.0
         version: 5.3.0
       '@fontsource/dm-mono':
         specifier: ^5.1.0
@@ -492,11 +492,11 @@ packages:
   '@floating-ui/utils@0.2.12':
     resolution: {integrity: sha512-HpCo8tmWzLVad5s2d19EhAz5zqrrQ6s69qd6moPMQvkOuSwDT1YgRfWSVuc4ennqrgv3OHppiOGMQ7oC13yIww==}
 
-  '@fontsource-variable/geist@5.3.0':
-    resolution: {integrity: sha512-j0m+vLQuG5XAYoHtGCVu0spvlGreR3EzpECUVzkFmI1mTVnAO38l/NEPDCFgZ177JxzYJCLSmTQibIiYPilGrA==}
-
   '@fontsource-variable/inter@5.3.0':
     resolution: {integrity: sha512-OupL48va4JNofb97w6NYeF9S7W/kHNKM0Er8Dem5nqi4jeOLrVJDoE8tZEpnMJmtkvNbB1EIPPwHcdkF6b1oUA==}
+
+  '@fontsource-variable/urbanist@5.3.0':
+    resolution: {integrity: sha512-riHbcRgoOhEdCwVw3n3R1JLEwvRD1N9GlXtBcwl/UJ2KabfyDBuryE2Yq10308QJgbXw3F/IFF+VoMuuqwVfIA==}
 
   '@fontsource/dm-mono@5.3.0':
     resolution: {integrity: sha512-OINjI8C1S/wpchhQxl7njZdMn4+hnDCpQ4YtvvOpKNARo+0J8O1x1IcrChxNjHOhfVv1by8C/FQoy3hXK+C1Ug==}
@@ -3723,9 +3723,9 @@ snapshots:
 
   '@floating-ui/utils@0.2.12': {}
 
-  '@fontsource-variable/geist@5.3.0': {}
-
   '@fontsource-variable/inter@5.3.0': {}
+
+  '@fontsource-variable/urbanist@5.3.0': {}
 
   '@fontsource/dm-mono@5.3.0': {}
 

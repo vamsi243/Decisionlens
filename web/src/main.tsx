@@ -1,5 +1,5 @@
 import "@fontsource-variable/inter";
-import "@fontsource-variable/geist";
+import "@fontsource-variable/urbanist";
 import "@fontsource/dm-mono/400.css";
 import "@fontsource/dm-mono/500.css";
 import "./styles/index.css";

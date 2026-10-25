@@ -161,11 +161,11 @@ function IntensityTab() {
             <ChartTooltip cursor={{ fill: "var(--panel-2)" }} contentStyle={{ borderRadius: 12, border: "1px solid var(--line)", fontSize: 12 }} formatter={(v: number) => [v.toFixed(0), t("intensity")]} labelFormatter={(m: number) => `${m}'–${m + 5}'`} />
             <Bar dataKey="index" radius={[4, 4, 0, 0]} barSize={14}>
               {data.map((d) => (
-                <Cell key={d.minute} fill={d.current ? "var(--amber)" : "var(--ink)"} fillOpacity={d.current ? 1 : 0.8} />
+                <Cell key={d.minute} fill={d.current ? "var(--key)" : "var(--ink)"} fillOpacity={d.current ? 1 : 0.8} />
               ))}
             </Bar>
             {marks.map((m) => (
-              <ReferenceLine key={m.moment_id} x={m.t_ms / 60000} stroke="var(--amber)" strokeDasharray="3 3" />
+              <ReferenceLine key={m.moment_id} x={m.t_ms / 60000} stroke="var(--key)" strokeDasharray="3 3" />
             ))}
           </BarChart>
         </ResponsiveContainer>
