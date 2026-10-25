@@ -57,7 +57,9 @@ export function Scrubber({ className }: { className?: string }) {
   };
 
   const halftime = (meta?.period_length_ms ?? 2_700_000) / duration;
-  const visible = moments.filter((m) => m.type !== "fatigue_alert");
+  const liveMs = useMatch((s) => s.liveMs);
+  // A live broadcast only marks what has happened: no spoilers, and no clips of the future.
+  const visible = moments.filter((m) => m.type !== "fatigue_alert" && (!live || m.t_ms <= liveMs));
 
   return (
     <div className={cn("flex items-center gap-3 px-2 py-1", className)}>

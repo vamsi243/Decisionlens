@@ -179,7 +179,7 @@ azd up
 | Key Vault, App Insights, Log Analytics | standard / pay-as-you-go | keys, traces | cents (1 GB/day cap) |
 | Azure OpenAI | pay per token | cards, recaps, copilot | cents; the copilot is capped at 600 questions an hour |
 
-**Live broadcast.** In Azure the match is a shared live broadcast that loops every 90 minutes, on wall-clock time. Every viewer sees the same moment, so there's no seek or speed control. Clicking a key moment plays a personal clip on your own board, then rejoins live. The app scales to zero when nobody is watching, so the first visit after a quiet spell takes 10–20 s to wake. Try the live behaviour locally with `LIVE_SIMULATION=true`.
+**Live broadcast.** In Azure the match is a shared live broadcast that loops every 90 minutes, on wall-clock time. Every viewer sees the same moment, so there's no seek or speed control. Clicking a key moment plays a personal clip on your own board, then rejoins live. The score, clock and moments list stay at the live point during a clip, and the timeline only marks moments that have already happened (the server won't list or replay later ones), so nothing is spoiled. The app scales to zero when nobody is watching, so the first visit after a quiet spell takes 10–20 s to wake. Try the live behaviour locally with `LIVE_SIMULATION=true`.
 
 When judging ends (10 Nov), remove everything:
 

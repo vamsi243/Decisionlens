@@ -63,6 +63,8 @@ export function MomentFeed() {
   const seen = useMatch((s) => s.seen);
   const allMoments = useMatch((s) => s.allMoments);
   const clockMs = useMatch((s) => s.clockMs);
+  const liveMs = useMatch((s) => s.liveMs);
+  const clip = useMatch((s) => s.clip);
   const analyses = useMatch((s) => s.analyses);
   const players = useMatch((s) => s.players);
   const workload = useMatch((s) => s.workload);
@@ -79,16 +81,16 @@ export function MomentFeed() {
   const clubName = meta?.teams.find((t) => t.team_id === favClub)?.name;
 
   const moments = useMemo(
-    () => revealedMoments({ seen, allMoments, clockMs }),
-    [seen, allMoments, clockMs],
+    () => revealedMoments({ seen, allMoments, clockMs, liveMs, clip }),
+    [seen, allMoments, clockMs, liveMs, clip],
   );
   useEffect(() => ensureAnalyses(moments), [moments]);
   const recaps = useMemo(
     () =>
       Object.values(overlays).filter(
-        (o) => o.kind === "recap" && o.t_ms <= clockMs,
+        (o) => o.kind === "recap" && o.t_ms <= (clip ? liveMs : clockMs),
       ),
-    [overlays, clockMs],
+    [overlays, clockMs, liveMs, clip],
   );
   const inScope = useMemo(
     () =>

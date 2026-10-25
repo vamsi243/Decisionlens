@@ -204,8 +204,9 @@ async def players() -> list[PlayerProfile]:
 
 @app.get("/moments")
 async def moments(all: bool = False) -> list[KeyMoment]:
-    """Key moments detected so far; `all=true` lists every moment in the replay (scrubber)."""
-    if all:
+    """Key moments detected so far; `all=true` lists every moment in the replay (scrubber).
+    A live broadcast never lists moments that haven't happened yet: no spoilers on the timeline."""
+    if all and not rt.adapters.live:
         return [d.moment for d in rt.pipeline.all_detected]
     return rt.adapters.store.moments(until_ms=rt.adapters.source.status().t_ms)
 
@@ -222,9 +223,10 @@ async def moment_analysis(moment_id: str) -> MomentAnalysis:
 async def moment_frames(moment_id: str, step: int = 1) -> list[dict[str, Any]]:
     """The tracking frames around a moment (a few seconds before to a few after), for replays."""
     d = rt.pipeline.detected.get(moment_id)
-    if d is None:
-        raise HTTPException(404, "no such moment")
     src = rt.adapters.source
+    # in a live broadcast a moment that hasn't happened yet doesn't exist for viewers
+    if d is None or (rt.adapters.live and d.moment.t_ms > src.status().t_ms):
+        raise HTTPException(404, "no such moment")
     fr = d.moment.frame_range
     last = min(fr.end, src.n_frames - 1)
     return [src.packet(f).data for f in range(fr.start, last + 1, max(1, step))]

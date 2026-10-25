@@ -24,7 +24,8 @@ interface MatchState {
   meta: MatchMeta | null;
   players: Record<string, PlayerProfile>;
   status: ReplayStatus | null;
-  clockMs: number;
+  clockMs: number; // what the board shows (a personal clip moves it back in time)
+  liveMs: number; // where the match itself is; a clip never moves it
   onPitch: string[];
   stats: MatchStats | null;
   workload: Record<string, WorkloadState>;
@@ -65,6 +66,7 @@ export const useMatch = create<MatchState>((set, get) => ({
   players: {},
   status: null,
   clockMs: 0,
+  liveMs: 0,
   onPitch: [],
   stats: null,
   workload: {},
@@ -88,6 +90,7 @@ export const useMatch = create<MatchState>((set, get) => ({
       players: Object.fromEntries(h.players.map((p) => [p.player_id, p])),
       status: h.status,
       clockMs: h.status.t_ms,
+      liveMs: h.status.t_ms,
       seen: Object.fromEntries(h.moments.map((m) => [m.moment_id, m])),
       stats: h.stats ?? null,
     });
@@ -95,23 +98,32 @@ export const useMatch = create<MatchState>((set, get) => ({
   },
 
   frame: (f) => {
-    if (get().clip) return; // a personal replay owns the board until it ends
-    frames.push(f);
     const now = performance.now();
+    if (get().clip) {
+      // A personal replay owns the board until it ends; the match clock keeps running.
+      if (now - lastClockSet > CLOCK_EVERY_MS) {
+        lastClockSet = now;
+        set({ liveMs: f.t_ms });
+      }
+      return;
+    }
+    frames.push(f);
     const ids = f.players.map((p) => p.id);
     const changed = ids.join() !== get().onPitch.join();
     if (changed || now - lastClockSet > CLOCK_EVERY_MS) {
       lastClockSet = now;
-      set(changed ? { clockMs: f.t_ms, onPitch: ids } : { clockMs: f.t_ms });
+      set(changed ? { clockMs: f.t_ms, liveMs: f.t_ms, onPitch: ids } : { clockMs: f.t_ms, liveMs: f.t_ms });
     }
   },
 
   setStatus: (status) => {
     frames.speed = status.speed;
-    const seekedBack = status.t_ms < get().clockMs - 1000;
+    const seekedBack = status.t_ms < get().liveMs - 1000;
     set({
       status,
-      clockMs: status.t_ms,
+      liveMs: status.t_ms,
+      // during a clip the board keeps the clip's time
+      ...(get().clip ? {} : { clockMs: status.t_ms }),
       events: seekedBack ? [] : get().events,
     });
   },
@@ -141,15 +153,18 @@ export const useMatch = create<MatchState>((set, get) => ({
 }));
 
 /**
- * Moments revealed so far: anything at or before the clock. A replay also knows every moment up
- * front (`allMoments`), so seeking forward still shows the earlier ones.
+ * Moments revealed so far: anything at or before the match clock. A replay also knows every
+ * moment up front (`allMoments`), so seeking forward still shows the earlier ones. During a
+ * personal clip the match clock is `liveMs`, not the clip's time, so the feed (and the score
+ * beside it) stay at the live point.
  */
 export function revealedMoments(
-  s: Pick<MatchState, "seen" | "allMoments" | "clockMs">,
+  s: Pick<MatchState, "seen" | "allMoments" | "clockMs" | "liveMs" | "clip">,
 ): KeyMoment[] {
+  const upTo = s.clip ? s.liveMs : s.clockMs;
   const byId = new Map<string, KeyMoment>();
   for (const m of [...s.allMoments, ...Object.values(s.seen)]) byId.set(m.moment_id, m);
-  return [...byId.values()].filter((m) => m.t_ms <= s.clockMs).sort((a, b) => a.t_ms - b.t_ms);
+  return [...byId.values()].filter((m) => m.t_ms <= upTo).sort((a, b) => a.t_ms - b.t_ms);
 }
 
 const requested = new Set<string>();

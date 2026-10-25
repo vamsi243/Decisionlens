@@ -246,3 +246,24 @@ def test_overlays_traces_and_mcp_mount(monkeypatch: pytest.MonkeyPatch) -> None:
         swings = [t["what_if"] for t in recap["payload"]["turning_points"] if "what_if" in t]
         assert swings and swings[0]["with_swap"] - swings[0]["actual"] > 0.2
     get_settings.cache_clear()
+
+
+def test_live_broadcast_hides_moments_that_have_not_happened(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """At kick-off of a live broadcast the 87' goal must not be listed or replayable."""
+    monkeypatch.setenv("MATCH_DIR", "data/samples/match_42")
+    monkeypatch.setenv("PRECOMPUTE_ANALYSIS", "true")
+    monkeypatch.setenv("AZURE_OPENAI_ENDPOINT", "")
+    monkeypatch.setenv("AGENT_CACHE_PATH", "")
+    get_settings.cache_clear()
+    from service.main import app, rt
+
+    with TestClient(app) as c:
+        every = c.get("/moments", params={"all": "true"}).json()
+        assert every and rt.adapters.source.status().t_ms < every[-1]["t_ms"]
+        monkeypatch.setattr(type(rt.adapters), "live", property(lambda _: True))
+        shown = c.get("/moments", params={"all": "true"}).json()
+        now = rt.adapters.source.status().t_ms
+        assert all(m["t_ms"] <= now for m in shown) and len(shown) < len(every)
+        assert c.get(f"/moments/{every[-1]['moment_id']}/frames").status_code == 404

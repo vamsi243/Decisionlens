@@ -15,7 +15,8 @@ export function TopBar() {
 export function ScoreStrip() {
   const meta = useMatch((s) => s.meta);
   const stats = useMatch((s) => s.stats);
-  const clockMs = useMatch((s) => s.clockMs);
+  // The score is the live score, so the clock beside it is the live clock, even during a clip.
+  const clockMs = useMatch((s) => (s.clip ? s.liveMs : s.clockMs));
   const live = useMatch((s) => s.server?.live ?? false);
   const clip = useMatch((s) => s.clip);
   const t = useT();
