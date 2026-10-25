@@ -1,6 +1,7 @@
 import { lazy, Suspense, useEffect, useRef, useState, type ReactNode } from "react";
 import { Table } from "@/components/board/Table";
 import { MomentFeed } from "@/components/MomentFeed";
+import { BallIcon } from "@/components/Scrubber";
 import { PlayerPanel } from "@/components/PlayerPanel";
 import { ResizableSplit } from "@/components/ui/resizable";
 import { SettingsSheet } from "@/components/SettingsSheet";
@@ -72,6 +73,12 @@ function Legend() {
       </span>
       <span className="inline-flex items-center gap-1.5">
         <Grass><span className="size-2 rounded-full border border-chrome bg-white" /></Grass> {t("ball")}
+      </span>
+      <span className="inline-flex items-center gap-1.5">
+        <span className="size-3.5 text-chrome">
+          <BallIcon />
+        </span>{" "}
+        {t("goal on the timeline")}
       </span>
     </div>
   );

@@ -23,6 +23,22 @@ export async function replayMoment(m: KeyMoment) {
   await api.play();
 }
 
+/** A small football for goal markers: white ball, purple panels. */
+export function BallIcon() {
+  return (
+    <svg viewBox="0 0 20 20" className="size-full" aria-hidden>
+      <circle cx="10" cy="10" r="9.2" fill="#fff" stroke="currentColor" strokeWidth="1.3" />
+      <path d="M10 6.3 13.1 8.6 11.9 12.2H8.1L6.9 8.6Z" fill="currentColor" />
+      <path
+        d="M10 6.3V1.4M13.1 8.6l4.5-1.5M11.9 12.2l2.8 3.9M8.1 12.2l-2.8 3.9M6.9 8.6 2.4 7.1"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.2"
+      />
+    </svg>
+  );
+}
+
 /** The match timeline with key-moment markers; it sits in the control bar under the pitch. */
 export function Scrubber({ className }: { className?: string }) {
   const status = useMatch((s) => s.status);
@@ -57,6 +73,7 @@ export function Scrubber({ className }: { className?: string }) {
   };
 
   const halftime = (meta?.period_length_ms ?? 2_700_000) / duration;
+  const home = meta?.teams[0]?.team_id;
   const liveMs = useMatch((s) => s.liveMs);
   // A live broadcast only marks what has happened: no spoilers, and no clips of the future.
   const visible = moments.filter((m) => m.type !== "fatigue_alert" && (!live || m.t_ms <= liveMs));
@@ -93,15 +110,26 @@ export function Scrubber({ className }: { className?: string }) {
             />
           </div>
           <div className="pointer-events-none absolute top-0 h-full w-px bg-line-2" style={{ left: `${halftime * 100}%` }} />
-          {visible.map((m) => (
+          {/* Goals last, so the ball sits in front of a marker in the same minute. */}
+          {[...visible.filter((m) => m.type !== "goal"), ...visible.filter((m) => m.type === "goal")].map((m) => (
             <Tooltip key={m.moment_id} label={`${minute(m.t_ms)} ${t(MOMENT_LABEL[m.type])} · ${tr(m.title)}`}>
               <button
                 type="button"
                 aria-label={t("Replay {moment} at {minute}", { moment: t(MOMENT_LABEL[m.type]), minute: minute(m.t_ms) })}
                 onClick={() => void replayMoment(m)}
-                className="absolute top-0 size-3 -translate-x-1/2 rotate-45 rounded-[3px] bg-key-bright shadow-sm ring-1 ring-chrome transition-transform duration-200 hover:scale-125 focus-visible:outline-none focus-visible:ring-ink/40"
+                className={cn(
+                  "absolute -translate-x-1/2 transition-transform duration-200 hover:scale-125 focus-visible:outline-none",
+                  m.type === "goal"
+                    ? cn(
+                        "top-1/2 z-10 size-5 -translate-y-1/2 rounded-full text-chrome shadow-sm ring-2 focus-visible:ring-ink/40",
+                        m.team_id === home ? "ring-riv" : "ring-hil",
+                      )
+                    : "top-0 size-3 rotate-45 rounded-[3px] bg-key-bright shadow-sm ring-1 ring-chrome focus-visible:ring-ink/40",
+                )}
                 style={{ left: `${(m.t_ms / duration) * 100}%` }}
-              />
+              >
+                {m.type === "goal" ? <BallIcon /> : null}
+              </button>
             </Tooltip>
           ))}
         </div>
