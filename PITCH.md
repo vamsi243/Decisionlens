@@ -9,6 +9,17 @@
 | Code | https://github.com/vamsi243/Decisionlens |
 | Category | **Best Multi-Agent System** (also fits Best Azure Cloud Native Integration) |
 
+## Try it in two minutes
+Open the live demo: nothing to install, no account. The first load after a quiet spell can take 10–20 s while the app wakes up.
+
+1. **Live** (top nav): the match streams on the tactics board. Key-moment cards appear on the right with the chance before → after a what-if and the reasons in green and red.
+2. **Replay** on a card, or a cyan marker on the timeline, replays that moment with the options drawn as arrows. **Back to live** rejoins the broadcast.
+3. **Ask the match copilot** (purple panel under the moments): "Who should mark Morrow?" or "Who's tiring?".
+4. **Switch Analyst ↔ Fan** and **change the language** in the top bar: the same moment becomes one plain line, in any of six languages.
+5. **Recap** (top nav): the full-time story and the five turning points, replayed as you scroll.
+
+Every step, including players, stats and calibration, is in the README's [How judges can test it](README.md#how-judges-can-test-it).
+
 ## The problem
 Broadcasts tell you what happened, not what was possible. A fan sees a header lost at the back post. An analyst wants to know whether it was ever winnable, what the other options were, and whether a fresh substitute would have changed it. Today those answers take a video analyst hours after the final whistle, and they reach one audience in one language.
 
