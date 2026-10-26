@@ -48,6 +48,13 @@ PREFERRED_ARCHETYPE = {
 }
 
 
+# A substitution is a realistic what-if from about the hour, or earlier once the player is
+# clearly tiring. Before that nobody would make the change, so the fair question is a different
+# type of player (an archetype, keeping the actor's own fatigue), not fresh legs.
+SUB_FROM_MS = 55 * 60_000
+SUB_FATIGUE = 60.0
+
+
 def fatigue_of(mod: Modifiers) -> float:
     """Invert the reaction modifier (knocks don't touch it) back to a 0-100 fatigue score."""
     return round((mod.reaction - 1.0) / 0.004, 1)
@@ -151,12 +158,20 @@ def swap_custom(
     return ref, prof, snap.modifiers[actor_id]
 
 
+def sub_realistic(snap: Snapshot, actor_id: str) -> bool:
+    """Would a coach make this substitution at this point of the match?"""
+    return snap.t_ms >= SUB_FROM_MS or fatigue_of(snap.modifiers[actor_id]) >= SUB_FATIGUE
+
+
 def default_swap(
     snap: Snapshot, spec: MomentSpec, bench_ids: Sequence[str]
 ) -> tuple[ProfileRef, PlayerProfile, Modifiers]:
-    """Prefer a fresh bench player of the right archetype; otherwise a textbook archetype."""
+    """A fresh bench player of the right archetype when a substitution is realistic; otherwise
+    (or with nobody suitable on the bench) a textbook archetype."""
     want = PREFERRED_ARCHETYPE[spec.kind]
     team = snap.team_of(spec.actor_id)
+    if not sub_realistic(snap, spec.actor_id):
+        return swap_archetype(snap, spec.actor_id, want)
     for bid in bench_ids:
         p = snap.profiles[bid]
         if p.team_id == team and p.archetype == want:

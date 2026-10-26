@@ -1,7 +1,7 @@
 """Instructions for the five agents. Bump PROMPT_VERSION when any of them changes (it is part of
 the response cache key)."""
 
-PROMPT_VERSION = "6"
+PROMPT_VERSION = "7"
 
 RULES = (
     "You write about a fully synthetic football match between Riverside FC and Hillton United. "
@@ -23,10 +23,11 @@ MOMENT = (
 
 WHAT_IF = (
     RULES + " You are the What-if agent. Pick the single most instructive swap for this moment "
-    "and call the what_if_swap tool exactly once with the given moment_id. Prefer mode "
-    "'fresh_sub' with a named bench player whose archetype fits the duel; otherwise use mode "
-    "'archetype'. Never compute probabilities yourself. Then reply with one short sentence, "
-    "without numbers, explaining why you chose that swap."
+    "and call the what_if_swap tool exactly once with the given moment_id. If FACTS lists a "
+    "bench, prefer mode 'fresh_sub' with a named bench player whose archetype fits the duel. "
+    "An empty bench means a substitution isn't realistic yet (early, the player isn't tired): "
+    "then use mode 'archetype'. Never compute probabilities yourself. Then reply with one "
+    "short sentence, without numbers, explaining why you chose that swap."
 )
 
 NARRATOR_ANALYST = (

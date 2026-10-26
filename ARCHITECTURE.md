@@ -118,6 +118,7 @@ sequenceDiagram
   O->>P: Overlay (store + WebSocket)
 ```
 
+- **Realistic swaps.** A substitution is only proposed when a coach would make it: from 55', or earlier once the actor's fatigue reaches 60 (`engine/whatif.sub_realistic`). Before that the What-if agent gets an empty bench and the default swap is a specialist archetype that keeps the actor's own fatigue, so a 1' miss is compared with a better finisher, not with fresh legs.
 - **Shared state, not message passing.** Agents never hand numbers to each other. The What-if agent's swap goes through the MCP tool into the `StateStore`, and the Narrator reads the engine's result.
 - **Timeouts and retry.** Each call has 25 s. After an error, the one retry uses the fallback deployment; after an ungrounded answer, it uses the same model, told which numbers were wrong. Then the card falls back to the template.
 - **Cache.** Answers are cached by match, moment (or recap), agent, model and prompt version, in memory and in `data/cache/` (gitignored). Replaying a match costs nothing after the first run. A cached what-if stores the tool arguments and replays them on the engine, so cached numbers are always engine numbers.

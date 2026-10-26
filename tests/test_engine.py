@@ -29,7 +29,7 @@ from engine.probability import (
     recovery_run,
     xg,
 )
-from engine.whatif import default_swap, swap_custom, what_if
+from engine.whatif import SUB_FATIGUE, SUB_FROM_MS, default_swap, fatigue_of, swap_custom, what_if
 from engine.xt import GRID
 
 SAMPLE = Path("data/samples/match_42")
@@ -301,6 +301,18 @@ def test_fresh_specialist_turns_the_moment(data: MatchData, kind: MomentType) ->
         assert s.range.low <= s.range.median <= s.range.high
     assert any(d.factor == "fatigue" and d.delta < 0 for d in w.drivers)
     assert len(w.ghost_path) == 2
+
+
+def test_no_substitution_before_it_is_realistic(data: MatchData) -> None:
+    # The 24' line-breaking pass: a fresh passer is on the bench, but nobody subs a rested
+    # midfielder that early, so the what-if compares a different type of player instead.
+    _, spec, snap = _scripted(data, MomentType.LINE_BREAKING_PASS)
+    assert snap.t_ms < SUB_FROM_MS and fatigue_of(snap.modifiers[spec.actor_id]) < SUB_FATIGUE
+    bench = data.bench(spec.frame, snap.team_of(spec.actor_id))
+    assert bench
+    ref, _, mod = default_swap(snap, spec, bench)
+    assert ref.kind.value == "archetype" and "fresh sub" not in ref.label
+    assert mod == snap.modifiers[spec.actor_id]  # the actor's own legs: no fatigue advantage
 
 
 def test_aerial_drivers_name_the_reach(data: MatchData) -> None:

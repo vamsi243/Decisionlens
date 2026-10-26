@@ -15,6 +15,7 @@ from contracts.stream import MomentAnalysis
 from engine.whatif import (
     PREFERRED_ARCHETYPE,
     default_swap,
+    sub_realistic,
     swap_archetype,
     swap_custom,
     swap_substitute,
@@ -159,6 +160,17 @@ class EngineContext:
         return a.options if a else None
 
     def bench(self, moment_id: str) -> list[dict[str, str]]:
+        """Fresh substitutes for a moment's what-if: none when a substitution isn't realistic yet
+        (early in the match and the actor isn't tired)."""
+        d = self.pipeline.detected.get(moment_id)
+        early = (
+            d is not None
+            and d.snapshot is not None
+            and d.spec is not None
+            and not sub_realistic(d.snapshot, d.spec.actor_id)
+        )
+        if early:
+            return []
         return [
             {"player_id": b, "name": self.name(b), "archetype": self.players[b].archetype.value}
             for b in self.pipeline.moment_bench.get(moment_id, [])
@@ -181,6 +193,10 @@ class EngineContext:
         if mode == "fresh_sub":
             if bench_player_id is None:
                 swap = default_swap(snap, spec, bench)
+            elif not sub_realistic(snap, spec.actor_id):
+                raise ValueError(
+                    "too early for a substitution: the player isn't tired yet; use mode 'archetype'"
+                )
             elif bench_player_id not in bench:
                 raise ValueError(f"{bench_player_id} is not a fresh substitute at this moment")
             else:
