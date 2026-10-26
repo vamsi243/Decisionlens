@@ -11,9 +11,11 @@ Azure clients authenticate with the app's managed identity (DefaultAzureCredenti
 
 from __future__ import annotations
 
+import hashlib
 import logging
 from collections.abc import Awaitable, Callable, Coroutine
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Any
 
 from service.adapters.file_replay import FileReplay
@@ -41,6 +43,21 @@ class Adapters:
     @property
     def live(self) -> bool:
         return bool(self.source.status().live)
+
+
+def data_version(match_dir: str | Path) -> str:
+    """Short hash of the match files and the engine code.
+
+    Moment ids, numbers and cached agent text all follow from these, so the Cosmos partition is
+    `<match_id>@<version>`: a regenerated match or a new engine never wakes up with the old cards.
+    """
+    h = hashlib.sha256()
+    root = Path(__file__).resolve().parent.parent
+    files = sorted(Path(match_dir).glob("*.jsonl*")) + sorted((root / "engine").glob("*.py"))
+    for f in files:
+        h.update(f.name.encode())
+        h.update(f.read_bytes())
+    return h.hexdigest()[:12]
 
 
 def _speed(settings: Settings) -> Any:
@@ -99,7 +116,9 @@ async def build_adapters(settings: Settings) -> Adapters:
         container = await open_container(
             settings.cosmos_endpoint, settings.cosmos_database, settings.cosmos_container, cred
         )
-        store = CosmosStore(container, archive.meta.match_id)
+        partition = f"{archive.meta.match_id}@{data_version(settings.match_dir)}"
+        store = CosmosStore(container, partition)
+        log.info("cosmos partition %s", partition)
         await store.start()
         adapters.store = store
         adapters.cache_initial = dict(store.cache)

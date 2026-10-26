@@ -23,7 +23,7 @@ from service.adapters.event_hubs import (
 from service.adapters.file_replay import FileReplay
 from service.adapters.signalr import HybridPublisher, SignalRPublisher
 from service.adapters.ws_publisher import WebSocketPublisher
-from service.factory import build_adapters
+from service.factory import build_adapters, data_version
 from service.settings import Settings
 from tests.factories import key_moment, overlay
 
@@ -198,6 +198,16 @@ class FakeCredential:
             expires_on = 4_000_000_000
 
         return Tok()
+
+
+def test_a_regenerated_match_gets_a_fresh_cosmos_partition(tmp_path: Path) -> None:
+    # Old cards must not wake up beside a new match: the partition follows the match files.
+    events = tmp_path / "events.jsonl"
+    events.write_text('{"event_id": "e1"}', encoding="utf-8")
+    first = data_version(tmp_path)
+    assert data_version(tmp_path) == first
+    events.write_text('{"event_id": "e2"}', encoding="utf-8")
+    assert data_version(tmp_path) != first
 
 
 def test_signalr_broadcast_and_negotiate() -> None:

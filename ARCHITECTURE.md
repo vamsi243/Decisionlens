@@ -18,7 +18,7 @@ The service talks to infrastructure only through three ports (`service/ports.py`
 | Port | `RUN_MODE=local` | `RUN_MODE=azure` |
 | --- | --- | --- |
 | `StreamSource` | `FileReplay`: JSONL at 1/2/4/8×, pause, seek | `EventHubsSource`: shared live broadcast (+ in-process `EventHubsBroadcaster`) |
-| `StateStore` | `MemoryStore` | `CosmosStore`: write-through, hydrated on wake |
+| `StateStore` | `MemoryStore` | `CosmosStore`: write-through, hydrated on wake; partition `<match_id>@<data version>` (a hash of the match files and the engine), so a regenerated match never wakes up with old cards |
 | `Publisher` | `WebSocketPublisher` | `HybridPublisher`: SignalR for low-rate, WebSocket for frames |
 
 ```mermaid
