@@ -120,7 +120,7 @@ function ExplainScene({ reduce }: { reduce: boolean }) {
   return (
     <div className="flex h-full flex-col gap-2 rounded-lg bg-surface p-3.5">
       <span className="self-start rounded-full bg-key px-2 py-0.5 text-[11px] font-semibold text-chrome">
-        {t("Big chance")} · 58'
+        {t("Big chance")} · 1'
       </span>
       <p className="font-display text-base font-extrabold leading-tight">{t("Big chance missed by Reyes-Ward")}</p>
       <div className="flex flex-wrap gap-1.5">
@@ -391,6 +391,7 @@ export function HowPage() {
   const status = useMatch((s) => s.status);
   const stats = useMatch((s) => s.stats);
   const allMoments = useMatch((s) => s.allMoments);
+  const live = useMatch((s) => s.server?.live ?? false);
   const overlays = useMatch((s) => s.overlays);
   const [traces, setTraces] = useState<{ steps: TraceStep[] }[]>([]);
   useEffect(() => {
@@ -495,7 +496,7 @@ export function HowPage() {
             lead={msg("The board glides between frames at 60 fps. Key moments arrive as cards, option arrows and what-if ghosts, and every card exports as time-coded JSON for a broadcast graphics engine.")}
           >
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-2">
-              <Stat value={String(allMoments.length)} label={msg("key moments detected in this match")} />
+              <Stat value={String(allMoments.length)} label={live ? msg("key moments detected so far") : msg("key moments detected in this match")} />
               <Stat value={String(Object.keys(overlays).length)} label={msg("cards rendered so far")} />
               <Stat value={narrated.length ? `${byAgents}/${narrated.length}` : "–"} label={msg("texts written by agents (rest: engine templates)")} />
               <Stat value="0" label={msg("numbers invented by a model")} />

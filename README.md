@@ -41,7 +41,7 @@ Full list with status: [FEATURES.md](FEATURES.md). Colours, type and layout rule
 ## The sample match
 `data/samples/match_42/` holds one generated match: `meta.jsonl`, `players.jsonl`, `events.jsonl` and `tracking.jsonl.gz` (10 Hz, 54,000 frames). Regenerate it in about a minute with `make generate SEED=42`; the same seed always produces byte-identical files.
 
-It ends **1-1**: Reyes-Ward scores for Riverside at 70', Morrow equalises for Hillton at 87' from the late aerial duel. The engine detects **14 key moments**: the five scripted ones below, both goals, two more big chances and fatigue alerts.
+It ends **1-1**: Reyes-Ward scores for Riverside at 70', Morrow equalises for Hillton at 87' from the late aerial duel. The engine detects **14 key moments**: the five scripted ones below, both goals, one more big chance (Reyes-Ward at 1') and six fatigue alerts.
 
 | Minute | Scripted key moment |
 | --- | --- |
