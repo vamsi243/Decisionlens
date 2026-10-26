@@ -62,7 +62,8 @@ def replay() -> int:
 
 
 def calibrate() -> int:
-    return run([sys.executable, "-m", "engine.calibration", "data/samples/match_42"])
+    m = "data/samples/match_42"
+    return run([sys.executable, "-m", "engine.calibration", m, "--out", f"{m}/calibration.json"])
 
 
 def schema() -> int:

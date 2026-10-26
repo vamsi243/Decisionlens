@@ -1,4 +1,5 @@
 import type {
+  CalibrationReport,
   IntensityPoint,
   KeyMoment,
   MatchMeta,
@@ -75,6 +76,7 @@ export const api = {
   stats: () => req<MatchStats>("/stats"),
   workload: () => req<WorkloadState[]>("/workload"),
   intensity: () => req<IntensityPoint[]>("/intensity"),
+  calibration: () => req<CalibrationReport[]>("/calibration"),
   play: () => post<ReplayStatus>("/replay/play"),
   pause: () => post<ReplayStatus>("/replay/pause"),
   seek: (t_ms: number) => post<ReplayStatus>("/replay/seek", { t_ms: Math.max(0, Math.round(t_ms)) }),

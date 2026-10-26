@@ -10,7 +10,7 @@ import orjson
 import pytest
 from fastapi.testclient import TestClient
 
-from contracts import KeyMoment, MatchStats
+from contracts import CalibrationReport, KeyMoment, MatchStats
 from contracts.stream import Hello, StreamMessageType
 from generator.writer import simulate
 from service.adapters.file_replay import FileReplay
@@ -159,6 +159,14 @@ def test_rest_endpoints(client: TestClient) -> None:
     assert client.post("/replay/speed", json={"speed": 4}).json()["speed"] == 4
     assert client.post("/replay/speed", json={"speed": 3}).status_code == 422
     assert client.post("/replay/seek", json={"t_ms": 30_000}).json()["t_ms"] == 29_900
+
+
+def test_calibration_runs_the_engine_when_no_file_is_committed(client: TestClient) -> None:
+    reports = [CalibrationReport.model_validate(r) for r in client.get("/calibration").json()]
+    assert [r.model for r in reports] == ["pass_success", "xg"]
+    passes = reports[0]
+    assert passes.samples > 0 and sum(b.count for b in passes.bins) == passes.samples
+    assert client.get("/calibration").json() == [r.model_dump(mode="json") for r in reports]
 
 
 def test_websocket_streams_hello_then_frames(client: TestClient) -> None:

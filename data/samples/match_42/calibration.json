@@ -1,0 +1,88 @@
+[
+  {
+    "model": "pass_success",
+    "samples": 1282,
+    "brier": 0.1337,
+    "ece": 0.0121,
+    "bins": [
+      {
+        "lo": 0.0,
+        "hi": 0.1,
+        "count": 2,
+        "predicted": 0.0707,
+        "observed": 1.0
+      },
+      {
+        "lo": 0.30000000000000004,
+        "hi": 0.4,
+        "count": 1,
+        "predicted": 0.3904,
+        "observed": 0.0
+      },
+      {
+        "lo": 0.4,
+        "hi": 0.5,
+        "count": 3,
+        "predicted": 0.4919,
+        "observed": 0.6667
+      },
+      {
+        "lo": 0.5,
+        "hi": 0.6000000000000001,
+        "count": 49,
+        "predicted": 0.5592,
+        "observed": 0.5102
+      },
+      {
+        "lo": 0.6000000000000001,
+        "hi": 0.7000000000000001,
+        "count": 127,
+        "predicted": 0.6599,
+        "observed": 0.6535
+      },
+      {
+        "lo": 0.7000000000000001,
+        "hi": 0.8,
+        "count": 261,
+        "predicted": 0.7591,
+        "observed": 0.7778
+      },
+      {
+        "lo": 0.8,
+        "hi": 0.9,
+        "count": 524,
+        "predicted": 0.8547,
+        "observed": 0.8626
+      },
+      {
+        "lo": 0.9,
+        "hi": 1.0,
+        "count": 315,
+        "predicted": 0.9287,
+        "observed": 0.927
+      }
+    ]
+  },
+  {
+    "model": "xg",
+    "samples": 13,
+    "brier": 0.1126,
+    "ece": 0.0588,
+    "bins": [
+      {
+        "lo": 0.0,
+        "hi": 0.2,
+        "count": 11,
+        "predicted": 0.0445,
+        "observed": 0.0909
+      },
+      {
+        "lo": 0.2,
+        "hi": 0.4,
+        "count": 2,
+        "predicted": 0.3733,
+        "observed": 0.5
+      }
+    ]
+  }
+]

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import contextlib
+import json
 import logging
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
@@ -23,6 +24,7 @@ from agents.orchestrator import Orchestrator
 from agents.router import Trigger, route
 from agents.translator import Translator
 from contracts import (
+    CalibrationReport,
     IntensityPoint,
     KeyMoment,
     MatchMeta,
@@ -57,6 +59,7 @@ class Runtime:
     orchestrator: Orchestrator
     translator: Translator
     mcp_app: Any = None
+    calibration: list[CalibrationReport] | None = None
 
 
 rt = Runtime()
@@ -91,6 +94,7 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
     settings = get_settings()
     setup_telemetry(settings)
     rt.adapters = await build_adapters(settings)
+    rt.calibration = None
     rt.queue = asyncio.Queue()
     rt.pipeline = Pipeline(rt.adapters.source, rt.adapters.store, rt.adapters.publisher, rt.queue)
     await asyncio.to_thread(rt.pipeline.warm_up)
@@ -313,6 +317,25 @@ async def workload() -> list[WorkloadState]:
 @app.get("/intensity")
 async def intensity() -> list[IntensityPoint]:
     return rt.pipeline.state.intensity.series()
+
+
+def _calibration(match_dir: Path) -> list[CalibrationReport]:
+    """`calibration.json` from `make calibrate` if it's there, else run the engine once."""
+    f = match_dir / "calibration.json"
+    if f.exists():
+        return [CalibrationReport.model_validate(r) for r in json.loads(f.read_text("utf-8"))]
+    from engine.calibration import calibrate
+    from engine.match import MatchData
+
+    return calibrate(MatchData.load(match_dir))
+
+
+@app.get("/calibration")
+async def calibration() -> list[CalibrationReport]:
+    """Predicted vs observed success for the pass and shot models (the analyst drawer's chart)."""
+    if rt.calibration is None:
+        rt.calibration = await asyncio.to_thread(_calibration, Path(get_settings().match_dir))
+    return rt.calibration
 
 
 @app.get("/overlays")
