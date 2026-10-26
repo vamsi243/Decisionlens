@@ -4,6 +4,26 @@
 
 > Built for the Microsoft Premier League "Inside the Game" hackathon. All data is synthetic — *Riverside FC* vs *Hillton United*, invented players.
 
+| | |
+| --- | --- |
+| **Live demo** | **https://orange-ocean-05183100f.5.azurestaticapps.net** (free, no sign-in, running until 10 Nov 2026) |
+| **Demo video** | _link coming soon_ |
+| **Project pitch** | [PITCH.md](PITCH.md) |
+
+## How judges can test it
+Open the live demo; nothing to install and no account. The app scales to zero when idle, so the first load after a quiet spell can take 10–20 s.
+
+1. **Live** (top nav). The match is a shared live broadcast that loops every 90 minutes; the score, clock and LIVE badge sit above the pitch.
+2. **Key moments** appear on the right as they happen. Each card shows the chance before → after a what-if swap, and green ▲ / red ▼ reasons, all engine numbers.
+3. **Click a cyan marker** on the timeline under the pitch (or *Replay* on a card) to replay that moment on your own board, with the options drawn as arrows. *Back to live* rejoins the broadcast.
+4. **Switch Analyst ↔ Fan** in the nav: the same moment becomes a different card, and fan mode adds the follow-cam, momentum bar and commentary.
+5. **Click a player** for their stats and key decisions; *Follow* them to highlight them and put their moments first.
+6. **Change the language** (the language menu at the right of the nav): the menus, cards, commentary and copilot answers all switch.
+7. **Ask the match copilot** (purple panel, under the moments), e.g. "who should mark Dax Morrow?" or "how many passes has Reyes-Ward completed?". It answers from engine tools.
+8. **Analyst extras:** the chart icon under the pitch opens team stats, workload and intensity; every analyst card exports overlay JSON.
+
+To run it yourself instead, see [Quick start](#quick-start-local).
+
 ## The problem
 Broadcasts show what happened, not what was possible. A fan sees a header lost at the back post; an analyst wants to know whether it was ever winnable, what the other options were, and whether a fresh substitute would have changed it. Those answers usually take a video analyst hours after the match. Decision Lens gives them live, on the board, with every number coming from a model you can check rather than from a language model's guess.
 
@@ -71,7 +91,7 @@ API on http://localhost:8000, web on http://localhost:5173. Without Azure keys i
 
 | Task | Command |
 | --- | --- |
-| Tests (118) | `uv run python tasks.py test` (`make test`) |
+| Tests (120) | `uv run python tasks.py test` (`make test`) |
 | Lint (ruff, mypy, tsc) | `uv run python tasks.py lint` (`make lint`) |
 | Generate a match | `uv run python tasks.py generate --seed 42` (`make generate SEED=42`) |
 | Calibration | `uv run python tasks.py calibrate` |
