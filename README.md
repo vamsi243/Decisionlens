@@ -20,7 +20,7 @@ Open the live demo; nothing to install and no account. The app scales to zero wh
 5. **Click a player** for their stats and key decisions; *Follow* them to highlight them and put their moments first.
 6. **Change the language** (the language menu at the right of the nav): the menus, cards, commentary and copilot answers all switch.
 7. **Ask the match copilot** (purple panel, under the moments), e.g. "who should mark Dax Morrow?" or "how many passes has Reyes-Ward completed?". It answers from engine tools.
-8. **Analyst extras:** the chart icon under the pitch opens team stats, workload and intensity; every analyst card exports overlay JSON.
+8. **Analyst extras:** the chart icon under the pitch opens team stats, workload, intensity with the match's rhythm (control, pressure or chaos, window by window), and the calibration chart (the engine's predicted chances against what happened); every analyst card exports overlay JSON.
 
 To run it yourself instead, see [Quick start](#quick-start-local).
 
@@ -67,7 +67,7 @@ The generator samples its outcomes from these same models, so the match and the 
 uv run python tasks.py calibrate
 ```
 
-On seed 42, pass predictions land within 1.2 percentage points of what happened (ECE 0.012, Brier 0.134).
+On seed 42, pass predictions land within 1.2 percentage points of what happened (ECE 0.012, Brier 0.134). It writes `data/samples/match_42/calibration.json`, which the board plots in the stats drawer (chart icon → Calibration).
 
 ## Microsoft and Azure tech
 - **Azure OpenAI in Foundry** through **Microsoft Agent Framework** (a mini model for analyst text, recaps and the copilot, a nano model for fan lines, a fallback deployment)
@@ -91,7 +91,7 @@ API on http://localhost:8000, web on http://localhost:5173. Without Azure keys i
 
 | Task | Command |
 | --- | --- |
-| Tests (120) | `uv run python tasks.py test` (`make test`) |
+| Tests (121) | `uv run python tasks.py test` (`make test`) |
 | Lint (ruff, mypy, tsc) | `uv run python tasks.py lint` (`make lint`) |
 | Generate a match | `uv run python tasks.py generate --seed 42` (`make generate SEED=42`) |
 | Calibration | `uv run python tasks.py calibrate` |
@@ -150,6 +150,7 @@ uv run python -m mcp_server --match data/samples/match_42
 | `GET /moments/{id}/analysis` | Engine option map + what-if for a moment |
 | `GET /moments/{id}/frames` | Tracking frames around a moment (for replays and clips) |
 | `GET /stats`, `/workload`, `/intensity` | Live team stats, player workload, intensity windows |
+| `GET /calibration` | Reliability bins, ECE and Brier score for the pass and shot models |
 | `GET /players/{id}/stats` | One player so far: km, fatigue, sprints, top-speed loss, passes, shots, goals, tackles, aerials, interceptions (the hover card) |
 | `GET /players/{id}/decisions` | The 2-3 decisions that cost a player most in goal odds so far, plus their best one, with analyst and fan lines (the player panel) |
 | `GET /players/{id}/heatmap` (`?full=true`) | Share of time in each 5 m cell |
