@@ -1,5 +1,5 @@
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { Focus, Maximize2, RotateCcw, UserRound, X } from "lucide-react";
+import { Focus, Maximize2, UserRound, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { KeyMoment, MatchStats, PlayerStats } from "@/types/contracts";
 import { api } from "@/lib/api";
@@ -13,6 +13,7 @@ import { cn } from "@/lib/utils";
 import { useMatch } from "@/state/match";
 import { usePrefs } from "@/state/prefs";
 import { useUi } from "@/state/ui";
+import { ReplayLabel } from "../ReplayLabel";
 import { replayMoment } from "../Scrubber";
 
 /* Fan mode: everything here reads engine data already on the board, and writes only words,
@@ -196,7 +197,7 @@ export function MomentBanner() {
             onClick={() => void replayMoment(show)}
             className="inline-flex shrink-0 items-center gap-1 rounded-full bg-black/15 px-3 py-1 text-xs font-medium hover:bg-black/25"
           >
-            <RotateCcw className="size-3.5" aria-hidden /> {t("Watch again")}
+            <ReplayLabel id={show.moment_id} label={msg("Watch again")} />
           </button>
         </motion.div>
       ) : null}

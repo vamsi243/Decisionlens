@@ -1,4 +1,4 @@
-import { Download, RotateCcw, Star } from "lucide-react";
+import { Download, Star } from "lucide-react";
 import { useState } from "react";
 import { downloadJson } from "@/lib/export";
 import { motion, useReducedMotion } from "framer-motion";
@@ -13,12 +13,13 @@ import type {
   WorkloadState,
 } from "@/types/contracts";
 import { midSentence, minute, pct, surname } from "@/lib/format";
-import { useT } from "@/lib/i18n";
+import { msg, useT } from "@/lib/i18n";
 import { MOMENT_LABEL } from "@/lib/moments";
 import { useTr } from "@/lib/tr";
 import { cn } from "@/lib/utils";
 import { useMatch } from "@/state/match";
 import { usePrefs } from "@/state/prefs";
+import { ReplayLabel } from "./ReplayLabel";
 import { replayMoment } from "./Scrubber";
 
 interface Props {
@@ -286,7 +287,7 @@ export function MomentCard({
               onClick={() => void replayMoment(moment)}
               className="inline-flex items-center gap-1.5 rounded-full bg-chrome px-3 py-1.5 text-xs font-medium text-white hover:bg-chrome/85"
             >
-              <RotateCcw className="size-3.5" aria-hidden /> {t("Watch again")}
+              <ReplayLabel id={moment.moment_id} label={msg("Watch again")} />
             </button>
             {star ? (
               <button
@@ -328,10 +329,10 @@ export function MomentCard({
         <button
           type="button"
           onClick={() => void replayMoment(moment)}
-          className="ml-auto inline-flex items-center gap-1 rounded-md px-1.5 py-1 hover:bg-panel-2 hover:text-ink"
+          className="ml-auto inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-md px-1.5 py-1 hover:bg-panel-2 hover:text-ink"
           aria-label={t("Replay {moment}", { moment: tr(moment.title) })}
         >
-          <RotateCcw className="size-3.5" /> {t("Replay")}
+          <ReplayLabel id={moment.moment_id} label={msg("Replay")} />
         </button>
       </header>
       <h3 className="mt-3 font-display text-2xl font-extrabold leading-tight tracking-tight text-chrome">
