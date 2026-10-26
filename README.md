@@ -7,7 +7,7 @@
 | | |
 | --- | --- |
 | **Live demo** | **https://orange-ocean-05183100f.5.azurestaticapps.net** (free, no sign-in, running until 10 Nov 2026) |
-| **Demo video** | _link coming soon_ |
+| **Demo video** | **https://www.youtube.com/watch?v=1txBr0CBSNQ** |
 | **Project pitch** | [PITCH.md](PITCH.md) |
 
 ## How judges can test it

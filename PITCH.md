@@ -5,7 +5,7 @@
 | | |
 | --- | --- |
 | Live demo | https://orange-ocean-05183100f.5.azurestaticapps.net (free, no sign-in) |
-| Demo video | _link coming soon_ |
+| Demo video | https://www.youtube.com/watch?v=1txBr0CBSNQ |
 | Code | https://github.com/vamsi243/Decisionlens |
 | Category | **Best Multi-Agent System** (also fits Best Azure Cloud Native Integration) |
 
