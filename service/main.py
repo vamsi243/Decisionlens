@@ -371,7 +371,9 @@ async def calibration() -> list[CalibrationReport]:
 async def overlays(all: bool = False) -> list[Overlay]:
     """Cards so far (`all=true`: every card generated for the replay)."""
     until = None if all else rt.adapters.source.status().t_ms
-    return rt.adapters.store.overlays(until_ms=until)
+    ours = rt.pipeline.detected  # skip cards for moments an older match version had
+    cards = rt.adapters.store.overlays(until_ms=until)
+    return [o for o in cards if o.moment_id is None or o.moment_id in ours]
 
 
 @app.get("/overlays/{overlay_id}")

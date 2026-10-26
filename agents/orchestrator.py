@@ -28,6 +28,7 @@ from agents.router import Step, Trigger, route, trigger_for
 from contracts import Event, Overlay, OverlayKind, Persona
 from contracts.stream import MomentAnalysis, StreamMessageType
 from mcp_server.context import EngineContext
+from service.factory import data_version
 from service.ports import Publisher, StateStore
 from service.settings import Settings
 
@@ -72,7 +73,9 @@ class Orchestrator:
         self.settings = settings
         self.cache = cache or ResponseCache(None)
         self.timeout = settings.agent_timeout_s
-        self.match_id = ctx.pipeline.meta.match_id
+        # Cached text belongs to one version of the match: a regenerated match or a new engine
+        # must not reuse the old recap, which is cached under the same ids.
+        self.match_id = f"{ctx.pipeline.meta.match_id}@{data_version(settings.match_dir)}"
         self.queue: asyncio.Queue[Job] = asyncio.Queue()
         self.traces: list[Trace] = []
         self._queued: set[str] = set()
