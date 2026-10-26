@@ -91,7 +91,7 @@ API on http://localhost:8000, web on http://localhost:5173. Without Azure keys i
 
 | Task | Command |
 | --- | --- |
-| Tests (121) | `uv run python tasks.py test` (`make test`) |
+| Tests (123) | `uv run python tasks.py test` (`make test`) |
 | Lint (ruff, mypy, tsc) | `uv run python tasks.py lint` (`make lint`) |
 | Generate a match | `uv run python tasks.py generate --seed 42` (`make generate SEED=42`) |
 | Calibration | `uv run python tasks.py calibrate` |

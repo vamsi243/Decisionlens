@@ -20,13 +20,13 @@ A live match-intelligence board for a fully synthetic football match (*Riverside
 - a what-if swap, such as "a fresh centre-back: 4% → 46%";
 - one short line of explanation.
 
-Every number comes from a transparent probability engine. The language model only writes the words around it, and a grounding guard rejects any text with a number the engine didn't produce.
+Every number comes from a transparent probability engine. The language model only writes the words around it, and a grounding guard rejects any text with a number the engine didn't produce. You can check the engine too: its pass probabilities land within 1.2 percentage points of what happened (calibration error 0.012), plotted on the board.
 
 ## The five stages
 | Stage | Decision Lens |
 | --- | --- |
 | **Ingest** | Our own seeded match generator streams events (passes, shots, tackles, pressure, possession changes, subs) and 10 Hz tracking live through Azure Event Hubs |
-| **Interpret** | Live stats, pass difficulty, ball and shot speed, distance, sprints, fatigue, and a five-minute intensity index that shows the game's rhythm |
+| **Interpret** | Live stats, pass difficulty, ball and shot speed, distance, sprints, fatigue, and a five-minute intensity index that reads the game's rhythm: control, pressure or chaos |
 | **Explain** | Option probabilities with ranges, what-if swaps and decision quality, explained by agents in two voices |
 | **Render** | Time-coded cards on the board and downloadable overlay JSON, ready for a broadcast graphics engine |
 | **Personalize** | Analyst and fan modes that are really different experiences, follow a player or a club, six languages, and a match copilot you can ask anything |
