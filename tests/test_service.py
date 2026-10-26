@@ -295,3 +295,10 @@ def test_live_broadcast_hides_moments_that_have_not_happened(
             and show["analysis"]["moment"]["moment_id"] == show["moment"]["moment_id"]
         )
         assert show["key_moments"] == sum(m["type"] != "fatigue_alert" for m in every)
+        # the recap page tells the whole match: its turning points replay whatever the clock says
+        chapters = c.get("/recap/moments").json()
+        assert chapters and len({m["moment_id"] for m in chapters}) == len(chapters)
+        late = max(chapters, key=lambda m: m["t_ms"])
+        assert late["t_ms"] > now
+        assert c.get(f"/moments/{late['moment_id']}/frames").status_code == 404
+        assert c.get(f"/moments/{late['moment_id']}/frames", params={"full": "true"}).json()

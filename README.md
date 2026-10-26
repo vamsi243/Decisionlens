@@ -148,7 +148,7 @@ uv run python -m mcp_server --match data/samples/match_42
 | `GET /match`, `GET /players` | Match metadata, replay status, squads |
 | `GET /moments` (`?all=true`) | Key moments so far (or the whole replay, for the timeline) |
 | `GET /moments/{id}/analysis` | Engine option map + what-if for a moment |
-| `GET /moments/{id}/frames` | Tracking frames around a moment (for replays and clips) |
+| `GET /moments/{id}/frames` (`?full=true`) | Tracking frames around a moment (for replays and clips; `full` for the recap, which may replay moments the live broadcast hasn't reached) |
 | `GET /stats`, `/workload`, `/intensity` | Live team stats, player workload, intensity windows |
 | `GET /calibration` | Reliability bins, ECE and Brier score for the pass and shot models |
 | `GET /players/{id}/stats` | One player so far: km, fatigue, sprints, top-speed loss, passes, shots, goals, tackles, aerials, interceptions (the hover card) |
@@ -159,6 +159,7 @@ uv run python -m mcp_server --match data/samples/match_42
 | `POST /translate {lang, texts}` | Batch-translate engine text (moment titles, bullets, commentary); cached per string, 400 calls an hour per caller |
 | `GET /agents/traces` | Which router steps ran per trigger and where each text came from |
 | `GET /recap` | The full-time recap, whatever the live replay is doing |
+| `GET /recap/moments` | The recap's turning points as moments, for its scroll chapters |
 | `GET /showcase` | The home page replay: the 86' aerial duel's frames and analysis, and the match's key-moment count |
 | `POST /copilot` | The match copilot over AG-UI (Server-Sent Events) for the CopilotKit chat |
 | `POST /replay/play`, `/pause`, `/seek {t_ms}`, `/speed {speed: 1, 2, 4 or 8}` | Replay controls (locked in the live broadcast) |

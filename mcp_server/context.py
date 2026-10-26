@@ -223,8 +223,8 @@ class EngineContext:
         stats = self.pipeline.stats()
         moments = []
         # Every moment the engine detected up to now, even ones a seek skipped past on screen.
+        # Not the store's list: it can hold moments from an older version of the match.
         seen = {d.moment.moment_id: d.moment for d in self.pipeline.detected.values()}
-        seen.update({m.moment_id: m for m in self.store.moments()})
         for m in sorted(seen.values(), key=lambda m: m.t_ms):
             if m.t_ms > t_ms or m.type.value == "fatigue_alert":
                 continue

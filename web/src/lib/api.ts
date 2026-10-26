@@ -77,9 +77,10 @@ export const api = {
     ),
   playerStats: (id: string) => req<PlayerStats>(`/players/${encodeURIComponent(id)}/stats`),
   playerDecisions: (id: string) => req<PlayerDecisions>(`/players/${encodeURIComponent(id)}/decisions`),
-  frames: (momentId: string, step = 1) =>
-    req<TrackingFrame[]>(`/moments/${encodeURIComponent(momentId)}/frames?step=${step}`),
+  frames: (momentId: string, step = 1, full = false) =>
+    req<TrackingFrame[]>(`/moments/${encodeURIComponent(momentId)}/frames?step=${step}${full ? "&full=true" : ""}`),
   recap: () => req<Overlay>("/recap"),
+  recapMoments: () => req<KeyMoment[]>("/recap/moments"),
   showcase: () => req<Showcase>("/showcase"),
   translate: (lang: string, texts: string[]) => post<{ texts: string[] }>("/translate", { lang, texts }),
   stats: () => req<MatchStats>("/stats"),

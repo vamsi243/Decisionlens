@@ -121,7 +121,19 @@ export function RecapPage() {
     const tps = (recap?.payload?.turning_points ?? []) as TurningPoint[];
     return [...tps].sort((a, b) => a.minute - b.minute);
   }, [recap]);
-  const byId = useMemo(() => new Map(allMoments.map((m) => [m.moment_id, m])), [allMoments]);
+  // The turning points as moments: in a live broadcast the board only knows the ones so far.
+  const [recapMoments, setRecapMoments] = useState<KeyMoment[]>([]);
+  useEffect(() => {
+    if (!recap) return;
+    api
+      .recapMoments()
+      .then(setRecapMoments)
+      .catch(() => undefined);
+  }, [recap]);
+  const byId = useMemo(
+    () => new Map([...allMoments, ...recapMoments].map((m) => [m.moment_id, m])),
+    [allMoments, recapMoments],
+  );
   const moments = points.map((tp) => byId.get(tp.moment_id)).filter((m): m is KeyMoment => !!m);
 
   const momentKey = moments.map((m) => m.moment_id).join();
@@ -130,7 +142,7 @@ export function RecapPage() {
     for (const tp of points) {
       if (frames[tp.moment_id]) continue;
       api
-        .frames(tp.moment_id, 1)
+        .frames(tp.moment_id, 1, true)
         .then((fs) => setFrames((f) => ({ ...f, [tp.moment_id]: fs })))
         .catch(() => undefined);
     }

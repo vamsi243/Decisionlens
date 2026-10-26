@@ -230,16 +230,24 @@ async def moment_analysis(moment_id: str) -> MomentAnalysis:
 
 
 @app.get("/moments/{moment_id}/frames")
-async def moment_frames(moment_id: str, step: int = 1) -> list[dict[str, Any]]:
-    """The tracking frames around a moment (a few seconds before to a few after), for replays."""
+async def moment_frames(moment_id: str, step: int = 1, full: bool = False) -> list[dict[str, Any]]:
+    """The tracking frames around a moment (a few seconds before to a few after), for replays.
+    `full=true` is the recap page, which tells the whole match whatever the broadcast is doing."""
     d = rt.pipeline.detected.get(moment_id)
     src = rt.adapters.source
     # in a live broadcast a moment that hasn't happened yet doesn't exist for viewers
-    if d is None or (rt.adapters.live and d.moment.t_ms > src.status().t_ms):
+    if d is None or (rt.adapters.live and not full and d.moment.t_ms > src.status().t_ms):
         raise HTTPException(404, "no such moment")
     fr = d.moment.frame_range
     last = min(fr.end, src.n_frames - 1)
     return [src.packet(f).data for f in range(fr.start, last + 1, max(1, step))]
+
+
+@app.get("/recap/moments")
+async def recap_moments() -> list[KeyMoment]:
+    """The recap's turning points as moments (the recap page replays them as chapters)."""
+    ids = [tp["moment_id"] for tp in (await recap()).payload.get("turning_points", [])]
+    return [rt.pipeline.detected[i].moment for i in ids if i in rt.pipeline.detected]
 
 
 @app.get("/showcase")
