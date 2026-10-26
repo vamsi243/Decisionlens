@@ -214,6 +214,10 @@ class Pipeline:
             self.state, start = copy.deepcopy(self.checkpoints[base]), base
         for f in range(start, frame):
             self._process(self.state, self.source.packet(f))
+        # A viewer (or a container waking up) joining mid-match still sees the moments so far.
+        for d in self.all_detected:
+            if d.moment.t_ms < frame * 100:
+                self.store.put_moment(d.moment)
         self.store.reset_live()
 
     # ------------------------------------------------------------------ live

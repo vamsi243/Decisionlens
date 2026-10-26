@@ -112,6 +112,18 @@ def test_restore_after_seek_matches_straight_replay(short_match: Path) -> None:
     assert a.state.frame == b.state.frame == 699
 
 
+def test_joining_mid_match_lists_the_moments_so_far() -> None:
+    # A container that wakes (or joins the live broadcast) late must not start with an empty feed.
+    src, store = FileReplay("data/samples/match_42"), MemoryStore()
+    pipe = Pipeline(src, store, Capture())
+    pipe.warm_up()
+    joined = pipe.all_detected[2].moment.t_ms + 1_000
+    pipe.restore(joined // 100)
+    expected = {d.moment.moment_id for d in pipe.all_detected if d.moment.t_ms < joined}
+    assert len(expected) == 3
+    assert {m.moment_id for m in store.moments()} == expected
+
+
 def test_handle_publishes_frames_events_and_stats(short_match: Path) -> None:
     src, cap, store = FileReplay(short_match), Capture(), MemoryStore()
     pipe = Pipeline(src, store, cap)

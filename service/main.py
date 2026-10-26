@@ -213,7 +213,12 @@ async def moments(all: bool = False) -> list[KeyMoment]:
     A live broadcast never lists moments that haven't happened yet: no spoilers on the timeline."""
     if all and not rt.adapters.live:
         return [d.moment for d in rt.pipeline.all_detected]
-    return rt.adapters.store.moments(until_ms=rt.adapters.source.status().t_ms)
+    return _current(rt.adapters.store.moments(until_ms=rt.adapters.source.status().t_ms))
+
+
+def _current(ms: list[KeyMoment]) -> list[KeyMoment]:
+    """Only moments this match and engine detect: a store may hold an older version's."""
+    return [m for m in ms if m.moment_id in rt.pipeline.detected]
 
 
 @app.get("/moments/{moment_id}/analysis")
@@ -498,7 +503,7 @@ async def ws(websocket: WebSocket) -> None:
         meta=src.meta,
         players=src.players,
         status=status,
-        moments=store.moments(until_ms=status.t_ms),
+        moments=_current(store.moments(until_ms=status.t_ms)),
         stats=store.stats() or rt.pipeline.stats(),
         frame=src.packet(status.frame).data,
     )
