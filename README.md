@@ -159,6 +159,7 @@ uv run python -m mcp_server --match data/samples/match_42
 | `POST /translate {lang, texts}` | Batch-translate engine text (moment titles, bullets, commentary); cached per string, 400 calls an hour per caller |
 | `GET /agents/traces` | Which router steps ran per trigger and where each text came from |
 | `GET /recap` | The full-time recap, whatever the live replay is doing |
+| `GET /showcase` | The home page replay: the 86' aerial duel's frames and analysis, and the match's key-moment count |
 | `POST /copilot` | The match copilot over AG-UI (Server-Sent Events) for the CopilotKit chat |
 | `POST /replay/play`, `/pause`, `/seek {t_ms}`, `/speed {speed: 1, 2, 4 or 8}` | Replay controls (locked in the live broadcast) |
 | `POST /mcp/` | The MCP server (streamable HTTP) |
@@ -193,7 +194,7 @@ azd up
 | --- | --- | --- | --- |
 | Container Apps | consumption, min 0 / max 1 replica | stream service, engine, MCP tools, agents, copilot | free grant while idle; a few dollars while watched |
 | Event Hubs | Basic, 1 TU | the live match feed | about $0.36/day |
-| Cosmos DB for NoSQL | free tier, 400 RU/s | moments, analyses, cards, agent cache | free |
+| Cosmos DB for NoSQL | free tier, 400 RU/s | moments, analyses, cards, agent cache (partitioned by match and data version) | free |
 | SignalR Service | Free | moments and cards to every board | free (20,000 messages/day) |
 | Static Web Apps | Free | the board | free |
 | Container Registry | Basic | API image | about $0.17/day |

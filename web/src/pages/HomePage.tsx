@@ -6,16 +6,15 @@ import {
   Route as RouteIcon,
   ScanSearch,
 } from "lucide-react";
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { StaticBoard } from "@/components/board/StaticBoard";
 import { PageHeader } from "@/components/Nav";
-import { api } from "@/lib/api";
+import { api, type Showcase } from "@/lib/api";
 import { midSentence, minute, pct } from "@/lib/format";
 import { msg, useT } from "@/lib/i18n";
 import { href } from "@/lib/router";
 import { useTr } from "@/lib/tr";
 import { useMatch } from "@/state/match";
-import type { MomentAnalysis, TrackingFrame } from "@/types/contracts";
 
 const HOLD_FRAMES = 35; // ~3.5 s on the option map before the clip loops
 
@@ -39,38 +38,16 @@ function Reveal({
 }
 
 /** The 86' aerial duel on a loop, like a GIF: real frames from the stream, then the what-if. */
-function HeroClip() {
+function HeroClip({ show }: { show: Showcase | null }) {
   const t = useT();
   const tr = useTr();
-  const moments = useMatch((s) => s.allMoments);
   const players = useMatch((s) => s.players);
   const home = useMatch((s) => s.meta?.teams[0]?.team_id);
   const reduce = useReducedMotion();
-  const moment = useMemo(
-    () =>
-      moments.find((m) => m.type === "aerial_duel") ??
-      moments.find((m) => m.type !== "fatigue_alert"),
-    [moments],
-  );
-  const [clip, setClip] = useState<TrackingFrame[]>([]);
-  const [analysis, setAnalysis] = useState<MomentAnalysis | null>(null);
+  const moment = show?.moment ?? null;
+  const clip = show?.frames ?? [];
+  const analysis = show?.analysis ?? null;
   const [i, setI] = useState(0);
-
-  useEffect(() => {
-    if (!moment) return;
-    let alive = true;
-    void api
-      .frames(moment.moment_id, 1)
-      .then((f) => alive && setClip(f))
-      .catch(() => undefined);
-    void api
-      .analysis(moment.moment_id)
-      .then((a) => alive && setAnalysis(a))
-      .catch(() => undefined);
-    return () => {
-      alive = false;
-    };
-  }, [moment]);
 
   useEffect(() => {
     if (!clip.length || reduce) return;
@@ -166,10 +143,20 @@ function Feature({
 
 export function HomePage() {
   const t = useT();
-  const moments = useMatch((s) => s.allMoments);
   const meta = useMatch((s) => s.meta);
   const [home, away] = meta?.teams ?? [];
-  const keyMoments = moments.filter((m) => m.type !== "fatigue_alert").length;
+  const [show, setShow] = useState<Showcase | null>(null);
+  useEffect(() => {
+    let alive = true;
+    void api
+      .showcase()
+      .then((s) => alive && setShow(s))
+      .catch(() => undefined);
+    return () => {
+      alive = false;
+    };
+  }, []);
+  const keyMoments = show?.key_moments ?? 0;
 
   return (
     <div className="min-h-dvh bg-bg">
@@ -224,7 +211,7 @@ export function HomePage() {
             </dl>
           </Reveal>
           <Reveal delay={0.1}>
-            <HeroClip />
+            <HeroClip show={show} />
           </Reveal>
         </section>
 

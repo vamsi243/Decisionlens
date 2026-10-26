@@ -53,6 +53,14 @@ async function req<T>(path: string, init?: RequestInit): Promise<T> {
 const post = <T>(path: string, body?: unknown) =>
   req<T>(path, { method: "POST", body: body === undefined ? undefined : JSON.stringify(body) });
 
+/** The home page replay: one highlight with its frames and analysis, and the match's moment count. */
+export interface Showcase {
+  moment: KeyMoment;
+  frames: TrackingFrame[];
+  analysis: MomentAnalysis;
+  key_moments: number;
+}
+
 export const api = {
   config: () => req<ServerConfig>("/config"),
   negotiate: () => req<{ url: string; accessToken: string }>("/negotiate"),
@@ -72,6 +80,7 @@ export const api = {
   frames: (momentId: string, step = 1) =>
     req<TrackingFrame[]>(`/moments/${encodeURIComponent(momentId)}/frames?step=${step}`),
   recap: () => req<Overlay>("/recap"),
+  showcase: () => req<Showcase>("/showcase"),
   translate: (lang: string, texts: string[]) => post<{ texts: string[] }>("/translate", { lang, texts }),
   stats: () => req<MatchStats>("/stats"),
   workload: () => req<WorkloadState[]>("/workload"),

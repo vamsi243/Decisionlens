@@ -275,3 +275,11 @@ def test_live_broadcast_hides_moments_that_have_not_happened(
         now = rt.adapters.source.status().t_ms
         assert all(m["t_ms"] <= now for m in shown) and len(shown) < len(every)
         assert c.get(f"/moments/{every[-1]['moment_id']}/frames").status_code == 404
+        # the home page's replay is last time round's highlight, so it's there from kick-off
+        show = c.get("/showcase").json()
+        assert show["moment"]["type"] == "aerial_duel" and show["moment"]["t_ms"] > now
+        assert (
+            show["frames"]
+            and show["analysis"]["moment"]["moment_id"] == show["moment"]["moment_id"]
+        )
+        assert show["key_moments"] == sum(m["type"] != "fatigue_alert" for m in every)

@@ -29,6 +29,7 @@ from contracts import (
     KeyMoment,
     MatchMeta,
     MatchStats,
+    MomentType,
     Overlay,
     Persona,
     PlayerDecisions,
@@ -234,6 +235,29 @@ async def moment_frames(moment_id: str, step: int = 1) -> list[dict[str, Any]]:
     fr = d.moment.frame_range
     last = min(fr.end, src.n_frames - 1)
     return [src.packet(f).data for f in range(fr.start, last + 1, max(1, step))]
+
+
+@app.get("/showcase")
+async def showcase() -> dict[str, Any]:
+    """The home page's looping replay: the match's aerial duel (or its first moment), with
+    frames and analysis, plus how many key moments the match has. Unlike the live board it
+    doesn't wait for the broadcast to reach the moment: the match loops, so it's last time
+    round's highlight."""
+    fatigue = MomentType.FATIGUE_ALERT
+    shown = [d for d in rt.pipeline.all_detected if d.moment.type != fatigue]
+    d = next((d for d in shown if d.moment.type == MomentType.AERIAL_DUEL), None)
+    d = d or (shown[0] if shown else None)
+    if d is None:
+        raise HTTPException(404, "no moments in this match")
+    mid = d.moment.moment_id
+    a = rt.adapters.store.analysis(mid)
+    if a is None:
+        job = Job(d, rt.pipeline.moment_bench.get(mid, []))
+        a = await asyncio.to_thread(analyse, job)
+        rt.adapters.store.put_analysis(a)
+    src, fr = rt.adapters.archive, d.moment.frame_range
+    frames = [src.packet(f).data for f in range(fr.start, min(fr.end, src.n_frames - 1) + 1)]
+    return {"moment": d.moment, "frames": frames, "analysis": a, "key_moments": len(shown)}
 
 
 @app.get("/players/{player_id}/heatmap")
